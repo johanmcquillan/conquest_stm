@@ -2,39 +2,36 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import math
 
-# Folder and names
+# Location and names of .ion files
 ionfolder = 'ions/'
-ionfiles = ['H_SZ_6.5au',	'H_SZP_6.5au', 'H_DZDP_6.5_2.5au',
-			'C_SZ_6.5au',	'C_SZP_6.5au', 'C_DZDP_6.5_2.5au',
-			'Si_SZ_8bohr']
+ionfiles = ['H_SZ_6.5au',	'H_SZP_6.5au', 'H_DZDP_6.5_2.5au', 'H_TZTP_6.5_4.5_2.5au',
+			'C_SZ_6.5au',	'C_SZP_6.5au', 'C_DZDP_6.5_2.5au', 'C_TZTP_6.5_4.5_2.5au',
+			'Si_SZ_8bohr',	'Si_TZ_8_6_4bohr']
 
-Radials = {}
+Radials = {} # Stores all data on PAO
 
 for ion in ionfiles:
+	# Open file and initialise entry
 	f = open(ionfolder+ion+'.ion', 'r')
-
 	Radials[ion] = {}
 
-	line = f.readline()
-
+	# Skip preamble and first 9 lines
+	line = f.next()
 	while not '</preamble>' in line:
-		line = f.readline()
-
+		line = f.next()
 	for i in range(0, 9):
-		line = f.readline()
+		line = f.next()
 
-	line = f.readline()
-
+	# Parse PAO data
+	line = f.next()
 	while line.split()[0] != '#':
-		print ion, line
 		metadata = line.split()
 		l = metadata[0]
 		n = metadata[1]
 		z = metadata[2]
 
 		orbitaldata = z+n+l
-		print orbitaldata
-		line = f.readline()
+		line = f.next()
 		metadata = line.split()
 		pts = int(metadata[0])
 		cutoff = float(metadata[2])
@@ -42,27 +39,30 @@ for ion in ionfiles:
 		Radials[ion][orbitaldata] = [[], [], cutoff]
 
 		for i in range(0, pts):
-			line = f.readline()
+			line = f.next()
 			a, b = line.split()
 			Radials[ion][orbitaldata][0].append(float(a))
 			Radials[ion][orbitaldata][1].append(float(b))
 
-		line = f.readline()
+		line = f.next()
+	f.close()
 
+# Plot functions to pdf
 with PdfPages('Rnl.pdf') as pdf:
 	for ion in ionfiles:
-		orbitals = Radials[ion].keys()
-		orbitals = sorted(orbitals, key=lambda x: x)
+		orbitals = sorted(Radials[ion].keys())
 		cutoffs = []
 		for o in orbitals:
 			cutoffs.append(Radials[ion][o][2])
 			label = '$\zeta ='+o[0]+'$, $n='+o[1]+'$, $l='+o[2]+'$'#, $m_l='+o[2]+'$'
 			plt.plot(Radials[ion][o][0], Radials[ion][o][1], label=label)
 		plt.xlim(0, math.ceil(max(cutoffs)))
-		plt.title('Radial Functions for '+ion+'.ion')
-		plt.xlabel('Radius, $r$ / $a_0$')
+		plt.title('PAOs for '+ion+'.ion')
+		plt.xlabel('Radial Distance, $r$ / $a_0$')
 		plt.ylabel('$R_{nl}(r)$')
-		plt.grid(b=True, which='both', color='0.65',linestyle='--')
+		plt.minorticks_on()
+		plt.grid(b=True, which='major', alpha=0.45, linestyle='-')
+		plt.grid(b=True, which='minor', alpha=0.10, linestyle='-')
 		plt.legend()
 		pdf.savefig()
 		plt.close()
