@@ -1,46 +1,69 @@
+
+from ion import *
 import math
 
-# Location and names of .ion files
-ionfolder = 'ions/'
-ionfiles = ['H_SZ_6.5au',	'H_SZP_6.5au', 'H_DZDP_6.5_2.5au', 'H_TZTP_6.5_4.5_2.5au',
-			'C_SZ_6.5au',	'C_SZP_6.5au', 'C_DZDP_6.5_2.5au', 'C_TZTP_6.5_4.5_2.5au',
-			'Si_SZ_8bohr',	'Si_TZ_8_6_4bohr']
+class Parser:
 
-Radials = {} # Stores all data on PAO
+	def __init__(self, folder, files):
+		self.ionfolder = folder
+		self.ionfiles = files
+		self.ions = {}
 
-for ion in ionfiles:
-	# Open file and initialise entry
-	f = open(ionfolder+ion+'.ion', 'r')
-	Radials[ion] = {}
+	@property
+	def ionfolder(self):
+		return self._ionfolder
 
-	# Skip preamble and first 9 lines
-	line = f.next()
-	while not '</preamble>' in line:
-		line = f.next()
-	for i in range(0, 9):
-		line = f.next()
+	def getRadial(self, ionname):
+		return self.ions[ionname]
 
-	# Parse PAO data
-	line = f.next()
-	while line.split()[0] != '#':
-		metadata = line.split()
-		l = metadata[0]
-		n = metadata[1]
-		z = metadata[2]
+	def getIon(self, ionname):
+		return self.ions[ionname]
+	
+	def parse(self):
+		for iname in self.ionfiles:
+			# Open file and initialise entry
+			f = open(self.ionfolder+iname+'.ion', 'r')
 
-		orbitaldata = z+n+l
-		line = f.next()
-		metadata = line.split()
-		pts = int(metadata[0])
-		cutoff = float(metadata[2])
-
-		Radials[ion][orbitaldata] = [[], [], cutoff]
-
-		for i in range(0, pts):
+			# Skip preamble and first 9 lines
 			line = f.next()
-			a, b = line.split()
-			Radials[ion][orbitaldata][0].append(float(a))
-			Radials[ion][orbitaldata][1].append(float(b)*math.pow(float(a),int(l)))
+			while not '</preamble>' in line:
+				line = f.next()
+			for i in range(0, 9):
+				line = f.next()
 
-		line = f.next()
-	f.close()
+			ion = Ion(iname)
+			# Parse PAO data
+			line = f.next()
+			while line.split()[0] != '#':
+				metadata = line.split()
+				l = int(metadata[0])
+				n = int(metadata[1])
+				zeta = int(metadata[2])
+
+				line = f.next()
+				metadata = line.split()
+				pts = int(metadata[0])
+				cutoff = float(metadata[2])
+
+				#self.Rnl[ion][orbitaldata] = [[], [], cutoff]
+				r = []
+				R = []
+				for i in range(0, pts):
+					line = f.next()
+					x, y = line.split()
+					x = float(x)
+					y = float(y)
+					y = y * math.pow(x, l)
+					r.append(x)
+					R.append(y)
+
+				R = Radial(zeta, n, l, r, R, cutoff)
+
+					#self.Rnl[ion][orbitaldata][0].append(float(a))
+					#self.Rnl[ion][orbitaldata][1].append(float(b)*math.pow(float(a),int(l)))
+				ion.setRadial(R)
+				line = f.next()
+			f.close()
+			self.ions[iname] = ion
+
+			

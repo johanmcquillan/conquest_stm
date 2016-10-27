@@ -1,69 +1,43 @@
 
 class Radial:
 
-	def __init__(self, n, l, r, R, cutoff):
+	def __init__(self, zeta, n, l, r, R, cutoff):
+		self.zeta = zeta
 		self.n = n
 		self.l = l
 		self.r = r
 		self.R = R
 		self.cutoff = cutoff
-
-	@property
-	def r(self):
-		return self.__r
-
-	@property
-	def R(self):
-		return self.__R
-	
-	@property
-	def n(self):
-		return self.__n
-
-	@property
-	def l(self):
-		return self.__l
-
-	@property
-	def cutoff(self):
-		return self._cutoff
-	
-	@r.setter
-	def r(self, r):
-		self.__r = r
-
-	@R.setter
-	def R(self, R):
-		self.__R = R
-
-	@n.setter
-	def n(self, n):
-		self.__n = n
-
-	@l.setter
-	def l(self, l):
-		self.__l = l
-
-	@cutoff.setter
-	def cutoff(self, cutoff):
-		self.__cutoff = cutoff
-
 	
 class Ion:
 
-	def __init__(self, Name, maxn, maxl):
+	def __init__(self, name):
 		self.name = name
-		self.maxn = maxn
-		self.maxl = maxl
+		self.nl = {}
+		self.zetas = 1
+		self.cutoffs = []
+		self.Rads = {}
 
-	def setRadial(self, n, l, r, R, cutoff):
-		self.Rad = Radial(n, l, r, R, cutoff)
+	def setRadial(self, radial):
+		zeta = radial.zeta
+		n = radial.n
+		l = radial.l
+		cutoff = radial.cutoff
+		if cutoff not in self.cutoffs:
+			self.cutoffs.append(cutoff)
+			++self.zetas
 
+		if not self.Rads.has_key(zeta):
+			self.Rads[zeta] = {}
+		if not self.Rads[zeta].has_key(n):
+			self.Rads[zeta][n] = {}
+			self.nl[n] = []
+		self.Rads[zeta][n][l] = radial
+		self.nl[n].append(l)
 
+	#def setRadialFromData(self, n, l, r, R, cutoff):
+	#	self.Rads = Radial(n, l, r, R, cutoff)
 
-
-
-
-
-
+	def getRadial(self, zeta, n, l):
+		return self.Rads[zeta][n][l]
 
