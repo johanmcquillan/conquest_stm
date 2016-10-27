@@ -42,7 +42,7 @@ for ion in ionfiles:
 			line = f.next()
 			a, b = line.split()
 			Radials[ion][orbitaldata][0].append(float(a))
-			Radials[ion][orbitaldata][1].append(float(b))
+			Radials[ion][orbitaldata][1].append(float(b)*math.pow(float(a),int(l)))
 
 		line = f.next()
 	f.close()
