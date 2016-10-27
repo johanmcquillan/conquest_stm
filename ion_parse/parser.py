@@ -39,7 +39,6 @@ class Parser:
 				l = int(metadata[0])
 				n = int(metadata[1])
 				zeta = int(metadata[2])
-
 				line = f.next()
 				metadata = line.split()
 				pts = int(metadata[0])
@@ -56,8 +55,7 @@ class Parser:
 					y = y * math.pow(x, l)
 					r.append(x)
 					R.append(y)
-
-				R = Radial(zeta, n, l, r, R, cutoff)
+				R = Radial(zeta, n, l, r, R)
 
 					#self.Rnl[ion][orbitaldata][0].append(float(a))
 					#self.Rnl[ion][orbitaldata][1].append(float(b)*math.pow(float(a),int(l)))
@@ -66,4 +64,3 @@ class Parser:
 			f.close()
 			self.ions[iname] = ion
 
-			
