@@ -1,27 +1,23 @@
-
 from ion import *
 import math
 
 class Parser:
+	"""Parses and stores data from input files.
+	Currently only works for .ion files."""
 
-	def __init__(self, folder, files):
-		self.ionfolder = folder
-		self.ionfiles = files
+	def __init__(self, ionfolder, ionfiles):
+		self.ionfolder = ionfolder
+		self.ionfiles = ionfiles
 		self.ions = {}
 
-	@property
-	def ionfolder(self):
-		return self._ionfolder
+	def getIon(self, iname):
+		return self.ions[iname]
 
-	def getRadial(self, ionname):
-		return self.ions[ionname]
-
-	def getIon(self, ionname):
-		return self.ions[ionname]
-	
-	def parse(self):
+	def parseIons(self):
+		"""Parse data from ion files to Ion objects and 
+		store in self.ions indexed by ionfile name."""
 		for iname in self.ionfiles:
-			# Open file and initialise entry
+			# Open .ion and initialise entry
 			f = open(self.ionfolder+iname+'.ion', 'r')
 
 			# Skip preamble and first 9 lines
@@ -31,22 +27,26 @@ class Parser:
 			for i in range(0, 9):
 				line = f.next()
 
+			# Create empty Ion and fill with radial data
 			ion = Ion(iname)
-			# Parse PAO data
 			line = f.next()
 			while line.split()[0] != '#':
+				# Read quantum numbers and zeta index
 				metadata = line.split()
 				l = int(metadata[0])
 				n = int(metadata[1])
 				zeta = int(metadata[2])
+
+				# Get number of points for radial and cutoff radius
 				line = f.next()
 				metadata = line.split()
 				pts = int(metadata[0])
 				cutoff = float(metadata[2])
 
-				#self.Rnl[ion][orbitaldata] = [[], [], cutoff]
+				# Initialise R(r) function data
 				r = []
 				R = []
+				# Read data into Radial object and add to Ion
 				for i in range(0, pts):
 					line = f.next()
 					x, y = line.split()
@@ -55,12 +55,11 @@ class Parser:
 					y = y * math.pow(x, l)
 					r.append(x)
 					R.append(y)
-				R = Radial(zeta, n, l, r, R)
 
-					#self.Rnl[ion][orbitaldata][0].append(float(a))
-					#self.Rnl[ion][orbitaldata][1].append(float(b)*math.pow(float(a),int(l)))
-				ion.setRadial(R)
+				R = Radial(zeta, n, l, r, R)
+				ion.addRadial(R)
 				line = f.next()
+
 			f.close()
 			self.ions[iname] = ion
 

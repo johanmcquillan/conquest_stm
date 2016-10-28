@@ -9,7 +9,7 @@ ionfiles = ['H_SZ_6.5au',	'H_SZP_6.5au', 'H_DZDP_6.5_2.5au', 'H_TZTP_6.5_4.5_2.5
 
 # Initialise parser and get data
 Prsr = Parser(ionfolder, ionfiles)
-Prsr.parse()
+Prsr.parseIons()
 
 # Put Ion objects into a dict indexed by name in ionfiles
 ions = {}
