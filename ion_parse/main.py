@@ -22,7 +22,7 @@ for ion in ionfiles:
 
 I = ions['C_TZTP_6.5_4.5_2.5au']
 #I.plotSPH(2, 1)
-I.plotBasis(1, 3, 2, 0)
+I.plotBasis(1, 2, 1, 1, 'z')
 
 # # Plot radial functions to 'Rnl_radials.pdf'
 # Pltr = Plotter('Rnl', ions)

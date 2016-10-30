@@ -69,39 +69,13 @@ class Ion(object):
 			if abs(lowestdif) > abs(dif):
 				lowestdif = dif
 				bestIndex = i
-		return Rvalues[bestIndex]
+		if lowestdif > 0.5:
+			return 0.0
+		else:
+			return Rvalues[bestIndex]
 
 	@classmethod
-	def sphericalHarmonicFromVector(cls, l, m, V):
-		V.normalise()
-		x = V.x
-		y = V.y
-		z = V.z
-		harm = 0.0
-		if l == 0:
-			harm = cls.sph00
-		elif l == 1:
-			if m == 1:
-				harm = -cls.sph11 * x
-			elif m == -1:
-				harm = cls.sph11 * y
-			elif m == 0:
-				harm =  cls.sph10 * z
-		elif l == 2:
-			if m == 2:
-				harm =  cls.sph22 * (x**2 - y**2)
-			elif m == -2:
-				harm =  cls.sph22 * (x**2 - y**2)
-			elif m == 1:
-				harm = -cls.sph21 * x*z
-			elif m == -1:
-				harm =  cls.sph21 * x*z
-			elif m == 0:
-				harm =  cls.sph20 * 3*z**2
-		return harm
-
-	@classmethod
-	def sphericalHarmonicFromCart(cls, l, m, x, y, z):
+	def sph(cls, l, m, x, y, z):
 
 		harm = 0.0
 		if l == 0:
@@ -126,31 +100,44 @@ class Ion(object):
 				harm =  cls.sph20 * 3*z**2
 		return harm
 
-	def plotBasis(self, zeta, n, l, m):
+	def plotBasis(self, zeta, n, l, m, axis):
 		plotname = 'SPH_'+str(l)+str(m)
 
 		minimum = -8
 		maximum = 8
 
 		step = 0.1
-		x,y = np.mgrid[minimum:maximum:step, minimum:maximum:step]
-		
-		Y = self.sumInQuad(x,y)
-		R = self.sumInQuad(x,y)
-		psi = self.sumInQuad(x, y)
+		space = np.mgrid[minimum:maximum:step, minimum:maximum:step]
+		Y = self.sumInQuad(space[0],space[1])
+		R = self.sumInQuad(space[0],space[1])
+		psi = self.sumInQuad(space[0],space[1])
 		maxpsi = 0
 		for i in range(0, int((maximum-minimum)/step)):
 			for j in range(0, int((maximum-minimum)/step)):
-				Y[i, j] = self.sphericalHarmonicFromCart(l,m,x[i,j],y[i,j],1)
-				R[i, j] = self.getRadialValue(zeta, n, l, np.sqrt(x[i,j]**2+y[i,j]**2+1))
+				if axis == 'z':
+					Y[i,j] = self.sph(l,m,space[0][i,j],space[1][i,j],0.01)
+					plt.xlabel('$x$ / $a_0$')
+					plt.ylabel('$y$ / $a_0$')
+				if axis == 'y':
+					Y[i,j] = self.sph(l,m,space[0][i,j],0.01,space[1][i,j])
+					plt.xlabel('$x$ / $a_0$')
+					plt.ylabel('$z$ / $a_0$')
+				if axis == 'x':
+					Y[i,j] = self.sph(l,m,0.01,space[0][i,j],space[1][i,j])
+					plt.xlabel('$y$ / $a_0$')
+					plt.ylabel('$z$ / $a_0$')
+				
+				R[i, j] = self.getRadialValue(zeta, n, l, np.sqrt(space[0][i,j]**2+space[1][i,j]**2+1))
 				psi[i,j] = Y[i,j]*R[i,j]
 				if abs(psi[i,j]) > maxpsi:
 					maxpsi = abs(psi[i,j])
 
-		plt.contour(x, y, psi, 0)
+
 		plt.imshow(psi, interpolation='bilinear', cmap=plt.cm.seismic, extent=(minimum,maximum,minimum,maximum),vmin=-maxpsi, vmax=maxpsi)
 		plt.colorbar()
-		ttl = 'Spherical Harmonic for $l='+str(l)+'$, $m_l='+str(m)+'$'
+		axes = ['x', 'y', 'z']
+		axes.remove(axis)
+		ttl = 'Basis Function, $\zeta='+str(zeta)+'$, $n='+str(n)+'$, $l='+str(l)+'$, $m_l='+str(m)+'$ in $'+axes[0]+'-'+axes[1]+'$ plane'
 		plt.title(ttl)
 		plt.show()
 
@@ -170,7 +157,7 @@ class Ion(object):
 		maxY = 0
 		for i in range(0, int((maximum-minimum)/step)):
 			for j in range(0, int((maximum-minimum)/step)):
-				Y[i, j] = cls.sphericalHarmonicFromCart(l,m,x[i,j],y[i,j],1)
+				Y[i, j] = cls.sph(l,m,x[i,j],y[i,j],1)
 				if abs(Y[i,j]) > maxY:
 					maxY = abs(Y[i,j])
 
