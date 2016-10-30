@@ -18,12 +18,22 @@ class Radial:
 	
 class Ion(object):
 	"""Stores Radial objects"""
-	sph00 = 1.0 / (2.0 * np.sqrt(math.pi))
-	sph11 = 1.0/2.0 * np.sqrt(3.0 / (2.0*math.pi))
-	sph10 = 1.0/2.0 * np.sqrt(3.0 / math.pi)
-	sph22 = 1.0/4.0 * np.sqrt(15.0 / (2.0*math.pi)) 
-	sph21 = 1.0/2.0 * np.sqrt(15.0 / (2.0*math.pi))
-	sph20 = 1.0/4.0 * np.sqrt(5.0 / math.pi)
+
+	# Normalisation factors for spherical harmonic
+	# Numbers in variable names refer to l and abs(m)
+	sph00 = 1.0/2.0 * np.sqrt(1.0   / math.pi)
+
+	sph11 = 1.0/2.0 * np.sqrt(3.0   / (2.0*math.pi))
+	sph10 = 1.0/2.0 * np.sqrt(3.0   / math.pi)
+
+	sph22 = 1.0/4.0 * np.sqrt(15.0  / (2.0*math.pi)) 
+	sph21 = 1.0/2.0 * np.sqrt(15.0  / (2.0*math.pi))
+	sph20 = 1.0/4.0 * np.sqrt(5.0   / math.pi)
+
+	sph33 = 1.0/8.0 * np,sqrt(35.0  / math.pi)
+	sph32 = 1.0/4.0 * np.sqrt(105.0 / (2.0*math.pi))
+	sph31 = 1.0/8.0 * np.sqrt(21.0  / math.pi)
+	sph30 = 1.0/4.0 * np.sqrt(7.0   / math.pit)
 
 	def __init__(self, name):
 		self.name = name
@@ -113,6 +123,21 @@ class Ion(object):
 				harm = -cls.sph21 * x*z
 			elif m == 0:
 				harm =  cls.sph20 * (3*z**2 - 1)
+		elif l == 3:
+			if m == 3:
+				harm =  -cls.sph33 * (x**3 - 3*x*y**2)
+			elif m == -3:
+				harm =   cls.sph33 * (x**3 - 3*x*y**2)
+			elif m == 2:
+				harm = 	 cls.sph32 * (x**2 - y**2)*z
+			elif m == -2:
+				harm =   cls.sph32 * (x**2 - y**2)*z
+			elif m == 1:
+				harm =  -cls.sph31 * (5*z**2 - 1)*x
+			elif m == -1:
+				harm =   cls.sph31 * (5*z**2 - 1)*x
+			elif m == 0:
+				harm =   cls.sph30 * (5*z**2 - 3)*z
 		return harm
 
 	def plotBasis(self, zeta, n, l, m, axis):
