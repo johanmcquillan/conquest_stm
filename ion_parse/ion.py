@@ -58,6 +58,7 @@ class Ion(object):
 		return self.Rads[zeta][n][l]
 
 	def getRadialValue(self, zeta, n, l, r):
+		'''Find closest r value in Radial to given r and return R(r)'''
 		Rad = self.Rads[zeta][n][l]
 		rvalues = Rad.r
 		Rvalues = Rad.R
@@ -76,15 +77,29 @@ class Ion(object):
 
 	@classmethod
 	def sph(cls, l, m, x, y, z):
+		'''Return cartesian spherical harmonic.
+		Valid indices are l > 0; -l < m < +l.
+		Currently, only l <= 2 is supported.'''
 
+		# Normalise coordinates to unit magnitude
+		# If at origin, return 0
+		magnitude = np.sqrt(x**2 + y**2 + z**2)
+		if magnitude != 0:
+			x = x / magnitude
+			y = y / magnitude
+			z = z / magnitude
+		else:
+			return 0.0
+
+		# Choose correct form of spherical harmonic depending on l and m
 		harm = 0.0
 		if l == 0:
-			harm = cls.sph00
+			harm =      cls.sph00
 		elif l == 1:
 			if m == 1:
-				harm = cls.sph11 * x
+				harm =  cls.sph11 * x
 			elif m == -1:
-				harm = cls.sph11 * y
+				harm =  cls.sph11 * y
 			elif m == 0:
 				harm =  cls.sph10 * z
 		elif l == 2:
@@ -93,53 +108,61 @@ class Ion(object):
 			elif m == -2:
 				harm =  cls.sph22 * (x**2 - y**2)
 			elif m == 1:
-				harm = -cls.sph21 * x*z
-			elif m == -1:
 				harm =  cls.sph21 * x*z
+			elif m == -1:
+				harm = -cls.sph21 * x*z
 			elif m == 0:
-				harm =  cls.sph20 * 3*z**2
+				harm =  cls.sph20 * (3*z**2 - 1)
 		return harm
 
 	def plotBasis(self, zeta, n, l, m, axis):
-		plotname = 'SPH_'+str(l)+str(m)
+
+		plotname = 'Basis_'+self.name+'_'+str(zeta)+'_'+str(n)+'_'+str(l)+'_'+str(m)+'_'+axis
 
 		minimum = -8
 		maximum = 8
 
 		step = 0.1
-		space = np.mgrid[minimum:maximum:step, minimum:maximum:step]
-		Y = self.sumInQuad(space[0],space[1])
-		R = self.sumInQuad(space[0],space[1])
-		psi = self.sumInQuad(space[0],space[1])
-		maxpsi = 0
-		for i in range(0, int((maximum-minimum)/step)):
-			for j in range(0, int((maximum-minimum)/step)):
-				if axis == 'z':
-					Y[i,j] = self.sph(l,m,space[0][i,j],space[1][i,j],0.01)
-					plt.xlabel('$x$ / $a_0$')
-					plt.ylabel('$y$ / $a_0$')
-				if axis == 'y':
-					Y[i,j] = self.sph(l,m,space[0][i,j],0.01,space[1][i,j])
-					plt.xlabel('$x$ / $a_0$')
-					plt.ylabel('$z$ / $a_0$')
-				if axis == 'x':
-					Y[i,j] = self.sph(l,m,0.01,space[0][i,j],space[1][i,j])
-					plt.xlabel('$y$ / $a_0$')
-					plt.ylabel('$z$ / $a_0$')
-				
-				R[i, j] = self.getRadialValue(zeta, n, l, np.sqrt(space[0][i,j]**2+space[1][i,j]**2+1))
-				psi[i,j] = Y[i,j]*R[i,j]
-				if abs(psi[i,j]) > maxpsi:
-					maxpsi = abs(psi[i,j])
+		space1, space2 = np.mgrid[minimum:maximum:step, minimum:maximum:step]
+		planeHeight = 0.00001
+		Y = self.sumInQuad(space1,space2)
+		R = self.sumInQuad(space1,space2)
+		psi = self.sumInQuad(space1,space2)
+		maxpsi = 0.1
+		with PdfPages('pdfs/'+plotname+'.pdf') as pdf:
+			print 'Creating '+plotname+'.pdf'
+			for i in range(0, int((maximum-minimum)/step)):
+				for j in range(0, int((maximum-minimum)/step)):
+					if axis == 'z':
+						Y[i,j] = self.sph(l,m,space2[i,j],space1[i,j],planeHeight)
+						plt.xlabel('$x$ / $a_0$')
+						plt.ylabel('$y$ / $a_0$')
+					if axis == 'y':
+						Y[i,j] = self.sph(l,m,space2[i,j],planeHeight,space1[i,j])
+						plt.xlabel('$x$ / $a_0$')
+						plt.ylabel('$z$ / $a_0$')
+					if axis == 'x':
+						Y[i,j] = self.sph(l,m,planeHeight,space2[i,j],space1[i,j])
+						plt.xlabel('$y$ / $a_0$')
+						plt.ylabel('$z$ / $a_0$')
+					
+					R[i, j] = self.getRadialValue(zeta, n, l, np.sqrt(space1[i,j]**2+space2[i,j]**2+planeHeight**2))
+					psi[i,j] = Y[i,j]*R[i,j]
+					#if space1[i, j] == 5.0 and space2[i, j] == 2.0:
+					#	psi[i,j] = 5
+					if abs(psi[i,j]) > maxpsi:
+						maxpsi = abs(psi[i,j])
 
-
-		plt.imshow(psi, interpolation='bilinear', cmap=plt.cm.seismic, extent=(minimum,maximum,minimum,maximum),vmin=-maxpsi, vmax=maxpsi)
-		plt.colorbar()
-		axes = ['x', 'y', 'z']
-		axes.remove(axis)
-		ttl = 'Basis Function, $\zeta='+str(zeta)+'$, $n='+str(n)+'$, $l='+str(l)+'$, $m_l='+str(m)+'$ in $'+axes[0]+'-'+axes[1]+'$ plane'
-		plt.title(ttl)
-		plt.show()
+			#plt.contour(space2, space1, psi, 8, cmap=plt.cm.seismic)
+			plt.imshow(psi, interpolation='bilinear', origin='center', cmap=plt.cm.bwr, extent=(minimum,maximum,minimum,maximum),vmin=-maxpsi, vmax=maxpsi)
+			plt.colorbar()
+			plt.grid()
+			axes = ['x', 'y', 'z']
+			axes.remove(axis)
+			ttl = self.name+' Basis Function for \n \n $\zeta='+str(zeta)+'$, $n='+str(n)+'$, $l='+str(l)+'$, $m_l='+str(m)+'$ in $'+axes[0]+'-'+axes[1]+'$ plane'
+			plt.title(ttl)
+			pdf.savefig()
+			plt.close()
 
 	@staticmethod
 	def sumInQuad(x, y):

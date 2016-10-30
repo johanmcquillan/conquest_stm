@@ -13,7 +13,7 @@ class Plotter:
 
 	def plotRadials(self):
 		"""Plot all radial functions from self.ions to 'self.filename'_radials.pdf"""
-		with PdfPages(self.fname+'_radials.pdf') as pdf:
+		with PdfPages('pdfs/'+self.fname+'_radials.pdf') as pdf:
 
 			# Plot all functions for the same ion on one graph
 			ionNames = sorted(self.ions.keys())
