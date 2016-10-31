@@ -6,8 +6,9 @@ from matplotlib.backends.backend_pdf import PdfPages
 from vector import Vector
 
 class Radial:
-	"""Stores the radial part of basis function and metadata, ie.
-	quantum numbers (n and l) and zeta index"""
+
+	"""Stores the radial part of basis function and metadata,
+	ie. quantum numbers (n and l) and zeta index."""
 
 	def __init__(self, zeta, n, l, r, R):
 		self.zeta = zeta
@@ -17,7 +18,8 @@ class Radial:
 		self.R = R
 	
 class Ion(object):
-	"""Stores Radial objects"""
+
+	"""Stores Radial objects."""
 
 	# Normalisation factors for spherical harmonic
 	# Numbers in variable names refer to l and abs(m)
@@ -68,7 +70,7 @@ class Ion(object):
 		return self.Rads[zeta][n][l]
 
 	def getRadialValue(self, zeta, n, l, r):
-		'''Find closest r value in Radial to given r and return R(r)'''
+		"""Find closest r value in Radial to given r and return R(r)"""
 		Rad = self.Rads[zeta][n][l]
 		rvalues = Rad.r
 		Rvalues = Rad.R
@@ -87,9 +89,17 @@ class Ion(object):
 
 	@classmethod
 	def sph(cls, l, m, x, y, z):
-		'''Return cartesian spherical harmonic.
+		"""Return cartesian spherical harmonic.
 		Valid indices are l > 0; -l < m < +l.
-		Currently, only l <= 2 is supported.'''
+		Currently, only l <= 3 is supported.
+		
+		Input:
+		l:			Orbital angular momentum quantum number
+		m:			Azimuthal quantum number
+		x, y, z:	Cartesian coordinates
+
+		Output:
+		harm:		Spherical harmonic for given l and m, evaluated at (x, y, z)"""
 
 		# Normalise coordinates to unit magnitude
 		# If at origin, return 0
@@ -140,7 +150,19 @@ class Ion(object):
 				harm =   cls.sph30 * (5*z**2 - 3)*z
 		return harm
 
-	def plotBasis(self, zeta, n, l, m, axis, minimum=-8, maximum=8, planeHeight=0.00001):
+	def plotBasis(self, zeta, n, l, m, axis, minimum=-8, maximum=8, planeValue=0.00001):
+		"""Plots cross-section of basis function of ion to pdf.
+		All lengths measured in bohr radii (a0).
+		
+		Input:
+		zeta:		Zeta index of Radial
+		n:			Principal quantum number for Radial
+		l:			Orbital angular momentum quantum number for Radial and spherical harmonic
+		m:			Azimuthal quantum number for spherical harmonic
+		axis:		Cartesian axis ('x', 'y', or 'z') to set to constant value given by planeValue
+		minimum:	Minimum value of coordinates measured in a0; Default is -8
+		maximum:	Maximum value of coordinates measured in a0; Default is +8
+		planeValue:	Constant value assigned to Cartesian coordinate given by axis; Default is 0.00001"""
 
 		plotname = 'Basis_'+self.name+'_'+str(zeta)+'_'+str(n)+'_'+str(l)+'_'+str(m)+'_'+axis
 
@@ -156,19 +178,19 @@ class Ion(object):
 			for i in range(0, int((maximum-minimum)/step)):
 				for j in range(0, int((maximum-minimum)/step)):
 					if axis == 'z':
-						Y[i,j] = self.sph(l,m,space2[i,j],space1[i,j],planeHeight)
+						Y[i,j] = self.sph(l,m,space2[i,j],space1[i,j],planeValue)
 						plt.xlabel('$x$ / $a_0$')
 						plt.ylabel('$y$ / $a_0$')
 					if axis == 'y':
-						Y[i,j] = self.sph(l,m,space2[i,j],planeHeight,space1[i,j])
+						Y[i,j] = self.sph(l,m,space2[i,j],planeValue,space1[i,j])
 						plt.xlabel('$x$ / $a_0$')
 						plt.ylabel('$z$ / $a_0$')
 					if axis == 'x':
-						Y[i,j] = self.sph(l,m,planeHeight,space2[i,j],space1[i,j])
+						Y[i,j] = self.sph(l,m,planeValue,space2[i,j],space1[i,j])
 						plt.xlabel('$y$ / $a_0$')
 						plt.ylabel('$z$ / $a_0$')
 					
-					R[i, j] = self.getRadialValue(zeta, n, l, np.sqrt(space1[i,j]**2+space2[i,j]**2+planeHeight**2))
+					R[i, j] = self.getRadialValue(zeta, n, l, np.sqrt(space1[i,j]**2+space2[i,j]**2+planeValue**2))
 					psi[i,j] = Y[i,j]*R[i,j]
 					#if space1[i, j] == 5.0 and space2[i, j] == 2.0:
 					#	psi[i,j] = 5
