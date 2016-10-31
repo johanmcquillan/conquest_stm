@@ -150,7 +150,7 @@ class Ion(object):
 				harm =   cls.sph30 * (5*z**2 - 3)*z
 		return harm
 
-	def plotBasis(self, zeta, n, l, m, axis, minimum=-8, maximum=8, planeValue=0.00001):
+	def plotBasis(self, zeta, n, l, m, axis, minimum=-8, maximum=8, planeValue=0.00001, step=0.1):
 		"""Plots cross-section of basis function of ion to pdf.
 		All lengths measured in bohr radii (a0).
 		
@@ -162,16 +162,17 @@ class Ion(object):
 		axis:		Cartesian axis ('x', 'y', or 'z') to set to constant value given by planeValue
 		minimum:	Minimum value of coordinates measured in a0; Default is -8
 		maximum:	Maximum value of coordinates measured in a0; Default is +8
-		planeValue:	Constant value assigned to Cartesian coordinate given by axis; Default is 0.00001"""
+		planeValue:	Constant value assigned to Cartesian coordinate given by axis; Default is 0.00001
+		step:		Interval between Cartesian mgrid points, measured in a0; Default is 0.1"""
 
 		plotname = 'Basis_'+self.name+'_'+str(zeta)+'_'+str(n)+'_'+str(l)+'_'+str(m)+'_'+axis
 
-		step = 0.1
+		# Initialise meshes
 		space1, space2 = np.mgrid[minimum:maximum:step, minimum:maximum:step]
+		Y = np.empty_like(space1)
+		R = np.empty_like(space1)
+		psi = np.empty_like(space1)
 
-		Y = self.sumInQuad(space1,space2)
-		R = self.sumInQuad(space1,space2)
-		psi = self.sumInQuad(space1,space2)
 		maxpsi = 0.1
 		with PdfPages('pdfs/'+plotname+'.pdf') as pdf:
 			print 'Creating '+plotname+'.pdf'
@@ -208,10 +209,6 @@ class Ion(object):
 			pdf.savefig()
 			plt.close()
 
-	@staticmethod
-	def sumInQuad(x, y):
-		return x**2 + y**2
-
 	@classmethod
 	def plotSPH(cls, l, m):
 		minimum = -8
@@ -220,7 +217,7 @@ class Ion(object):
 		step = 0.1
 		x,y = np.mgrid[minimum:maximum:step, minimum:maximum:step]
 		
-		Y = cls.sumInQuad(x,y)
+		Y = np.empty_like(x)
 		maxY = 0
 		for i in range(0, int((maximum-minimum)/step)):
 			for j in range(0, int((maximum-minimum)/step)):
