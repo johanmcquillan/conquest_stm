@@ -210,26 +210,55 @@ class Ion(object):
 			plt.close()
 
 	@classmethod
-	def plotSPH(cls, l, m):
-		minimum = -8
-		maximum = 8
-
-		step = 0.1
-		x,y = np.mgrid[minimum:maximum:step, minimum:maximum:step]
+	def plotSPH(cls, l, m, axis, minimum=-8, maximum=8, planeValue=0.00001, step=0.1):
+		"""Plots cross-section of spherical harmonic to pdf.
+		All lengths measured in bohr radii (a0).
 		
-		Y = np.empty_like(x)
-		maxY = 0
-		for i in range(0, int((maximum-minimum)/step)):
-			for j in range(0, int((maximum-minimum)/step)):
-				Y[i, j] = cls.sph(l,m,x[i,j],y[i,j],1)
-				if abs(Y[i,j]) > maxY:
-					maxY = abs(Y[i,j])
+		Input:
+		l:			Orbital angular momentum quantum number for spherical harmonic
+		m:			Azimuthal quantum number for spherical harmonic
+		axis:		Cartesian axis ('x', 'y', or 'z') to set to constant value given by planeValue
+		minimum:	Minimum value of coordinates measured in a0; Default is -8
+		maximum:	Maximum value of coordinates measured in a0; Default is +8
+		planeValue:	Constant value assigned to Cartesian coordinate given by axis; Default is 0.00001
+		step:		Interval between Cartesian mgrid points, measured in a0; Default is 0.1"""
 
-		plt.contour(x, y, Y, 0)
-		plt.imshow(Y, interpolation='bilinear', cmap=plt.cm.seismic, extent=(minimum,maximum,minimum,maximum),vmin=-maxY, vmax=maxY)
-		plt.colorbar()
-		ttl = 'Spherical Harmonic for $l='+str(l)+'$, $m_l='+str(m)+'$'
-		plt.title(ttl)
-		plt.show()
+		plotname = 'SPH_'+str(l)+'_'+str(m)+'_'+axis
+
+		# Initialise meshes
+		space1, space2 = np.mgrid[minimum:maximum:step, minimum:maximum:step]
+		Y = np.empty_like(space1)
+
+		maxY = 0.1
+		with PdfPages('pdfs/'+plotname+'.pdf') as pdf:
+			print 'Creating '+plotname+'.pdf'
+			for i in range(0, int((maximum-minimum)/step)):
+				for j in range(0, int((maximum-minimum)/step)):
+					if axis == 'z':
+						Y[i,j] = cls.sph(l,m,space2[i,j],space1[i,j],planeValue)
+						plt.xlabel('$x$ / $a_0$')
+						plt.ylabel('$y$ / $a_0$')
+					if axis == 'y':
+						Y[i,j] = cls.sph(l,m,space2[i,j],planeValue,space1[i,j])
+						plt.xlabel('$x$ / $a_0$')
+						plt.ylabel('$z$ / $a_0$')
+					if axis == 'x':
+						Y[i,j] = cls.sph(l,m,planeValue,space2[i,j],space1[i,j])
+						plt.xlabel('$y$ / $a_0$')
+						plt.ylabel('$z$ / $a_0$')
+					
+					if abs(Y[i,j]) > maxY:
+						maxY = abs(Y[i,j])
+
+			plt.imshow(Y, interpolation='bilinear', origin='center', cmap=plt.cm.bwr, extent=(minimum,maximum,minimum,maximum),vmin=-maxY, vmax=maxY)
+			plt.colorbar()
+			plt.grid()
+			axes = ['x', 'y', 'z']
+			axes.remove(axis)
+			ttl = 'Spherical Harmonic for \n \n $l='+str(l)+'$, $m_l='+str(m)+'$ in $'+axes[0]+'-'+axes[1]+'$ plane'
+			plt.title(ttl)
+			pdf.savefig()
+			plt.close()
+
 
 

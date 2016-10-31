@@ -3,11 +3,6 @@ from plotter import Plotter
 from ion import *
 from vector import *
 
-n = Vector(0,0,1)
-#Ion.plotSPH(1, 1, n)
-
-
-
 ionfolder = 'ions/'
 ionfiles = ['H_SZ_6.5au',	'H_SZP_6.5au', 'H_DZDP_6.5_2.5au', 'H_TZTP_6.5_4.5_2.5au',
 			'C_SZ_6.5au',	'C_SZP_6.5au', 'C_DZDP_6.5_2.5au', 'C_TZTP_6.5_4.5_2.5au',
@@ -32,7 +27,13 @@ for n in I.nl.keys():
 	for l in I.nl[n]:
 		for m in range(-l, l+1):
 			for e in ['x','y','z']:
-				I.plotBasis(1, n, l, m, e)
+				#I.plotBasis(1, n, l, m, e)
+				continue
+
+for l in range(0, 4):
+	for m in range(-l, l+1):
+		for e in ['x', 'y', 'z']:
+			Ion.plotSPH(l, m, e)
 
 # # Plot radial functions to 'Rnl_radials.pdf'
 # Pltr = Plotter('Rnl', ions)
