@@ -140,12 +140,9 @@ class Ion(object):
 				harm =   cls.sph30 * (5*z**2 - 3)*z
 		return harm
 
-	def plotBasis(self, zeta, n, l, m, axis, planeHeight=0.00001):
+	def plotBasis(self, zeta, n, l, m, axis, minimum=-8, maximum=8, planeHeight=0.00001):
 
 		plotname = 'Basis_'+self.name+'_'+str(zeta)+'_'+str(n)+'_'+str(l)+'_'+str(m)+'_'+axis
-
-		minimum = -8
-		maximum = 8
 
 		step = 0.1
 		space1, space2 = np.mgrid[minimum:maximum:step, minimum:maximum:step]
