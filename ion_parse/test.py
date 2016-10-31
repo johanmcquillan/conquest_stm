@@ -1,23 +1,31 @@
+
+import glob
 from parser import Parser
 from plotter import Plotter
 from ion import *
 from vector import *
 
-ionfolder = 'ions/'
+ionFolder = 'ions/'
 # ionfiles = ['H_SZ_6.5au',	'H_SZP_6.5au', 'H_DZDP_6.5_2.5au', 'H_TZTP_6.5_4.5_2.5au',
 # 			'C_SZ_6.5au',	'C_SZP_6.5au', 'C_DZDP_6.5_2.5au', 'C_TZTP_6.5_4.5_2.5au',
 # 			'Si_SZ_8bohr',	'Si_TZ_8_6_4bohr']
 
+ionFilesRaw = glob.glob(ionFolder+'*.ion')
+ionFiles = []
+tempName = ''
+for ionNameRaw in ionFilesRaw:
+	print ionNameRaw[len(ionFolder):len(ionNameRaw)-4]
+	ionFiles.append(ionNameRaw[len(ionFolder):len(ionNameRaw)-4])
 
 
 # ionfiles = ['C_TZTP_6.5_4.5_2.5au']
 # Initialise parser and get data
-Prsr = Parser(ionfolder, ionfiles)
+Prsr = Parser(ionFolder, ionFiles)
 Prsr.parseIons()
 
 # Put Ion objects into a dict indexed by name in ionfiles
 ions = {}
-for ion in ionfiles:
+for ion in ionFiles:
 	ions[ion] = Prsr.getIon(ion)
 
 #Pltr = Plotter('Rnl', ions)
