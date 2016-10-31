@@ -1,24 +1,27 @@
-from ion import *
+
+from atoms import *
 import math
 
 class Parser:
+
 	"""Parses and stores data from input files.
 	Currently only works for .ion files."""
 
-	def __init__(self, ionfolder, ionfiles):
-		self.ionfolder = ionfolder
-		self.ionfiles = ionfiles
+	def __init__(self):
 		self.ions = {}
 
-	def getIon(self, iname):
-		return self.ions[iname]
+	def getIon(self, ionName):
+		return self.ions[ionName]
 
-	def parseIons(self):
+	def parseIons(self, ionFolder, ionFiles):
 		"""Parse data from ion files to Ion objects and 
-		store in self.ions indexed by ionfile name."""
-		for iname in self.ionfiles:
+		store in self.ions indexed by ionFile name."""
+		self.ionFolder = ionFolder
+		self.ionFiles = ionFiles
+
+		for ionName in self.ionFiles:
 			# Open .ion and initialise entry
-			f = open(self.ionfolder+iname+'.ion', 'r')
+			f = open(self.ionFolder+ionName+'.ion', 'r')
 
 			# Skip preamble and first 9 lines
 			line = f.next()
@@ -28,7 +31,7 @@ class Parser:
 				line = f.next()
 
 			# Create empty Ion and fill with radial data
-			ion = Ion(iname)
+			ion = Ion(ionName)
 			line = f.next()
 			while line.split()[0] != '#':
 				# Read quantum numbers and zeta index
@@ -61,5 +64,42 @@ class Parser:
 				line = f.next()
 
 			f.close()
-			self.ions[iname] = ion
+			self.ions[ionName] = ion
+
+	def parseAtoms(self, atomFolder, atomFiles):
+		self.atomFolder = atomFolder
+		self.atomFiles = atomFiles
+
+		for atomName in self.atomFiles:
+			f = open(self.atomFolder+atomName+'.dat')
+
+			line = f.next()
+			line = f.next()
+			data = line.split()
+			kpoint = [float(data[0]), float(data[1]), float(data[2])]
+
+			line = f.next()
+			data = line.split()
+			band = [int(data[0]), float(data[1])]
+
+			line = f.next()
+			data = line.split()
+			a = int(data[0])
+			PAO = int(data[1])
+			coeffString = data[2]
+			coeffString = coeffString.replace('(', '')
+			coeffString = coeffString.replace(')', '')
+			complexString = coeffString.split(',')
+			complexCoeff = [float(complexString[0]), float(complexString[1])]
+
+			print complexCoeff
+			f.close()
+
+
+
+
+
+
+
+
 

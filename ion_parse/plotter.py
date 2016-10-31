@@ -2,7 +2,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-from ion import *
+from atoms import *
 
 class Plotter:
 	"""Stores dict of Ion objects and provides methods to plot data to pdf"""
