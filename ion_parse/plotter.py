@@ -5,6 +5,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from atoms import *
 
 class Plotter:
+	
 	"""Stores dict of Ion objects and provides methods to plot data to pdf"""
 
 	def __init__(self, filename, ions):

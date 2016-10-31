@@ -19,10 +19,10 @@ class Radial:
 	
 class Ion(object):
 
-	"""Stores Radial objects."""
+	"""Stores information about an ion, primarily its basis functions."""
 
-	# Normalisation factors for spherical harmonic
-	# Numbers in variable names refer to l and abs(m)
+	# Normalisation factors for spherical harmonics
+	# Numbers in variable names refer to l and absolute value of m
 	sph00 = 1.0/2.0 * np.sqrt(1.0   / math.pi)
 
 	sph11 = 1.0/2.0 * np.sqrt(3.0   / (2.0*math.pi))
@@ -71,18 +71,21 @@ class Ion(object):
 
 	def getRadialValue(self, zeta, n, l, r):
 		"""Find closest r value in Radial to given r and return R(r)"""
+		# Get data
 		Rad = self.Rads[zeta][n][l]
 		rvalues = Rad.r
 		Rvalues = Rad.R
 
-		bestIndex = 0
-		lowestdif = 1000000
+		bestIndex = 0 # Index of rvalues corresponding to closest value of r
+		lowestdif = sys.maxint # Lowest difference found so far between r and any element of rvalues
+
+		# Find closest value of rvalues
 		for i in range(0, len(rvalues)):
 			dif = r - rvalues[i]
 			if abs(lowestdif) > abs(dif):
 				lowestdif = dif
 				bestIndex = i
-		if lowestdif > 0.5:
+		if lowestdif > 1: # If the closest rvalue is too far, assume r > cutoff and return 0
 			return 0.0
 		else:
 			return Rvalues[bestIndex]
@@ -94,8 +97,8 @@ class Ion(object):
 		Currently, only l <= 3 is supported.
 		
 		Input:
-		l:			Orbital angular momentum quantum number
-		m:			Azimuthal quantum number
+		l:			Orbital angular momentum quantum number; Must be => 0
+		m:			Azimuthal quantum number; must be within -l >= m >= l
 		x, y, z:	Cartesian coordinates
 
 		Output:
@@ -103,6 +106,7 @@ class Ion(object):
 
 		# Normalise coordinates to unit magnitude
 		# If at origin, return 0
+
 		magnitude = np.sqrt(x**2 + y**2 + z**2)
 		if magnitude != 0:
 			x = x / magnitude
@@ -168,16 +172,20 @@ class Ion(object):
 		plotname = 'Basis_'+self.name+'_'+str(zeta)+'_'+str(n)+'_'+str(l)+'_'+str(m)+'_'+axis
 
 		# Initialise meshes
-		space1, space2 = np.mgrid[minimum:maximum:step, minimum:maximum:step]
-		Y = np.empty_like(space1)
-		R = np.empty_like(space1)
-		psi = np.empty_like(space1)
+		space1, space2 = np.mgrid[minimum:maximum:step, minimum:maximum:step] # 2D cartesian mesh (x, y, or z axis determined later)
+		Y = np.empty_like(space1) # Spherical Harmonic mesh
+		R = np.empty_like(space1) # Radial Function mesh
+		psi = np.empty_like(space1) # Basis Function mesh (psi = R*Y)
 
-		maxpsi = 0.1
+		maxpsi = 0.1 # Colour plot sets limits to -maxpsi to +maxpsi
+
+		# Plot functions to pdf
 		with PdfPages('pdfs/'+plotname+'.pdf') as pdf:
-			print 'Creating '+plotname+'.pdf'
+			# Loop over all mesh points
 			for i in range(0, int((maximum-minimum)/step)):
 				for j in range(0, int((maximum-minimum)/step)):
+					# Use axis variable to determine which axes space1 and space2 refer to
+					# Evaluate spherical harmonic at mesh point
 					if axis == 'z':
 						Y[i,j] = self.sph(l,m,space2[i,j],space1[i,j],planeValue)
 						plt.xlabel('$x$ / $a_0$')
@@ -191,14 +199,15 @@ class Ion(object):
 						plt.xlabel('$y$ / $a_0$')
 						plt.ylabel('$z$ / $a_0$')
 					
+					# Estimate value of Radial for mesh point and get psi
 					R[i, j] = self.getRadialValue(zeta, n, l, np.sqrt(space1[i,j]**2+space2[i,j]**2+planeValue**2))
 					psi[i,j] = Y[i,j]*R[i,j]
-					#if space1[i, j] == 5.0 and space2[i, j] == 2.0:
-					#	psi[i,j] = 5
+
+					# Update maxpsi
 					if abs(psi[i,j]) > maxpsi:
 						maxpsi = abs(psi[i,j])
 
-			#plt.contour(space2, space1, psi, 8, cmap=plt.cm.seismic)
+			# Setup plot
 			plt.imshow(psi, interpolation='bilinear', origin='center', cmap=plt.cm.bwr, extent=(minimum,maximum,minimum,maximum),vmin=-maxpsi, vmax=maxpsi)
 			plt.colorbar()
 			plt.grid()
@@ -206,8 +215,11 @@ class Ion(object):
 			axes.remove(axis)
 			ttl = self.name+' Basis Function for \n \n $\zeta='+str(zeta)+'$, $n='+str(n)+'$, $l='+str(l)+'$, $m_l='+str(m)+'$ in $'+axes[0]+'-'+axes[1]+'$ plane'
 			plt.title(ttl)
+
+			# Save to pdf
 			pdf.savefig()
 			plt.close()
+			print 'Finished '+plotname+'.pdf'
 
 	@classmethod
 	def plotSPH(cls, l, m, axis, minimum=-8, maximum=8, planeValue=0.00001, step=0.1):
@@ -226,14 +238,16 @@ class Ion(object):
 		plotname = 'SPH_'+str(l)+'_'+str(m)+'_'+axis
 
 		# Initialise meshes
-		space1, space2 = np.mgrid[minimum:maximum:step, minimum:maximum:step]
-		Y = np.empty_like(space1)
+		space1, space2 = np.mgrid[minimum:maximum:step, minimum:maximum:step] # 2D cartesian mesh (x, y, or z axis determined later)
+		Y = np.empty_like(space1) # Spherical Harmonic mesh
 
-		maxY = 0.1
+		maxY = 0.1 # Colour plot sets limits to -maxY and +maxY
 		with PdfPages('pdfs/'+plotname+'.pdf') as pdf:
 			print 'Creating '+plotname+'.pdf'
 			for i in range(0, int((maximum-minimum)/step)):
 				for j in range(0, int((maximum-minimum)/step)):
+					# Use axis variable to determine which axes space1 and space2 refer to
+					# Evaluate spherical harmonic at mesh point
 					if axis == 'z':
 						Y[i,j] = cls.sph(l,m,space2[i,j],space1[i,j],planeValue)
 						plt.xlabel('$x$ / $a_0$')
@@ -247,9 +261,11 @@ class Ion(object):
 						plt.xlabel('$y$ / $a_0$')
 						plt.ylabel('$z$ / $a_0$')
 					
+					# Updare maxY
 					if abs(Y[i,j]) > maxY:
 						maxY = abs(Y[i,j])
 
+			# Setup plot
 			plt.imshow(Y, interpolation='bilinear', origin='center', cmap=plt.cm.bwr, extent=(minimum,maximum,minimum,maximum),vmin=-maxY, vmax=maxY)
 			plt.colorbar()
 			plt.grid()
@@ -257,8 +273,20 @@ class Ion(object):
 			axes.remove(axis)
 			ttl = 'Spherical Harmonic for \n \n $l='+str(l)+'$, $m_l='+str(m)+'$ in $'+axes[0]+'-'+axes[1]+'$ plane'
 			plt.title(ttl)
+			
+			# Save to pdf
 			pdf.savefig()
 			plt.close()
+			print 'Finished '+plotname+'.pdf'
+
+class Atom(Ion):
+
+	"""Stores information about an atom, primarily the Ion and basis coefficients"""
+
+	def __init__(self, name):
+		Ion.__init__(self, name)
+
+
 
 
 
