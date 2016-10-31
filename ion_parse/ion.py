@@ -30,10 +30,10 @@ class Ion(object):
 	sph21 = 1.0/2.0 * np.sqrt(15.0  / (2.0*math.pi))
 	sph20 = 1.0/4.0 * np.sqrt(5.0   / math.pi)
 
-	sph33 = 1.0/8.0 * np,sqrt(35.0  / math.pi)
+	sph33 = 1.0/8.0 * np.sqrt(35.0  / math.pi)
 	sph32 = 1.0/4.0 * np.sqrt(105.0 / (2.0*math.pi))
 	sph31 = 1.0/8.0 * np.sqrt(21.0  / math.pi)
-	sph30 = 1.0/4.0 * np.sqrt(7.0   / math.pit)
+	sph30 = 1.0/4.0 * np.sqrt(7.0   / math.pi)
 
 	def __init__(self, name):
 		self.name = name
