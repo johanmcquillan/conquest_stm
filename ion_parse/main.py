@@ -13,7 +13,7 @@ ionfiles = ['H_SZ_6.5au',	'H_SZP_6.5au', 'H_DZDP_6.5_2.5au', 'H_TZTP_6.5_4.5_2.5
 			'C_SZ_6.5au',	'C_SZP_6.5au', 'C_DZDP_6.5_2.5au', 'C_TZTP_6.5_4.5_2.5au',
 			'Si_SZ_8bohr',	'Si_TZ_8_6_4bohr']
 
-# ionfiles = ['C_TZTP_6.5_4.5_2.5au']
+ionfiles = ['C_TZTP_6.5_4.5_2.5au']
 # Initialise parser and get data
 Prsr = Parser(ionfolder, ionfiles)
 Prsr.parseIons()
@@ -23,8 +23,8 @@ ions = {}
 for ion in ionfiles:
 	ions[ion] = Prsr.getIon(ion)
 
-Pltr = Plotter('Rnl', ions)
-Pltr.plotRadials()
+#Pltr = Plotter('Rnl', ions)
+#Pltr.plotRadials()
 
 I = ions['C_TZTP_6.5_4.5_2.5au']
 #I.plotSPH(2, 1)
