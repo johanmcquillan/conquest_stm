@@ -38,8 +38,8 @@ for n in I.nl.keys():
 	for l in I.nl[n]:
 		for m in range(-l, l+1):
 			for e in ['x','y','z']:
-				#I.plotBasis(1, n, l, m, e, step=0.1)
-				continue
+				I.plotBasis(1, n, l, m, e, step=0.1)
+				#continue
 
 for l in range(0, 4):
 	for m in range(-l, l+1):
