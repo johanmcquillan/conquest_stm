@@ -9,6 +9,7 @@ class Parser:
 
 	def __init__(self):
 		self.ions = {}
+		self.atoms = {}
 
 	def getIon(self, ionName):
 		return self.ions[ionName]
@@ -67,6 +68,9 @@ class Parser:
 			self.ions[ionName] = ion
 
 	def parseAtoms(self, atomFolder, atomFiles):
+		"""Parse data from .dat files to Atom objects and 
+		store in self.atoms indexed by atomFile name.
+		UNFINISHED"""
 		self.atomFolder = atomFolder
 		self.atomFiles = atomFiles
 

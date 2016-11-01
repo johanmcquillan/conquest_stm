@@ -3,7 +3,6 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-from vector import Vector
 
 class Radial:
 
@@ -77,14 +76,16 @@ class Ion(object):
 		Rvalues = Rad.R
 
 		bestIndex = 0 # Index of rvalues corresponding to closest value of r
-		lowestdif = sys.maxint # Lowest difference found so far between r and any element of rvalues
+		lowestdif = 0 # Lowest difference found so far between r and any element of rvalues
+		first = True
 
 		# Find closest value of rvalues
 		for i in range(0, len(rvalues)):
 			dif = r - rvalues[i]
-			if abs(lowestdif) > abs(dif):
+			if abs(lowestdif) > abs(dif) or first:
 				lowestdif = dif
 				bestIndex = i
+				first = False
 		if lowestdif > 1: # If the closest rvalue is too far, assume r > cutoff and return 0
 			return 0.0
 		else:
@@ -281,7 +282,8 @@ class Ion(object):
 
 class Atom(Ion):
 
-	"""Stores information about an atom, primarily the Ion and basis coefficients"""
+	"""Stores information about an atom, primarily the Ion and basis coefficients.
+	UNFINISHED"""
 
 	def __init__(self, name):
 		Ion.__init__(self, name)
