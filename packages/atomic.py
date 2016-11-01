@@ -1,4 +1,6 @@
 
+
+from sph import *
 import math
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,22 +21,6 @@ class Radial:
 class Ion(object):
 
 	"""Stores information about an ion, primarily its basis functions."""
-
-	# Normalisation factors for spherical harmonics
-	# Numbers in variable names refer to l and absolute value of m
-	sph00 = 1.0/2.0 * np.sqrt(1.0   / math.pi)
-
-	sph11 = 1.0/2.0 * np.sqrt(3.0   / (2.0*math.pi))
-	sph10 = 1.0/2.0 * np.sqrt(3.0   / math.pi)
-
-	sph22 = 1.0/4.0 * np.sqrt(15.0  / (2.0*math.pi)) 
-	sph21 = 1.0/2.0 * np.sqrt(15.0  / (2.0*math.pi))
-	sph20 = 1.0/4.0 * np.sqrt(5.0   / math.pi)
-
-	sph33 = 1.0/8.0 * np.sqrt(35.0  / math.pi)
-	sph32 = 1.0/4.0 * np.sqrt(105.0 / (2.0*math.pi))
-	sph31 = 1.0/8.0 * np.sqrt(21.0  / math.pi)
-	sph30 = 1.0/4.0 * np.sqrt(7.0   / math.pi)
 
 	def __init__(self, name):
 		self.name = name
@@ -124,15 +110,15 @@ class Ion(object):
 					# Use axis variable to determine which axes space1 and space2 refer to
 					# Evaluate spherical harmonic at mesh point
 					if axis == 'z':
-						Y[i,j] = self.sph(l,m,space2[i,j],space1[i,j],planeValue)
+						Y[i,j] = sph(l,m,space2[i,j],space1[i,j],planeValue)
 						plt.xlabel('$x$ / $a_0$')
 						plt.ylabel('$y$ / $a_0$')
 					if axis == 'y':
-						Y[i,j] = self.sph(l,m,space2[i,j],planeValue,space1[i,j])
+						Y[i,j] = sph(l,m,space2[i,j],planeValue,space1[i,j])
 						plt.xlabel('$x$ / $a_0$')
 						plt.ylabel('$z$ / $a_0$')
 					if axis == 'x':
-						Y[i,j] = self.sph(l,m,planeValue,space2[i,j],space1[i,j])
+						Y[i,j] = sph(l,m,planeValue,space2[i,j],space1[i,j])
 						plt.xlabel('$y$ / $a_0$')
 						plt.ylabel('$z$ / $a_0$')
 					
@@ -186,15 +172,15 @@ class Ion(object):
 					# Use axis variable to determine which axes space1 and space2 refer to
 					# Evaluate spherical harmonic at mesh point
 					if axis == 'z':
-						Y[i,j] = cls.sph(l,m,space2[i,j],space1[i,j],planeValue)
+						Y[i,j] = sph(l,m,space2[i,j],space1[i,j],planeValue)
 						plt.xlabel('$x$ / $a_0$')
 						plt.ylabel('$y$ / $a_0$')
 					if axis == 'y':
-						Y[i,j] = cls.sph(l,m,space2[i,j],planeValue,space1[i,j])
+						Y[i,j] = sph(l,m,space2[i,j],planeValue,space1[i,j])
 						plt.xlabel('$x$ / $a_0$')
 						plt.ylabel('$z$ / $a_0$')
 					if axis == 'x':
-						Y[i,j] = cls.sph(l,m,planeValue,space2[i,j],space1[i,j])
+						Y[i,j] = sph(l,m,planeValue,space2[i,j],space1[i,j])
 						plt.xlabel('$y$ / $a_0$')
 						plt.ylabel('$z$ / $a_0$')
 					
