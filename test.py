@@ -1,8 +1,7 @@
 
 import glob
-from parser import Parser
-from plotter import Plotter
-from atoms import *
+import packages.io as IO
+import packages.atomic as atm
 
 ionFolder = 'ions/'
 ionFilesRaw = glob.glob(ionFolder+'*.ion')
@@ -21,7 +20,7 @@ for atomNameRaw in atomFilesRaw:
 
 ionfiles = ['C_TZTP_6.5_4.5_2.5au']
 # Initialise parser and get data
-Prsr = Parser()
+Prsr = IO.Parser()
 Prsr.parseIons(ionFolder, ionFiles)
 #Prsr.parseAtoms(atomFolder, atomFiles)
 
@@ -30,7 +29,7 @@ ions = {}
 for ion in ionFiles:
 	ions[ion] = Prsr.getIon(ion)
 
-Pltr = Plotter('Rnl', ions)
+Pltr = IO.Plotter('Rnl', ions)
 Pltr.plotRadials()
 
 I = ions['C_TZTP_6.5_4.5_2.5au']

@@ -1,5 +1,5 @@
 
-from atoms import *
+from ..atomic import *
 import math
 
 class Parser:
