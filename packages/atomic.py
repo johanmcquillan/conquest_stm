@@ -1,5 +1,4 @@
 
-
 from sph import *
 import math
 import numpy as np
@@ -11,12 +10,13 @@ class Radial:
 	"""Stores the radial part of basis function and metadata,
 	ie. quantum numbers (n and l) and zeta index."""
 
-	def __init__(self, zeta, n, l, r, R):
+	def __init__(self, zeta, n, l, r, R, cutoff):
 		self.zeta = zeta
 		self.n = n
 		self.l = l
 		self.r = r
 		self.R = R
+		self.cutoff = cutoff
 	
 class Ion(object):
 
@@ -55,27 +55,40 @@ class Ion(object):
 		return self.Rads[zeta][n][l]
 
 	def getRadialValue(self, zeta, n, l, r):
-		"""Find closest r value in Radial to given r and return R(r)"""
+		"""Use linear interpolation to evaluate R at r."""
+
 		# Get data
 		Rad = self.Rads[zeta][n][l]
-		rvalues = Rad.r
-		Rvalues = Rad.R
-
-		bestIndex = 0 # Index of rvalues corresponding to closest value of r
-		lowestdif = 0 # Lowest difference found so far between r and any element of rvalues
-		first = True
-
-		# Find closest value of rvalues
-		for i in range(0, len(rvalues)):
-			dif = r - rvalues[i]
-			if abs(lowestdif) > abs(dif) or first:
-				lowestdif = dif
-				bestIndex = i
-				first = False
-		if lowestdif > 1: # If the closest rvalue is too far, assume r > cutoff and return 0
+		if r > Rad.cutoff:
 			return 0.0
 		else:
-			return Rvalues[bestIndex]
+			rvalues = Rad.r
+			Rvalues = Rad.R
+
+			i = 0
+			r0 = 0.0
+			r1 = 0.0
+			while rvalues[i] < r:
+				i = i + 1
+
+			r0 = rvalues[i-1]
+			r1 = rvalues[i]
+			R0 = Rvalues[i-1]
+			R1 = Rvalues[i]
+
+			R = R0 + (r - r0) * (R1 - R0) / (r1 - r0)
+			return R
+
+	def getMaxCutoff(self):
+		"""Return the maximum cutoff of radius of Radial bases, beyond which 
+		the radial part is defined to be 0."""
+		maxcut = 0.0
+		for z in range(1, self.zetas+1):
+			for n in self.Rads[zeta].keys():
+				for l in self.Rads[zeta][n].keys():
+					if maxcut < self.Rads[zeta][n][l].cutoff:
+						maxcut = self.Rads[zeta][n][l].cutoff
+		return maxcut
 
 	def plotBasis(self, zeta, n, l, m, axis, minimum=-8, maximum=8, planeValue=0.00001, step=0.1):
 		"""Plots cross-section of basis function of ion to pdf.
@@ -184,7 +197,7 @@ class Ion(object):
 						plt.xlabel('$y$ / $a_0$')
 						plt.ylabel('$z$ / $a_0$')
 					
-					# Updare maxY
+					# Update maxY
 					if abs(Y[i,j]) > maxY:
 						maxY = abs(Y[i,j])
 

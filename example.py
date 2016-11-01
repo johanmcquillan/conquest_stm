@@ -4,7 +4,7 @@ import packages.io as IO
 import packages.atomic as atm
 
 # First, we need to provide the folder of the .ion files.
-ionFolder = 'ion_parse/ions'
+ionFolder = 'ions/'
 
 # We can either tell it which specific .ion files to read...
 ionFilesSpecific = ['H_SZ_6.5au', 'C_SZ_6.5au'] # File names, excluding .ion

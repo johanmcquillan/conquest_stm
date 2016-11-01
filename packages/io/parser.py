@@ -60,7 +60,7 @@ class Parser:
 					r.append(x)
 					R.append(y)
 
-				R = atm.Radial(zeta, n, l, r, R)
+				R = atm.Radial(zeta, n, l, r, R, cutoff)
 				ion.addRadial(R)
 				line = f.next()
 
