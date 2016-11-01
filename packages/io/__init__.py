@@ -1,2 +1,2 @@
-from parser import *
-from plotter import *
+from parser import Parser
+from plotter import Plotter

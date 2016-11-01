@@ -1,5 +1,5 @@
 
-from ..atomic import *
+from .. import atomic as atm
 import math
 
 class Parser:
@@ -32,7 +32,7 @@ class Parser:
 				line = f.next()
 
 			# Create empty Ion and fill with radial data
-			ion = Ion(ionName)
+			ion = atm.Ion(ionName)
 			line = f.next()
 			while line.split()[0] != '#':
 				# Read quantum numbers and zeta index
@@ -60,7 +60,7 @@ class Parser:
 					r.append(x)
 					R.append(y)
 
-				R = Radial(zeta, n, l, r, R)
+				R = atm.Radial(zeta, n, l, r, R)
 				ion.addRadial(R)
 				line = f.next()
 

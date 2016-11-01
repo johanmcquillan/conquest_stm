@@ -3,7 +3,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-from ..atomic import *
+from .. import atomic as atm
 
 class Plotter:
 

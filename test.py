@@ -1,7 +1,7 @@
 
 import glob
-import packages.io as IO
-import packages.atomic as atm
+from packages import atomic as atm
+from packages import io as IO
 
 ionFolder = 'ions/'
 ionFilesRaw = glob.glob(ionFolder+'*.ion')
