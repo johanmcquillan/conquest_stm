@@ -5,8 +5,13 @@ from matplotlib.backends.backend_pdf import PdfPages
 from atoms import *
 
 class Plotter:
-	
+
 	"""Stores dict of Ion objects and provides methods to plot data to pdf"""
+
+	spectral = {0 : 's',
+				1 : 'p',
+				2 : 'd',
+				3 : 'f'}
 
 	def __init__(self, filename, ions):
 		self.fname = filename
@@ -39,6 +44,7 @@ class Plotter:
 							R = radial.R
 							# Add radial info to legend and add to plot
 							label = '$\zeta ='+str(z)+'$, $n='+str(n)+'$, $l='+str(l)+'$'
+							label = '$\zeta ='+str(z)+'$, $'+str(n)+self.spectral[l]+'$'
 							plt.plot(r, R, label=label)
 				# Add plot to pdf and reset plt
 				plt.legend()
