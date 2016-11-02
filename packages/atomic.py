@@ -90,7 +90,7 @@ class Ion(object):
 						maxcut = self.Rads[zeta][n][l].cutoff
 		return maxcut
 
-	def plotBasis(self, zeta, n, l, m, axis, minimum=-8, maximum=8, planeValue=0.00001, step=0.1):
+	def plotBasis(self, zeta, n, l, m, axis, minimum=-8, maximum=8, planeValue=0.0, step=0.1):
 		"""Plots cross-section of basis function of ion to pdf.
 		All lengths measured in bohr radii (a0).
 		

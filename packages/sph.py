@@ -31,20 +31,19 @@ def sph(l, m, x, y, z):
 		harm:		Spherical harmonic for given l and m, evaluated at (x, y, z)"""
 
 		# Normalise coordinates to unit magnitude
-		# If at origin, return 0
-
 		magnitude = np.sqrt(x**2 + y**2 + z**2)
 		if magnitude != 0:
 			x = x / magnitude
 			y = y / magnitude
 			z = z / magnitude
-		else:
-			return 0.0
 
 		# Choose correct form of spherical harmonic depending on l and m
 		harm = 0.0
 		if l == 0:
 			harm =      sph00
+		# l = 0 is the only harmonic with non-zero value at origin
+		elif magnitude == 0:
+			harm = 		0.0
 		elif l == 1:
 			if m == 1:
 				harm =  sph11 * x
