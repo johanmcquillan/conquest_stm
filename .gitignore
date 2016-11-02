@@ -1,3 +1,10 @@
 .DS_Store
+Thumbs.db
+
 *.pdf
 *.pyc
+
+*.sublime-workspace
+*.tmlanguage.cache
+*.tmPreferences.cache
+*.stTheme.cache

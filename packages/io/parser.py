@@ -67,26 +67,95 @@ class Parser:
 			f.close()
 			self.ions[ionName] = ion
 
-	def parseAtoms(self, atomFolder, atomFiles):
-		"""Parse data from .dat files to Atom objects and 
-		store in self.atoms indexed by atomFile name.
-		UNFINISHED"""
-		self.atomFolder = atomFolder
-		self.atomFiles = atomFiles
+	# def parseAtoms(self, atomFolder, atomFiles):
+	# 	"""Parse data from .dat files to Atom objects and 
+	# 	store in self.atoms indexed by atomFile name.
+	# 	UNFINISHED"""
+	# 	self.atomFolder = atomFolder
+	# 	self.atomFiles = atomFiles
 
-		for atomName in self.atomFiles:
-			f = open(self.atomFolder+atomName+'.dat')
+	# 	for atomName in self.atomFiles:
+	# 		f = open(self.atomFolder+atomName+'.dat')
 
-			line = f.next()
-			line = f.next()
+	# 		line = f.next()
+	# 		line = f.next()
+	# 		data = line.split()
+	# 		kpoint = [float(data[0]), float(data[1]), float(data[2])]
+
+	# 		line = f.next()
+	# 		data = line.split()
+	# 		band = [int(data[0]), float(data[1])]
+
+	# 		line = f.next()
+	# 		data = line.split()
+	# 		a = int(data[0])
+	# 		PAO = int(data[1])
+	# 		coeffString = data[2]
+	# 		coeffString = coeffString.replace('(', '')
+	# 		coeffString = coeffString.replace(')', '')
+	# 		complexString = coeffString.split(',')
+	# 		complexCoeff = [float(complexString[0]), float(complexString[1])]
+
+	# 		print complexCoeff
+	# 		f.close()
+
+	def parseConq(self, conqFolder, conqFiles):
+		"""Parse data about atoms store in self.atoms 
+		indexes by atomFile name."""
+		self.conqFolder = conqFolder
+		self.conqFiles = conqFiles
+
+		for conq in self.conqFiles:
+			Fconq = open(self.conqFolder+conq)
+
+			line = Fconq.next()
+			while len(line.split()) != 8:
+				line = Fconq.next()
+
+			atomData = {}
+
+			while len(line.split()) == 8 and line.split()[0].isdigit():
+				rawData = line.split()
+
+				atomIndex = int(rawData[0])
+				x = float(rawData[1])
+				y = float(rawData[2])
+				z = float(rawData[3])
+				ionType = int(rawData[4])
+
+				atomData[atomIndex] = [x, y, z, ionType]
+				line = Fconq.next()
+
+			while line.split() != ['------------------------------------------------------------------']:
+				line = Fconq.next()
+
+			Fconq.next()
+			Fconq.next()
+			line = Fconq.next()
+
+			while line.split() != ['------------------------------------------------------------------']:
+				rawData = line.split()
+
+				a = int(rawData[0])
+				ionName = rawData[1]
+
+				Fconq.next()
+				line = Fconq.next()
+
+			Fconq.close()
+
+			Fcoeff = open(self.conqFolder+conq+'.dat')
+
+			line = Fcoeff.next()
+			line = Fcoeff.next()
 			data = line.split()
 			kpoint = [float(data[0]), float(data[1]), float(data[2])]
 
-			line = f.next()
+			line = Fcoeff.next()
 			data = line.split()
 			band = [int(data[0]), float(data[1])]
 
-			line = f.next()
+			line = Fcoeff.next()
 			data = line.split()
 			a = int(data[0])
 			PAO = int(data[1])
@@ -97,7 +166,9 @@ class Parser:
 			complexCoeff = [float(complexString[0]), float(complexString[1])]
 
 			print complexCoeff
-			f.close()
+			Fcoeff.close()
+
+
 
 
 
