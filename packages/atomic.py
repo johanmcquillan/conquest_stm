@@ -1,5 +1,6 @@
 
 from sph import *
+
 import math
 import numpy as np
 import matplotlib.pyplot as plt
@@ -23,7 +24,7 @@ class Ion(object):
 	"""Stores information about an ion, primarily its basis functions."""
 
 	def __init__(self, name):
-		self.name = name
+		self.ionName = name
 		self.nl = {}
 		self.zetas = 1 # 1 = SZ; 2 = DZ; 3 = TZ
 		self.Rads = {} # Radial objects; accessed by self.Rads[zeta][n][l]
@@ -105,7 +106,7 @@ class Ion(object):
 		planeValue:	Constant value assigned to Cartesian coordinate given by axis; Default is 0.00001
 		step:		Interval between Cartesian mgrid points, measured in a0; Default is 0.1"""
 
-		plotname = 'Basis_'+self.name+'_'+str(zeta)+'_'+str(n)+'_'+str(l)+'_'+str(m)+'_'+axis
+		plotname = 'Basis_'+self.ionName+'_'+str(zeta)+'_'+str(n)+'_'+str(l)+'_'+str(m)+'_'+axis
 
 		# Initialise meshes
 		space1, space2 = np.mgrid[minimum:maximum:step, minimum:maximum:step] # 2D cartesian mesh (x, y, or z axis determined later)
@@ -149,7 +150,7 @@ class Ion(object):
 			plt.grid()
 			axes = ['x', 'y', 'z']
 			axes.remove(axis)
-			ttl = self.name+' Basis Function for \n \n $\zeta='+str(zeta)+'$, $n='+str(n)+'$, $l='+str(l)+'$, $m_l='+str(m)+'$ in $'+axes[0]+'-'+axes[1]+'$ plane'
+			ttl = self.ionName+' Basis Function for \n \n $\zeta='+str(zeta)+'$, $n='+str(n)+'$, $l='+str(l)+'$, $m_l='+str(m)+'$ in $'+axes[0]+'-'+axes[1]+'$ plane'
 			plt.title(ttl)
 
 			# Save to pdf
@@ -220,9 +221,11 @@ class Atom(Ion):
 	"""Stores information about an atom, primarily the Ion and basis coefficients.
 	UNFINISHED"""
 
-	def __init__(self, name):
+	def __init__(self, name, x, y, z):
 		Ion.__init__(self, name)
-
+		self.x = x
+		self.y = y
+		self.z = z
 
 
 
