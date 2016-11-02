@@ -1,7 +1,9 @@
 
+from packages import atomic
+from packages import io
+from packages import cell
+
 import glob
-from packages import atomic as atm
-from packages import io as IO
 
 ionFolder = 'ions/'
 ionFilesRaw = glob.glob(ionFolder+'*.ion')
@@ -20,7 +22,7 @@ for atomNameRaw in conqFilesRaw:
 
 #ionFiles = ['C_TZTP_6.5_4.5_2.5au']
 # Initialise parser and get data
-Prsr = IO.Parser()
+Prsr = io.Parser()
 Prsr.parseIons(ionFolder, ionFiles)
 
 conqFiles = ['C6H6_SZ']
@@ -31,11 +33,19 @@ print 'Parsed OK'
 
 atoms = Prsr.atoms
 
-for i in range(1, 13):
+for i in range(1, 2):
 	x = atoms[i].x
 	y = atoms[i].y
 	z = atoms[i].z
 	print x, y, z
+
+C = cell.Cell(20.0, 20.0, 20.0, gridSpacing=0.5)
+
+for i in range(1, 13):
+	C.addAtom(atoms[i], i)
+
+C.setPsi()
+print C.psi
 
 # Put Ion objects into a dict indexed by name in ionfiles
 # ions = {}

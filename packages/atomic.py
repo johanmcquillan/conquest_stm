@@ -122,7 +122,7 @@ class Ion(object):
 		"""Return the maximum cutoff of radius of Radial bases, beyond which 
 		the radial part is defined to be 0."""
 		maxcut = 0.0
-		for z in range(1, self.zetas+1):
+		for zeta in range(1, self.zetas+1):
 			for n in self.Rads[zeta].keys():
 				for l in self.Rads[zeta][n].keys():
 					if maxcut < self.Rads[zeta][n][l].cutoff:
@@ -288,6 +288,25 @@ class Atom(Ion):
 		if not l in self.coeffs[zeta][n]:
 			self.coeffs[zeta][n][l] = {}
 		self.coeffs[zeta][n][l][m] = coeff
+
+	def getPsi(self, x, y, z):
+
+		r = np.sqrt(x**2 + y**2 + z**2)
+
+		if r > self.getMaxCutoff():
+			return 0.0
+		else:
+			psi = 0.0
+			for zeta in range(1, self.zetas+1):
+				for n in self.nl.keys():
+					for l in self.nl[n]:
+						R = self.getRadialValue(zeta, n, l, r)
+						for m in range(-l, l+1):
+							Y = sph(l, m, x, y, z)
+							psi += R*Y*self.coeffs[zeta][n][l][m]
+
+			return psi
+
 			
 
 
