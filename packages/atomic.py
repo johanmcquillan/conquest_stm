@@ -23,14 +23,28 @@ class Ion(object):
 
 	"""Stores information about an ion, primarily its basis functions."""
 
-	def __init__(self, name):
+	def __init__(self, name, radialDict=None):
 		self.ionName = name
+		#self.nl = {}
+		#self.zetas = 1 # 1 = SZ; 2 = DZ; 3 = TZ
+		self.zetas = 1
 		self.nl = {}
-		self.zetas = 1 # 1 = SZ; 2 = DZ; 3 = TZ
-		self.Rads = {} # Radial objects; accessed by self.Rads[zeta][n][l]
+		if radialDict:
+			self.Rads = radialDict # Radial objects; accessed by self.Rads[zeta][n][l]
+			for zeta in self.Rads.keys():
+				if zeta > self.zetas:
+					self.zetas = zeta
+				for n in self.Rads[zeta]:
+					if n not in self.nl.keys():
+						self.Rads[zeta][n] = []
+					for l in self.Rads[zeta][n]:
+						if l not in self.nl[n]:
+							self.nl[n].append(l)
+		else:
+			self.Rads = {}
 
 	def addRadial(self, radial):
-		"""Adds Radial to self.Rads. Overwrites radial with same metadata"""
+		"""Adds Radial to self.Rads. Overwrites radial with same metadata (zeta, n, l)"""
 		# Get metadata
 		zeta = radial.zeta
 		n = radial.n

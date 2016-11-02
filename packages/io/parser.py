@@ -144,6 +144,8 @@ class Parser:
 
 			Fconq.close()
 
+			Atom = atm.Atom(ionType, x, y, z)
+
 			Fcoeff = open(self.conqFolder+conq+'.dat')
 
 			line = Fcoeff.next()
@@ -163,9 +165,10 @@ class Parser:
 			coeffString = coeffString.replace('(', '')
 			coeffString = coeffString.replace(')', '')
 			complexString = coeffString.split(',')
-			complexCoeff = [float(complexString[0]), float(complexString[1])]
+			complexCoeff = complex(float(complexString[0]), float(complexString[1]))
 
 			print complexCoeff
+
 			Fcoeff.close()
 
 
