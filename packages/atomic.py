@@ -43,6 +43,28 @@ class Ion(object):
 		else:
 			self.Rads = {}
 
+	def sortPAOs(self):
+		sortedPAOs = []
+		for zeta in range(1, self.zetas+1):
+			nList = sorted(self.nl.keys())
+			for n in nList:
+				lList = sorted(self.nl[n])
+				for l in lList:
+					for m in range(-l, l+1):
+						sortedPAOs.append([zeta, n, l, m])
+		return sortedPAOs
+		# if not self.Rads:
+		# 	return []
+		# elif self.Rads.isempty():
+		# 	return []
+		# else:
+		# 	for zeta in range(1, self.zetas+1):
+		# 		nList = sorted(self.Rads[zeta].keys())
+		# 		for n in NList:
+
+
+
+
 	def addRadial(self, radial):
 		"""Adds Radial to self.Rads. Overwrites radial with same metadata (zeta, n, l)"""
 		# Get metadata
@@ -65,6 +87,8 @@ class Ion(object):
 
 		# Add Radial
 		self.Rads[zeta][n][l] = radial
+		self.sortPAOs()
+
 
 	def getRadial(self, zeta, n, l):
 		return self.Rads[zeta][n][l]
@@ -194,7 +218,6 @@ class Ion(object):
 
 		maxY = 0.1 # Colour plot sets limits to -maxY and +maxY
 		with PdfPages('pdfs/'+plotname+'.pdf') as pdf:
-			print 'Creating '+plotname+'.pdf'
 			for i in range(0, int((maximum-minimum)/step)):
 				for j in range(0, int((maximum-minimum)/step)):
 					# Use axis variable to determine which axes space1 and space2 refer to
@@ -240,6 +263,32 @@ class Atom(Ion):
 		self.x = x
 		self.y = y
 		self.z = z
+		self.coeffs = {}
+
+	def setIon(self, I):
+		self.Rads = I.Rads
+		self.zetas = I.zetas
+		self.nl = I.nl
+		self.sortPAOs()
+
+
+	def addCoeff(self, PAO, coeff):
+		PAOdata = self.sortPAOs()[PAO-1]
+
+		zeta = PAOdata[0]
+		n = PAOdata[1]
+		l = PAOdata[2]
+		m = PAOdata[3]
+
+		# Initialise dict entry
+		if not self.coeffs.has_key(zeta):
+			self.coeffs[zeta] = {}
+		if not self.coeffs[zeta].has_key(n):
+			self.coeffs[zeta][n] = {}
+		if not l in self.coeffs[zeta][n]:
+			self.coeffs[zeta][n][l] = {}
+		self.coeffs[zeta][n][l][m] = coeff
+			
 
 
 

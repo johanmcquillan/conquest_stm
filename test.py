@@ -22,7 +22,20 @@ for atomNameRaw in conqFilesRaw:
 # Initialise parser and get data
 Prsr = IO.Parser()
 Prsr.parseIons(ionFolder, ionFiles)
+
+conqFiles = ['C6H6_SZ']
+#print Prsr.getIon('H_SZ_6.5au').sortPAOs()
 Prsr.parseConq(conqFolder, conqFiles)
+
+print 'Parsed OK'
+
+atoms = Prsr.atoms
+
+for i in range(1, 13):
+	x = atoms[i].x
+	y = atoms[i].y
+	z = atoms[i].z
+	print x, y, z
 
 # Put Ion objects into a dict indexed by name in ionfiles
 # ions = {}

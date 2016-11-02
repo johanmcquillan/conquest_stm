@@ -11,9 +11,6 @@ class Parser:
 		self.ions = {}
 		self.atoms = {}
 
-	def getIon(self, ionName):
-		return self.ions[ionName]
-
 	def parseIons(self, ionFolder, ionFiles):
 		"""Parse data from ion files to Ion objects and 
 		store in self.ions indexed by ionFile name."""
@@ -105,15 +102,17 @@ class Parser:
 		self.conqFolder = conqFolder
 		self.conqFiles = conqFiles
 
+		# Open Conquest_out file
 		for conq in self.conqFiles:
 			Fconq = open(self.conqFolder+conq)
 
+			# Skip opening lines
 			line = Fconq.next()
 			while len(line.split()) != 8:
 				line = Fconq.next()
 
+			# Get atomic positions
 			atomData = {}
-
 			while len(line.split()) == 8 and line.split()[0].isdigit():
 				rawData = line.split()
 
@@ -124,57 +123,91 @@ class Parser:
 				ionType = int(rawData[4])
 
 				atomData[atomIndex] = [x, y, z, ionType]
+				
 				line = Fconq.next()
 
+			# Skip lines until more atom data
 			while line.split() != ['------------------------------------------------------------------']:
 				line = Fconq.next()
-
 			Fconq.next()
 			Fconq.next()
 			line = Fconq.next()
 
+			# Get ion species
 			while line.split() != ['------------------------------------------------------------------']:
 				rawData = line.split()
 
-				a = int(rawData[0])
+				ionType = int(rawData[0])
 				ionName = rawData[1]
 
+				for a in atomData.keys():
+					if atomData[a][3] == ionType:
+						x, y, z = atomData[a][:3]
+						self.atoms[a] = atm.Atom(ionName, x, y, z)
+						self.atoms[a].setIon(self.ions[ionName])
 				Fconq.next()
 				line = Fconq.next()
 
 			Fconq.close()
 
-			Atom = atm.Atom(ionType, x, y, z)
-
+			# Open corresponding .dat file
 			Fcoeff = open(self.conqFolder+conq+'.dat')
-
 			line = Fcoeff.next()
-			line = Fcoeff.next()
-			data = line.split()
-			kpoint = [float(data[0]), float(data[1]), float(data[2])]
 
-			line = Fcoeff.next()
-			data = line.split()
-			band = [int(data[0]), float(data[1])]
+			gotCoeffs = False
+			while not gotCoeffs:
+				line = Fcoeff.next()
+				if '#Kpoint' not in line and len(line.split()) != 3:
+					data = line.split()
+					bandN = int(data[0])
+					bandE = float(data[1])
 
-			line = Fcoeff.next()
-			data = line.split()
-			a = int(data[0])
-			PAO = int(data[1])
-			coeffString = data[2]
-			coeffString = coeffString.replace('(', '')
-			coeffString = coeffString.replace(')', '')
-			complexString = coeffString.split(',')
-			complexCoeff = complex(float(complexString[0]), float(complexString[1]))
+					line = Fcoeff.next()
+					while len(line.split()) > 2:
+						data = line.split()
+						a = int(data[0])
+						PAO = int(data[1])
+						coeffString = data[2]
+						coeffString = coeffString.replace('(', '')
+						coeffString = coeffString.replace(')', '')
+						complexString = coeffString.split(',')
+						complexCoeff = complex(float(complexString[0]), float(complexString[1]))
+						self.atoms[a].addCoeff(PAO, complexCoeff)
+						line = Fcoeff.next()
 
-			print complexCoeff
+					gotCoeffs = True
+				else:
+					line = Fcoeff.next()
+
+			# line = Fcoeff.next()
+			# line = Fcoeff.next()
+			# data = line.split()
+			# kpoint = [float(data[0]), float(data[1]), float(data[2])]
+
+			# line = Fcoeff.next()
+			# data = line.split()
+			# band = [int(data[0]), float(data[1])]
+
+			# line = Fcoeff.next()
+			# data = line.split()
+			# a = int(data[0])
+			# PAO = int(data[1])
+			# coeffString = data[2]
+			# coeffString = coeffString.replace('(', '')
+			# coeffString = coeffString.replace(')', '')
+			# complexString = coeffString.split(',')
+			# complexCoeff = complex(float(complexString[0]), float(complexString[1]))
+
 
 			Fcoeff.close()
 
 
 
+	def getIon(self, ionName):
+		return self.ions[ionName]
 
-
+	def getAtom(self, atomIndex):
+		return self.atoms[atomIndex]
 
 
 
