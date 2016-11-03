@@ -1,21 +1,24 @@
-
-from .. import atomic as atm
 import math
 
-class Parser:
+from .. import atomic
+
+class Parser(object):
 
 	"""Parses and stores data from input files.
 	Currently only works for .ion files."""
 
-	def __init__(self):
+	def __init__(self, ionFolder, ionFiles, conqFolder, conqFiles):
 		self.ions = {}
 		self.atoms = {}
 
-	def parseIons(self, ionFolder, ionFiles):
-		"""Parse data from ion files to Ion objects and 
-		store in self.ions indexed by ionFile name."""
-		self.ionFolder = ionFolder
 		self.ionFiles = ionFiles
+		self.ionFolder = ionFolder
+		self.conqFiles = conqFiles
+		self.conqFolder = conqFolder
+
+	def parseIons(self):
+		"""Parse data from ion files to Ion objects and
+		store in self.ions indexed by ionFile name."""
 
 		for ionName in self.ionFiles:
 			# Open .ion and initialise entry
@@ -29,7 +32,7 @@ class Parser:
 				line = f.next()
 
 			# Create empty Ion and fill with radial data
-			ion = atm.Ion(ionName)
+			ion = atomic.Ion(ionName)
 			line = f.next()
 			while line.split()[0] != '#':
 				# Read quantum numbers and zeta index
@@ -57,50 +60,16 @@ class Parser:
 					r.append(x)
 					R.append(y)
 
-				R = atm.Radial(zeta, n, l, r, R, cutoff)
-				ion.addRadial(R)
+				Rad = atomic.Radial(zeta, n, l, r, R, cutoff)
+				ion.addRadial(Rad)
 				line = f.next()
 
 			f.close()
 			self.ions[ionName] = ion
 
-	# def parseAtoms(self, atomFolder, atomFiles):
-	# 	"""Parse data from .dat files to Atom objects and 
-	# 	store in self.atoms indexed by atomFile name.
-	# 	UNFINISHED"""
-	# 	self.atomFolder = atomFolder
-	# 	self.atomFiles = atomFiles
-
-	# 	for atomName in self.atomFiles:
-	# 		f = open(self.atomFolder+atomName+'.dat')
-
-	# 		line = f.next()
-	# 		line = f.next()
-	# 		data = line.split()
-	# 		kpoint = [float(data[0]), float(data[1]), float(data[2])]
-
-	# 		line = f.next()
-	# 		data = line.split()
-	# 		band = [int(data[0]), float(data[1])]
-
-	# 		line = f.next()
-	# 		data = line.split()
-	# 		a = int(data[0])
-	# 		PAO = int(data[1])
-	# 		coeffString = data[2]
-	# 		coeffString = coeffString.replace('(', '')
-	# 		coeffString = coeffString.replace(')', '')
-	# 		complexString = coeffString.split(',')
-	# 		complexCoeff = [float(complexString[0]), float(complexString[1])]
-
-	# 		print complexCoeff
-	# 		f.close()
-
-	def parseConq(self, conqFolder, conqFiles):
-		"""Parse data about atoms store in self.atoms 
+	def parseConq(self):
+		"""Parse data about atoms store in self.atoms
 		indexes by atomFile name."""
-		self.conqFolder = conqFolder
-		self.conqFiles = conqFiles
 
 		# Open Conquest_out file
 		for conq in self.conqFiles:
@@ -123,7 +92,7 @@ class Parser:
 				ionType = int(rawData[4])
 
 				atomData[atomIndex] = [x, y, z, ionType]
-				
+
 				line = Fconq.next()
 
 			# Skip lines until more atom data
@@ -140,11 +109,11 @@ class Parser:
 				ionType = int(rawData[0])
 				ionName = rawData[1]
 
-				for a in atomData.keys():
-					if atomData[a][3] == ionType:
-						x, y, z = atomData[a][:3]
-						self.atoms[a] = atm.Atom(ionName, x, y, z)
-						self.atoms[a].setIon(self.ions[ionName])
+				for atomKey, atomDataList in atomData:
+					if atomDataList[3] == ionType:
+						x, y, z = atomDataList[:3]
+						self.atoms[atomKey] = atomic.Atom(ionName, x, y, z)
+						self.atoms[atomKey].setIon(self.ions[ionName])
 				Fconq.next()
 				line = Fconq.next()
 
@@ -174,43 +143,7 @@ class Parser:
 						complexCoeff = complex(float(complexString[0]), float(complexString[1]))
 						self.atoms[a].addCoeff(PAO, complexCoeff)
 						line = Fcoeff.next()
-
 					gotCoeffs = True
 				else:
 					line = Fcoeff.next()
-
-			# line = Fcoeff.next()
-			# line = Fcoeff.next()
-			# data = line.split()
-			# kpoint = [float(data[0]), float(data[1]), float(data[2])]
-
-			# line = Fcoeff.next()
-			# data = line.split()
-			# band = [int(data[0]), float(data[1])]
-
-			# line = Fcoeff.next()
-			# data = line.split()
-			# a = int(data[0])
-			# PAO = int(data[1])
-			# coeffString = data[2]
-			# coeffString = coeffString.replace('(', '')
-			# coeffString = coeffString.replace(')', '')
-			# complexString = coeffString.split(',')
-			# complexCoeff = complex(float(complexString[0]), float(complexString[1]))
-
-
 			Fcoeff.close()
-
-
-
-	def getIon(self, ionName):
-		return self.ions[ionName]
-
-	def getAtom(self, atomIndex):
-		return self.atoms[atomIndex]
-
-
-
-
-
-

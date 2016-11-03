@@ -1,7 +1,8 @@
 
 import glob
-import packages.io as IO
-import packages.atomic as atm
+
+from packages import io
+from packages import atomic
 
 # First, we need to provide the folder of the .ion files.
 ionFolder = 'ions/'
@@ -26,10 +27,10 @@ for ionNameRaw in ionFilesRaw:
 # This handles reading data from several different input files and locations,
 #  which will be needed as we need to combine info from .ion, Conquest_out
 #  and coefficient .dat files.
-Prsr = IO.Parser()
+Prsr = io.Parser(ionFolder, ionFilesAll, '', [])
 
 # Currently, Parser only works for .ion files
-Prsr.parseIons(ionFolder, ionFilesAll)
+Prsr.parseIons()
 
 # Prsr now holds all the info about the ions.
 # In the final code, we would run something like
@@ -37,21 +38,19 @@ Prsr.parseIons(ionFolder, ionFilesAll)
 #  which would combine the ion data with the other input files to get the atoms
 
 # For now, we get the ions from Prsr
-ions = {}
-for ion in ionFilesAll:
-	ions[ion] = Prsr.getIon(ion)
+ions = Prsr.ions
 
 # ions is a dict of all the Ion objects, indexed by the names given in ionFilesAll
 # An Ion object stores the corresponding Radial objects, which are the PAO's given
 #  in the .ion file.
 # To see the radial functions, we use Plotter
-Pltr = IO.Plotter('example', ions)
+Pltr = io.Plotter('example', ions)
 Pltr.plotRadials()
 
 # Running this code will produce example_radials.pdf in the folder pdfs
 
 # The Ion class combines the Radial data with the spherical harmonics
-#  to form the basis functions. We can plot a 2D cross section of the 
+#  to form the basis functions. We can plot a 2D cross section of the
 #  basis functions. Currently, this is done as a method in Ion class,
 #  but will be moved to the Plotter class such that output can be put
 #  into a single pdf.
@@ -64,7 +63,7 @@ for n in I.nl.keys():
 	for l in I.nl[n]:
 		for m in range(-l, l+1):
 			# e will be the axis that is set to a constant, planeValue, to get a 2D plot
-			for e in ['x','y','z']:
+			for e in ['x', 'y', 'z']:
 				I.plotBasis(1, n, l, m, e, step=0.1, planeValue=0.0)
 
 # The plots will be output to pdfs folder
@@ -72,16 +71,3 @@ for n in I.nl.keys():
 # The next step will involve an Atom class that inherits from the Ion
 #  class and also stores the coefficients such that the wavefunction
 #  around the atom can be found.
-
-
-
-
-
-
-
-
-
-
-
-
-

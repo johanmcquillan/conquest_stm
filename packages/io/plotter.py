@@ -1,18 +1,14 @@
 
-import math
-import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-from .. import atomic as atm
 
-class Plotter:
+#from .. import atomic
+
+class Plotter(object):
 
 	"""Stores dict of Ion objects and provides methods to plot data to pdf"""
 
-	spectral = {0 : 's',
-				1 : 'p',
-				2 : 'd',
-				3 : 'f'}
+	spectral = {0 : 's', 1 : 'p', 2 : 'd', 3 : 'f'}
 
 	def __init__(self, filename, ions):
 		self.fname = filename
@@ -51,13 +47,3 @@ class Plotter:
 				plt.legend()
 				pdf.savefig()
 				plt.close()
-
-	
-
-
-
-
-
-
-
-
