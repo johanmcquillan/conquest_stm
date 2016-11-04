@@ -1,7 +1,10 @@
 
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
+from packages.sph import sph
+from packages.smartDict import SmartDict
 #from .. import atomic
 
 class Plotter(object):
@@ -14,7 +17,7 @@ class Plotter(object):
 		self.fname = filename
 		self.ions = ions
 
-	def plotRadials(self):
+	def plotRadials(self, points=500, printStatus=False):
 		"""Plot all radial functions from self.ions to 'self.filename'_radials.pdf"""
 		with PdfPages('pdfs/'+self.fname+'_radials.pdf') as pdf:
 
@@ -32,18 +35,162 @@ class Plotter(object):
 				plt.grid(b=True, which='minor', alpha=0.10, linestyle='-')
 
 				# Loop over all radial functions
+
 				for zeta in ion.radials:
 					for n in ion.radials[zeta]:
 						for l in ion.radials[zeta][n]:
 							# Get Radial and data from ion
 							radial = ion.getRadial(zeta, n, l)
-							r = radial.r
-							R = radial.R
+							step = radial.cutoff / points
+							r = np.arange(0.0, radial.cutoff, step)
+							R = np.empty_like(r)
+							for i in range(0, len(r)):
+								R[i] = radial.getValue(r[i])
+
 							# Add radial info to legend and add to plot
 							label = '$\zeta ='+str(zeta)+'$, $n='+str(n)+'$, $l='+str(l)+'$'
 							label = '$\zeta ='+str(zeta)+'$, $'+str(n)+self.spectral[l]+'$'
 							plt.plot(r, R, label=label)
+
+							if printStatus:
+								print "Finished Radial "+ion.ionName+"_"+str(zeta)+"_"+str(n)+"_"+str(l)
 				# Add plot to pdf and reset plt
 				plt.legend()
 				pdf.savefig()
 				plt.close()
+
+	def plotBasis(self, ionName, zeta, n, l, m, axis, minimum=-8, maximum=8, planeValue=0.0, step=0.1, printStatus=False):
+		"""Plots cross-section of basis function of ion to pdf.
+		All lengths measured in bohr radii (a0).
+
+		Input:
+		zeta:		Zeta index of Radial
+		n:			Principal quantum number for Radial
+		l:			Orbital angular momentum quantum number for Radial and spherical harmonic
+		m:			Azimuthal quantum number for spherical harmonic
+		axis:		Cartesian axis ('x', 'y', or 'z') to set to constant value given by planeValue
+		minimum:	Minimum value of coordinates measured in a0; Default is -8
+		maximum:	Maximum value of coordinates measured in a0; Default is +8
+		planeValue:	Constant value assigned to Cartesian coordinate given by axis; Default is 0.00001
+		step:		Interval between Cartesian mgrid points, measured in a0; Default is 0.1"""
+
+		ion = self.ions[ionName]
+		plotname = 'Basis_'+ionName+'_'+str(zeta)+'_'+str(n)+'_'+str(l)+'_'+str(m)+'_'+axis
+
+		# Initialise meshes
+		# 2D cartesian mesh (x, y, or z axis determined later)
+		space1, space2 = np.mgrid[minimum:maximum:step, minimum:maximum:step]
+
+		Y = np.empty_like(space1) # Spherical Harmonic mesh
+		R = np.empty_like(space1) # Radial Function mesh
+		psi = np.empty_like(space1) # Basis Function mesh (psi = R*Y)
+
+		maxpsi = 0.1 # Colour plot sets limits to -maxpsi to +maxpsi
+
+		# Plot functions to pdf
+		with PdfPages('pdfs/' + plotname + '.pdf') as pdf:
+			# Loop over all mesh points
+			for i in range(0, int((maximum - minimum) / step)):
+				for j in range(0, int((maximum - minimum) / step)):
+					# Use axis variable to determine which axes space1 and space2 refer to
+					# Evaluate spherical harmonic at mesh point
+					if axis == 'z':
+						Y[i, j] = sph(l, m, space2[i, j], space1[i, j], planeValue)
+						plt.xlabel('$x$ / $a_0$')
+						plt.ylabel('$y$ / $a_0$')
+					if axis == 'y':
+						Y[i, j] = sph(l, m, space2[i, j], planeValue, space1[i, j])
+						plt.xlabel('$x$ / $a_0$')
+						plt.ylabel('$z$ / $a_0$')
+					if axis == 'x':
+						Y[i, j] = sph(l, m, planeValue, space2[i, j], space1[i, j])
+						plt.xlabel('$y$ / $a_0$')
+						plt.ylabel('$z$ / $a_0$')
+
+					# Estimate value of Radial for mesh point and get psi
+					R[i, j] = ion.getRadialValue(zeta, n, l, np.sqrt(space1[i, j]**2 +
+						                                                 space2[i, j]**2 +
+						                                                 planeValue**2))
+					psi[i, j] = Y[i, j] * R[i, j]
+
+					# Update maxpsi
+					if abs(psi[i, j]) > maxpsi:
+						maxpsi = abs(psi[i, j])
+
+			# Setup plot
+			plt.imshow(psi, interpolation='bilinear', origin='center', cmap=plt.cm.bwr,
+				          extent=(minimum, maximum, minimum, maximum), vmin=-maxpsi, vmax=maxpsi)
+			plt.colorbar()
+			plt.grid()
+			axes = ['x', 'y', 'z']
+			axes.remove(axis)
+			ttl = (ionName+' Basis Function for \n \n $\zeta='+str(zeta)+'$, $n='+
+				      str(n)+'$, $l='+str(l)+'$, $m_l='+str(m)+'$ in $'+axes[0]+'-'+axes[1]+'$ plane')
+			plt.title(ttl)
+
+			# Save to pdf
+			pdf.savefig()
+			plt.close()
+			if printStatus:
+				print 'Finished '+plotname+'.pdf'
+
+	@staticmethod
+	def plotSPH(cls, l, m, axis, minimum=-8, maximum=8, planeValue=0.0, step=0.1, printStatus=False):
+		"""Plots cross-section of spherical harmonic to pdf.
+		All lengths measured in bohr radii (a0).
+
+		Input:
+		l:			Orbital angular momentum quantum number for spherical harmonic
+		m:			Azimuthal quantum number for spherical harmonic
+		axis:		Cartesian axis ('x', 'y', or 'z') to set to constant value given by planeValue
+		minimum:	Minimum value of coordinates measured in a0; Default is -8
+		maximum:	Maximum value of coordinates measured in a0; Default is +8
+		planeValue:	Constant value assigned to Cartesian coordinate given by axis; Default is 0.00001
+		step:		Interval between Cartesian mgrid points, measured in a0; Default is 0.1"""
+
+		plotname = 'SPH_'+str(l)+'_'+str(m)+'_'+axis
+
+		# Initialise meshes
+		# 2D cartesian mesh (x, y, or z axis determined later)
+		space1, space2 = np.mgrid[minimum:maximum:step, minimum:maximum:step]
+		Y = np.empty_like(space1) # Spherical Harmonic mesh
+
+		maxY = 0.1 # Colour plot sets limits to -maxY and +maxY
+		with PdfPages('pdfs/'+plotname+'.pdf') as pdf:
+			for i in range(0, int((maximum - minimum) / step)):
+				for j in range(0, int((maximum - minimum) / step)):
+					# Use axis variable to determine which axes space1 and space2 refer to
+					# Evaluate spherical harmonic at mesh point
+					if axis == 'z':
+						Y[i, j] = sph(l, m, space2[i, j], space1[i, j], planeValue)
+						plt.xlabel('$x$ / $a_0$')
+						plt.ylabel('$y$ / $a_0$')
+					if axis == 'y':
+						Y[i, j] = sph(l, m, space2[i, j], planeValue, space1[i, j])
+						plt.xlabel('$x$ / $a_0$')
+						plt.ylabel('$z$ / $a_0$')
+					if axis == 'x':
+						Y[i, j] = sph(l, m, planeValue, space2[i, j], space1[i, j])
+						plt.xlabel('$y$ / $a_0$')
+						plt.ylabel('$z$ / $a_0$')
+
+					# Update maxY
+					if abs(Y[i, j]) > maxY:
+						maxY = abs(Y[i, j])
+
+			# Setup plot
+			plt.imshow(Y, interpolation='bilinear', origin='center', cmap=plt.cm.bwr,
+				          extent=(minimum, maximum, minimum, maximum), vmin=-maxY, vmax=maxY)
+			plt.colorbar()
+			plt.grid()
+			axes = ['x', 'y', 'z']
+			axes.remove(axis)
+			ttl = ('Spherical Harmonic for \n \n $l='+str(l)+'$, $m_l='+str(m)+'$ in $'+
+				      axes[0]+'-'+axes[1]+'$ plane')
+			plt.title(ttl)
+
+			# Save to pdf
+			pdf.savefig()
+			plt.close()
+			if printStatus:
+				print 'Finished '+plotname+'.pdf'

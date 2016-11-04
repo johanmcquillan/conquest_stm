@@ -1,6 +1,7 @@
 import math
 
 from .. import atomic
+from ..smartDict import SmartDict
 
 class Parser(object):
 
@@ -31,8 +32,8 @@ class Parser(object):
 			for i in range(0, 9):
 				line = f.next()
 
-			# Create empty Ion and fill with radial data
-			ion = atomic.Ion(ionName)
+			# Create empty dict of radial objects
+			radialDict = SmartDict()
 			line = f.next()
 			while line.split()[0] != '#':
 				# Read quantum numbers and zeta index
@@ -60,12 +61,14 @@ class Parser(object):
 					r.append(x)
 					R.append(y)
 
-				Rad = atomic.Radial(zeta, n, l, r, R, cutoff)
-				ion.addRadial(Rad)
+				# Create Radial object and store in dict
+				radialDict[zeta][n][l] = atomic.Radial(zeta, n, l, r, R, cutoff)
 				line = f.next()
-
 			f.close()
-			self.ions[ionName] = ion
+
+			# Create Ion with radials and add to dict
+			self.ions[ionName] = atomic.Ion(ionName, radialDict)
+			del radialDict
 
 	def parseConq(self):
 		"""Parse data about atoms store in self.atoms

@@ -27,7 +27,7 @@ for ionNameRaw in ionFilesRaw:
 # This handles reading data from several different input files and locations,
 #  which will be needed as we need to combine info from .ion, Conquest_out
 #  and coefficient .dat files.
-Prsr = io.Parser(ionFolder, ionFilesAll '', [])
+Prsr = io.Parser(ionFolder, ionFilesAll, '', [])
 
 # Currently, Parser only works for .ion files
 Prsr.parseIons()
@@ -45,7 +45,7 @@ ions = Prsr.ions
 #  in the .ion file.
 # To see the radial functions, we use Plotter
 Pltr = io.Plotter('example', ions)
-Pltr.plotRadials()
+Pltr.plotRadials(printStatus=True)
 
 # Running this code will produce example_radials.pdf in the folder pdfs
 
@@ -55,17 +55,15 @@ Pltr.plotRadials()
 #  but will be moved to the Plotter class such that output can be put
 #  into a single pdf.
 
-I = ions['C_TZTP_6.5_4.5_2.5au']
+ionName = 'C_TZTP_6.5_4.5_2.5au'
+ion = ions[ionName]
 
-# I.nl is a dict that stores all of the l values for a particular n
-# eg. I.nl[2] = [0, 1]; I.nl[3] = [2]
-for n in I.radials[1]:
-	print n
-	for l in I.radials[1][n]:
+for n in ion.radials[1]:
+	for l in ion.radials[1][n]:
 		for m in range(-l, l+1):
 			# e will be the axis that is set to a constant, planeValue, to get a 2D plot
 			for e in ['x', 'y', 'z']:
-				I.plotBasis(1, n, l, m, e, step=0.1, planeValue=0.0)
+				Pltr.plotBasis(ionName, 1, n, l, m, e, step=0.1, planeValue=0.0, printStatus=True)
 
 # The plots will be output to pdfs folder
 
