@@ -19,17 +19,20 @@ SPH31 = 1.0/8.0 * np.sqrt(21.0 / math.pi)
 SPH30 = 1.0/4.0 * np.sqrt(7.0 / math.pi)
 
 def sph(l, m, x, y, z):
-	"""Return cartesian spherical harmonic.
+	"""Return value of real spherical harmonic using Cartesian coordinates.
+
 	Valid indices are l > 0; -l < m < +l.
 	Currently, only l <= 3 is supported.
 
-	Input:
-	l:			Orbital angular momentum quantum number; Must be => 0
-	m:			Azimuthal quantum number; must be within -l >= m >= l
-	x, y, z:	Cartesian coordinates
+	Args:
+		l (int): Orbital angular momentum quantum number; Must be => 0
+		m (int): Azimuthal quantum number; must be within -l >= m >= l
+		x (float): Cartesian x coordinate at which to evaluate spherical harmonic
+		y (float): Cartesian y coordinate at which to evaluate spherical harmonic
+		z (float): Cartesian z coordinate at which to evaluate spherical harmonic
 
-	Output:
-	harmonic:		Spherical harmonic for given l and m, evaluated at (x, y, z)"""
+	Returns:
+		harmonic (float): Spherical harmonic for given l and m, evaluated at (x, y, z)"""
 
 	harmonic = 0.0
 

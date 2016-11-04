@@ -8,6 +8,15 @@ class Cell(object):
 	"""Simulation cell which holds Atom objects in a 3D mesh."""
 
 	def __init__(self, xLength, yLength, zLength, gridSpacing=0.1):
+		"""Constructs 3D cell with given dimensional.
+
+		Args:
+			xLength (float): Length of cell along x in Bohr radii
+			yLength (float): Length of cell along y in Bohr radii
+			zLength (float): Length of cell along z in Bohr radii
+			gridSpacing (float optional): Resolution of mesh points
+		"""
+
 		self.xLength = xLength
 		self.yLength = yLength
 		self.zLength = zLength

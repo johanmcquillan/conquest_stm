@@ -5,19 +5,19 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 from packages.sph import sph
 from packages.smartDict import SmartDict
-#from .. import atomic
 
 class Plotter(object):
 
 	"""Stores dict of Ion objects and provides methods to plot data to pdf"""
 
+	# Spectroscopic notation dictionary
 	spectral = {0 : 's', 1 : 'p', 2 : 'd', 3 : 'f'}
 
 	def __init__(self, filename, ions):
 		self.fname = filename
 		self.ions = ions
 
-	def plotRadials(self, points=500, printStatus=False):
+	def plotRadials(self, points=500, printStatus=False, spectro=True):
 		"""Plot all radial functions from self.ions to 'self.filename'_radials.pdf"""
 		with PdfPages('pdfs/'+self.fname+'_radials.pdf') as pdf:
 
@@ -48,18 +48,22 @@ class Plotter(object):
 								R[i] = radial.getValue(r[i])
 
 							# Add radial info to legend and add to plot
-							label = '$\zeta ='+str(zeta)+'$, $n='+str(n)+'$, $l='+str(l)+'$'
-							label = '$\zeta ='+str(zeta)+'$, $'+str(n)+self.spectral[l]+'$'
+							# If spectro, use spectroscopic notation for legend
+							if spectro:
+								label = '$\zeta ='+str(zeta)+'$, $'+str(n)+self.spectral[l]+'$'
+							else:
+								label = '$\zeta ='+str(zeta)+'$, $n='+str(n)+'$, $l='+str(l)+'$'
 							plt.plot(r, R, label=label)
 
 							if printStatus:
 								print "Finished Radial "+ion.ionName+"_"+str(zeta)+"_"+str(n)+"_"+str(l)
+
 				# Add plot to pdf and reset plt
 				plt.legend()
 				pdf.savefig()
 				plt.close()
 
-	def plotBasis(self, ionName, zeta, n, l, m, axis, minimum=-8, maximum=8, planeValue=0.0, step=0.1, printStatus=False):
+	def plotBasis(self, ionName, zeta, n, l, m, axis, minimum=-8, maximum=8, planeValue=0.0, step=0.1, printStatus=False, spectro=True):
 		"""Plots cross-section of basis function of ion to pdf.
 		All lengths measured in bohr radii (a0).
 

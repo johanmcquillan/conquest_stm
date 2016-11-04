@@ -13,14 +13,14 @@ class Radial(object):
 	"""
 
 	def __init__(self, zeta, n, l, radii, radialFuncValues, cutoff):
-		"""Constructs radial part of a basis function
-		
+		"""Constructs radial part of a basis function.
+
 		Args:
 		    zeta (int): Indexes functions with the same n and l, but different cutoff
 		    n (int): Principal quantum number
 		    l (int): Orbital angular momentum quantum number
-		    r (float[]): List of radial distance values; Measured in Bohr radii
-		    R (float[]): List of radial function values; Same length as r
+		    radii (float[]): List of radial distance values; Measured in Bohr radii
+		    radialFuncValues (float[]): List of radial function values; Same length as r
 		    cutoff (float): Range of radial function, beyond which value of R is 0.0
 		"""
 		self.zeta = zeta
@@ -34,10 +34,10 @@ class Radial(object):
 		"""Use linear interpolation to evaluate radial function at distance.
 		
 		Args:
-		    distance (double): Distance from origin in Bohr radii
+		    distance (float): Distance from origin in Bohr radii
 		
 		Returns:
-		    double: Value of radial part
+		    float: Value of radial part
 		"""
 		if distance > self.cutoff or distance > self.radii[-1]:
 			value = 0.0
@@ -61,40 +61,25 @@ class Radial(object):
 
 class Ion(object):
 	"""
-	Stores data on an ion represented using a certain basis.
+	Stores data on an ion represented with a certain basis.
 
 	Attributes:
-	ionName (string): Name of ion (usually from name of .ion file)
-	radials (nested dict): Radial objects stored in nested dict;
-							Indexed by radials[zeta][n][l]
-	orbitals (nested dict): Which 
+		ionName (string): Name of ion (usually from name of .ion file)
+		radials (SmartDict): Radial objects accessed by radials[zeta][n][l], where all indices are int
+		orbitals (nested dict): Which 
 
 	"""
 	def __init__(self, ionName, radialDict=SmartDict()):
-		"""Summary
+		"""Constuct ion represented using given basis functions.
 		
 		Args:
 		    ionName (string): Name of ion (usually from name of .ion file)
-		    radialDict (int, dict()): Description
+		    radialDict (SmartDict, optional): Radial objects, indexed by radialDict[zeta][n][l],
+		    									where all indices are int. Default is empty, radials
+		    									may be added after instantion
 		"""
 		self.ionName = ionName
 		self.radials = radialDict # Radial objects; accessed by self.radials[zeta][n][l]
-
-		# # Loop over all zeta indices in radialDict
-		# for zeta, nDict in radialDict:
-		# 	# If zeta not already added to orbitalDict, create empty dict
-		# 	if not orbitalDict.has_key(zeta):
-		# 		orbitalDict[zeta] = {}
-		# 	# Loop over all n for this zeta
-		# 	for n, lDict in nDict:
-		# 		# If n not already added to orbitalDict, create empty dict
-		# 		if not orbitalDict[zeta].has_key(n):
-		# 			orbitalDict[zeta][n] = []
-		# 		# Add l values, lowest to highest, to orbitalDict
-		# 		for l in sorted(lDict):
-		# 			orbitalDict[zeta][n].append(l)
-		# self.orbitals = orbitalDict
-
 
 	def sortPAOs(self):
 		"""Sort pseudo-atomic orbitals into order according to .dat files.
@@ -122,7 +107,16 @@ class Ion(object):
 		a dict.
 
 		This is needed as SmartDict will automatically create an empty
-		dict if given an invalid key."""
+		dict if given an invalid key.
+
+		Args:
+			zeta (int): Indexes functions with different cutoff but same n and l
+		    n (int): Principal quantum number
+		    l (int): Orbital angular momentum quantum number
+
+		Returns:
+			boolean: True if Radial is stored, false if not
+		"""
 		output = False
 		if self.radials.has_key(zeta):
 			if self.radials[zeta].has_key(n):
@@ -131,7 +125,13 @@ class Ion(object):
 		return output
 
 	def addRadial(self, radial):
-		"""Adds radial to self.radials. Overwrites radial with same metadata (zeta, n, l)"""
+		"""Adds radial to self.radials.
+
+		Overwrites radial with same metadata (zeta, n, l).
+
+		Args:
+			radial (Radial): Radial object to add"""
+
 		# Get metadata
 		zeta = radial.zeta
 		n = radial.n
@@ -142,21 +142,51 @@ class Ion(object):
 		self.sortPAOs()
 
 	def getRadial(self, zeta, n, l):
+		"""Return Radial object for specified orbital.
+
+		Encapsulation needed such that self.radials (SmartDict) does not create
+		entry for invalid keys.
+
+		Args:
+			zeta (int): Indexes functions with different cutoff but same n and l
+		    n (int): Principal quantum number
+		    l (int): Orbital angular momentum quantum number
+
+		Returns:
+			Radial: Radial object for specified indices
+		"""
+
 		output = None
 		if self.hasRadial(zeta, n, l):
 			output = self.radials[zeta][n][l]
 		return output
 
 	def getRadialValue(self, zeta, n, l, r):
-		"""Use linear interpolation to evaluate R at r."""
+		"""Use linear interpolation to evaluate radial function at distance r.
+
+		Encapsulation needed such that self.radials (SmartDict) does not create
+		entry for invalid keys.
+
+		Args:
+			zeta (int): Indexes functions with different cutoff but same n and l
+		    n (int): Principal quantum number
+		    l (int): Orbital angular momentum quantum number
+		    r (float): Radial distance from ion in Bohr radii
+
+		Returns:
+			float: Radial function evaluated at r
+		"""
+
 		output = None
 		if self.hasRadial(zeta, n, l):
 			output = self.radials[zeta][n][l].getValue(r)
 		return output
 
 	def getMaxCutoff(self):
-		"""Return the maximum cutoff of radius of Radial bases, beyond which
-		the radial part is defined to be 0."""
+		"""Return the maximum cutoff radius for all stored Radials as a float.
+
+		Beyond the cutoff the radial part of the wavefunction is defined to be 0.		
+		"""
 		maxcut = 0.0
 		for zeta in self.radials:
 			for n in self.radials[zeta]:
@@ -167,23 +197,48 @@ class Ion(object):
 
 class Atom(Ion):
 
-	"""Stores information about an atom, primarily the Ions and coefficients.
-	UNFINISHED"""
+	"""Stores information on an atom, extending Ion to include atomic position and basis coefficients"""
 
-	def __init__(self, name, x, y, z):
-		Ion.__init__(self, name)
+	def __init__(self, ionName, radials=SmartDict(), x, y, z):
+		"""Constructor for atom.
+
+		Args:
+			ionName (string): Name of ion (usually from name of .ion file)
+		    radialDict (SmartDict, optional): Radial objects, indexed by radialDict[zeta][n][l],
+		    									where all indices are int. Default is empty, radials
+		    									may be added after instantiation
+		    x (float): Atomic x coordinate in simulation cell in Bohr radii
+		    y (float): Atomic y coordinate in simulation cell in Bohr radii
+		    z (float): Atomic z coordinate in simulation cell in Bohr radii
+		"""
+		Ion.__init__(self, ionName, radials)
 		self.x = x
 		self.y = y
 		self.z = z
 		self.coeffs = SmartDict()
 
 	def setIon(self, I):
-		'''Copy all attributes from an Ion to this Atom'''
+		"""Copy all attributes from an Ion to this Atom.
+
+		Args:
+			I (Ion): Ion object to copy attributes from
+		"""
 		self.ionName = I.ionName
 		self.radials = I.radials
 		self.sortPAOs()
 
 	def hasCoeff(self, zeta, n, l, m):
+		"""Check if atom stores coefficient for given orbital.
+
+		Args:
+			zeta (int): Indexes functions with different cutoff but same n and l
+		    n (int): Principal quantum number
+		    l (int): Orbital angular momentum quantum number
+		    m (int): Azimuthal orbital angular momentum quantum number
+
+		Returns:
+			boolean: True if coefficient is stored, false if not
+		"""
 
 		output = False
 		if self.coeffs.has_key(zeta):
@@ -194,9 +249,13 @@ class Atom(Ion):
 		return output
 
 	def addCoeff(self, PAO, coeff):
-		'''Add a complex coefficient to self.coeffs'''
+		"""Add a complex coefficient to self.coeffs.
 
-		# Get zeta, n, l, m from the PAO index as given in .dat file
+		Args:
+			PAO (int): index of PAO as given in .dat file
+			coeff (coomplex): Coefficient of PAO
+		"""
+
 		PAOdata = self.sortPAOs()[PAO - 1]
 		zeta = PAOdata[0]
 		n = PAOdata[1]
@@ -206,13 +265,33 @@ class Atom(Ion):
 		self.coeffs[zeta][n][l][m] = coeff
 
 	def getCoeff(self, zeta, n, l, m):
+		"""Return complex coefficient for given orbital.
+
+		Args:
+			zeta (int): Indexes functions with different cutoff but same n and l
+		    n (int): Principal quantum number
+		    l (int): Orbital angular momentum quantum number
+		    m (int): Azimuthal orbital angular momentum quantum number
+
+		Returns:
+			complex: Coefficient for given orbital
+		"""
 		output = None
 		if self.hasCoeff(zeta, n, l, m):
 			output = self.coeffs[zeta][n][l][m]
 		return output
 
 	def getPsi(self, x, y, z):
-		"""Evaluate the wavefuncion at (x,y,z) due to this atom only"""
+		"""Return complex wavefunction at (x,y,z) due to this atom only.
+
+		Args:
+			x (float): Cartesian x coordinate at which to evaluate wavefunction
+			y (float): Cartesian y coordinate at which to evaluate wavefunction
+			z (float): Cartesian z coordinate at which to evaluate wavefunction
+
+		Returns:
+			complex: Complex wavefunction evaluated at x, y, z
+		"""
 
 		# Get coords relative to atom
 		relx = x - self.x

@@ -9,6 +9,15 @@ class Parser(object):
 	Currently only works for .ion files."""
 
 	def __init__(self, ionFolder, ionFiles, conqFolder, conqFiles):
+		"""Constructor for Parser.
+
+		Args:
+			ionFolder (string): Relative folder path to .ion files
+			ionFiles ([string]): Ion filenames, excluding '.ion'
+			conqFolder (string): Relative folder path to .dat and Conquest_out files
+			conqFiles ([string]): Conquest ouptut filenames, excluding '.dat' 
+		"""
+
 		self.ions = {}
 		self.atoms = {}
 
@@ -18,8 +27,7 @@ class Parser(object):
 		self.conqFolder = conqFolder
 
 	def parseIons(self):
-		"""Parse data from ion files to Ion objects and
-		store in self.ions indexed by ionFile name."""
+		"""Parse data from ionFiles to Ion objects and store in self.ions indexed by ionFile name."""
 
 		for ionName in self.ionFiles:
 			# Open .ion and initialise entry
@@ -71,8 +79,7 @@ class Parser(object):
 			del radialDict
 
 	def parseConq(self):
-		"""Parse data about atoms store in self.atoms
-		indexes by atomFile name."""
+		"""Parse data from conqFiles to Atom objects and store in self.ions indexed by conqFile name."""
 
 		# Open Conquest_out file
 		for conq in self.conqFiles:
