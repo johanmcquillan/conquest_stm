@@ -31,6 +31,8 @@ def sph(l, m, x, y, z):
 	Output:
 	harmonic:		Spherical harmonic for given l and m, evaluated at (x, y, z)"""
 
+	harmonic = 0.0
+
 	# Normalise coordinates to unit magnitude
 	magnitude = np.sqrt(x**2 + y**2 + z**2)
 	if magnitude != 0:
@@ -39,12 +41,12 @@ def sph(l, m, x, y, z):
 		z = z / magnitude
 
 	# Choose correct form of spherical harmonic depending on l and m
-	harmonic = 0.0
 	if l == 0:
 		harmonic = SPH00
 	# l = 0 is the only harmonic with non-zero value at origin
 	elif magnitude == 0:
 		harmonic = 0.0
+
 	elif l == 1:
 		if m == 1:
 			harmonic = SPH11 * x
@@ -52,6 +54,7 @@ def sph(l, m, x, y, z):
 			harmonic = SPH11 * y
 		elif m == 0:
 			harmonic = SPH10 * z
+
 	elif l == 2:
 		if m == 2:
 			harmonic = SPH22 * (x**2 - y**2)
@@ -63,6 +66,7 @@ def sph(l, m, x, y, z):
 			harmonic = -SPH21 * x*z
 		elif m == 0:
 			harmonic = SPH20 * (3*z**2 - 1)
+
 	elif l == 3:
 		if m == 3:
 			harmonic = -SPH33 * (x**3 - 3*x*y**2)
@@ -78,4 +82,5 @@ def sph(l, m, x, y, z):
 			harmonic = SPH31 * (5*z**2 - 1)*x
 		elif m == 0:
 			harmonic = SPH30 * (5*z**2 - 3)*z
+
 	return harmonic

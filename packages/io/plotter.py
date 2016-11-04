@@ -32,16 +32,16 @@ class Plotter(object):
 				plt.grid(b=True, which='minor', alpha=0.10, linestyle='-')
 
 				# Loop over all radial functions
-				for z in range(1, ion.zetas+1):
-					for n in ion.nl.keys():
-						for l in ion.nl[n]:
+				for zeta in ion.radials:
+					for n in ion.radials[zeta]:
+						for l in ion.radials[zeta][n]:
 							# Get Radial and data from ion
-							radial = ion.getRadial(z, n, l)
+							radial = ion.getRadial(zeta, n, l)
 							r = radial.r
 							R = radial.R
 							# Add radial info to legend and add to plot
-							label = '$\zeta ='+str(z)+'$, $n='+str(n)+'$, $l='+str(l)+'$'
-							label = '$\zeta ='+str(z)+'$, $'+str(n)+self.spectral[l]+'$'
+							label = '$\zeta ='+str(zeta)+'$, $n='+str(n)+'$, $l='+str(l)+'$'
+							label = '$\zeta ='+str(zeta)+'$, $'+str(n)+self.spectral[l]+'$'
 							plt.plot(r, R, label=label)
 				# Add plot to pdf and reset plt
 				plt.legend()

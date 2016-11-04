@@ -1,15 +1,28 @@
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
 from packages.sph import sph
+from packages.smartDict import SmartDict
 
 class Radial(object):
 
 	"""Stores the radial part of basis function and metadata,
-	ie. quantum numbers (n and l) and zeta index."""
+	ie. quantum numbers (n and l) and zeta index.
+	"""
 
 	def __init__(self, zeta, n, l, r, R, cutoff):
+		"""Constructs radial part of a basis function
+		
+		Args:
+		    zeta (int): Indexes functions with the same n and l, but different cutoff
+		    n (int): Principal quantum number
+		    l (int): Orbital angular momentum quantum number
+		    r (float[]): List of radial distance values; Measured in Bohr radii
+		    R (float[]): List of radial function values; Same length as r
+		    cutoff (float): Range of radial function, beyond which value of R is 0.0
+		"""
 		self.zeta = zeta
 		self.n = n
 		self.l = l
@@ -18,99 +31,142 @@ class Radial(object):
 		self.cutoff = cutoff
 
 	def getValue(self, distance):
-		"""Use linear interpolation to evaluate the radial function
-		at distance."""
-
-		if r > self.cutoff:
-			return 0.0
+		"""Use linear interpolation to evaluate radial function at distance.
+		
+		Args:
+		    distance (double): Distance from origin in Bohr radii
+		
+		Returns:
+		    double: Value of radial part
+		"""
+		if distance > self.cutoff or distance > self.r[-1]:
+			value = 0.0
 		else:
+			# Find the first r value larger than distance
 			i = 0
-			r0 = 0.0
-			r1 = 0.0
 			while self.r[i] < distance:
 				i = i + 1
 
-			r0 = self.r[i-1]
-			r1 = self.r[i]
-			R0 = self.r[i-1]
-			R1 = self.r[i]
+			# Get nearest stored values
+			x1 = self.r[i-1]
+			x2 = self.r[i]
+			y1 = self.R[i-1]
+			y2 = self.R[i]
 
-			value = R0 + (r - r0) * (R1 - R0) / (r1 - r0)
-			return value
+			# Calculate via interpolation
+			value = y1 + (distance - x1) * (y2 - y1) / (x2 - x1)
+		return value
 
 class Ion(object):
+	"""
+	Stores data on an ion represented using a certain basis.
 
-	"""Stores information about an ion, primarily its basis functions."""
+	Attributes:
+	ionName (string): Name of ion (usually from name of .ion file)
+	radials (nested dict): Radial objects stored in nested dict;
+							Indexed by radials[zeta][n][l]
+	orbitals (nested dict): Which 
 
-	def __init__(self, name, radialDict=None):
-		self.ionName = name
+	"""
+	def __init__(self, ionName, radialDict=SmartDict()):
+		"""Summary
+		
+		Args:
+		    ionName (string): Name of ion (usually from name of .ion file)
+		    radialDict (int, dict()): Description
+		"""
+		self.ionName = ionName
+		self.radials = radialDict # Radial objects; accessed by self.radials[zeta][n][l]
 
-		#self.zetas = 1 # 1 = SZ; 2 = DZ; 3 = TZ
-		self.zetas = 1
-		self.nl = {}
-		if radialDict:
-			self.radials = radialDict # Radial objects; accessed by self.radials[zeta][n][l]
-			for zeta in self.radials.keys():
-				if zeta > self.zetas:
-					self.zetas = zeta
-				for n in self.radials[zeta]:
-					if n not in self.nl.keys():
-						self.radials[zeta][n] = []
-					for l in self.radials[zeta][n]:
-						if l not in self.nl[n]:
-							self.nl[n].append(l)
-		else:
-			self.radials = {}
+		# # Loop over all zeta indices in radialDict
+		# for zeta, nDict in radialDict:
+		# 	# If zeta not already added to orbitalDict, create empty dict
+		# 	if not orbitalDict.has_key(zeta):
+		# 		orbitalDict[zeta] = {}
+		# 	# Loop over all n for this zeta
+		# 	for n, lDict in nDict:
+		# 		# If n not already added to orbitalDict, create empty dict
+		# 		if not orbitalDict[zeta].has_key(n):
+		# 			orbitalDict[zeta][n] = []
+		# 		# Add l values, lowest to highest, to orbitalDict
+		# 		for l in sorted(lDict):
+		# 			orbitalDict[zeta][n].append(l)
+		# self.orbitals = orbitalDict
+
 
 	def sortPAOs(self):
+		"""Sort pseudo-atomic orbitals into order according to .dat files.
+		
+		Returns:
+		    list: Ordered list of PAO data;
+		    		Each element is a list containing [zeta, n, l, m] for the PAO
+		"""
 		sortedPAOs = []
-		for zeta in range(1, self.zetas+1):
-			nList = sorted(self.nl.keys())
+
+		# Dict keys not necessarily in order
+		# Order key list by lowest to highest for each index
+		zetaList = sorted(self.radials.keys())
+		for zeta in zetaList:
+			nList = sorted(self.radials[zeta].keys())
 			for n in nList:
-				lList = sorted(self.nl[n])
+				lList = sorted(self.radials[zeta][n])
 				for l in lList:
 					for m in range(-l, l+1):
 						sortedPAOs.append([zeta, n, l, m])
 		return sortedPAOs
 
+	def hasRadial(self, zeta, n, l):
+		"""Check if Ion has radial object for specified object without creating
+		a dict.
+
+		This is needed as SmartDict will automatically create an empty
+		dict if given an invalid key."""
+		output = False
+		if self.radials.has_key(zeta):
+			if self.radials[zeta].has_key(n):
+				if self.radials[zeta][n].has_key(l):
+					return True
+		return output
+
 	def addRadial(self, radial):
-		"""Adds Radial to self.radials. Overwrites radial with same metadata (zeta, n, l)"""
+		"""Adds radial to self.radials. Overwrites radial with same metadata (zeta, n, l)"""
 		# Get metadata
 		zeta = radial.zeta
 		n = radial.n
 		l = radial.l
 
-		# Set max value of zeta
-		if zeta > self.zetas:
-			self.zetas = zeta
-
 		# Initialise dict entry
-		if not self.radials.has_key(zeta):
-			self.radials[zeta] = {}
-		if not self.radials[zeta].has_key(n):
-			self.radials[zeta][n] = {}
-			self.nl[n] = []
-		if not l in self.nl[n]:
-			self.nl[n].append(l)
+		# if not self.radials.has_key(zeta):
+		# 	self.radials[zeta] = {}
+		# if not self.radials[zeta].has_key(n):
+		# 	self.radials[zeta][n] = {}
+		# if not l in self.nl[n]:
+		# 	self.nl[n].append(l)
 
 		# Add Radial
 		self.radials[zeta][n][l] = radial
 		self.sortPAOs()
 
 	def getRadial(self, zeta, n, l):
-		return self.radials[zeta][n][l]
+		output = None
+		if self.hasRadial(zeta, n, l):
+			output = self.radials[zeta][n][l]
+		return output
 
 	def getRadialValue(self, zeta, n, l, r):
 		"""Use linear interpolation to evaluate R at r."""
-		return self.radials[zeta][n][l].getValue(r)
+		output = None
+		if self.hasRadial(zeta, n, l):
+			output = self.radials[zeta][n][l].getValue(r)
+		return output
 
 	def getMaxCutoff(self):
 		"""Return the maximum cutoff of radius of Radial bases, beyond which
 		the radial part is defined to be 0."""
 		maxcut = 0.0
-		for zeta in range(1, self.zetas+1):
-			for n in self.radials[zeta].keys():
-				for l in self.radials[zeta][n].keys():
+		for zeta in self.radials:
+			for n in self.radials[zeta]:
+				for l in self.radials[zeta][n]:
 					if maxcut < self.radials[zeta][n][l].cutoff:
 						maxcut = self.radials[zeta][n][l].cutoff
 		return maxcut
@@ -258,14 +314,23 @@ class Atom(Ion):
 		self.x = x
 		self.y = y
 		self.z = z
-		self.coeffs = {}
+		self.coeffs = SmartDict()
 
 	def setIon(self, I):
 		'''Copy all attributes from an Ion to this Atom'''
+		self.ionName = I.ionName
 		self.radials = I.radials
-		self.zetas = I.zetas
-		self.nl = I.nl
 		self.sortPAOs()
+
+	def hasCoeff(self, zeta, n, l, m):
+
+		output = False
+		if self.coeffs.has_key(zeta):
+			if self.coeffs[zeta].has_key(n):
+				if self.coeffs[zeta][n].has_key(l):
+					if self.coeffs[zeta][n][l].has_key(m):
+						output = True
+		return output
 
 	def addCoeff(self, PAO, coeff):
 		'''Add a complex coefficient to self.coeffs'''
@@ -277,19 +342,16 @@ class Atom(Ion):
 		l = PAOdata[2]
 		m = PAOdata[3]
 
-		# Initialise dict entry
-		if not self.coeffs.has_key(zeta):
-			self.coeffs[zeta] = {}
-		if not self.coeffs[zeta].has_key(n):
-			self.coeffs[zeta][n] = {}
-		if not l in self.coeffs[zeta][n]:
-			self.coeffs[zeta][n][l] = {}
-
-		# Set the coefficient
 		self.coeffs[zeta][n][l][m] = coeff
 
+	def getCoeff(self, zeta, n, l, m):
+		output = None
+		if self.hasCoeff(zeta, n, l, m):
+			output = self.coeffs[zeta][n][l][m]
+		return output
+
 	def getPsi(self, x, y, z):
-		"""Evaluate the wavefuncion at (x,y,z)"""
+		"""Evaluate the wavefuncion at (x,y,z) due to this atom only"""
 
 		# Get coords relative to atom
 		relx = x - self.x
@@ -298,19 +360,25 @@ class Atom(Ion):
 		# Get relative distance to atom
 		r = np.sqrt(relx**2 + rely**2 + relz**2)
 
-		if r > self.getMaxCutoff():
-			return complex(0.0, 0.0)
-		else:
-			psi = complex(0.0, 0.0)
-			for zeta in range(1, self.zetas+1):
-				for n in self.nl.keys():
-					for l in self.nl[n]:
+		psi = complex(0.0, 0.0)
+
+		# If r is beyond atoms range, return 0.0
+		if r <= self.getMaxCutoff(): # Loop over all radial functions
+			for zeta in self.radials:
+				for n in self.radials[zeta]:
+					for l in self.radials[zeta][n]:
+						# Evaluate R(r) using linear interpolation
 						R = self.getRadialValue(zeta, n, l, r)
+
 						for m in range(-l, l+1):
+							# Calculate spherical harmonic
 							Y = sph(l, m, relx, rely, relz)
+
+							# Get coefficient of basis functoin
 							coeff = self.coeffs[zeta][n][l][m]
+
+							# Calculate and add contribution of basis function
 							psiReal = R*Y*coeff.real
 							psiImag = R*Y*coeff.imag
 							psi += complex(psiReal, psiImag)
-							#print psi
-			return psi
+		return psi

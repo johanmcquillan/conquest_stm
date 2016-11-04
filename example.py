@@ -27,7 +27,7 @@ for ionNameRaw in ionFilesRaw:
 # This handles reading data from several different input files and locations,
 #  which will be needed as we need to combine info from .ion, Conquest_out
 #  and coefficient .dat files.
-Prsr = io.Parser(ionFolder, ionFilesAll, '', [])
+Prsr = io.Parser(ionFolder, ionFilesAll '', [])
 
 # Currently, Parser only works for .ion files
 Prsr.parseIons()
@@ -59,8 +59,9 @@ I = ions['C_TZTP_6.5_4.5_2.5au']
 
 # I.nl is a dict that stores all of the l values for a particular n
 # eg. I.nl[2] = [0, 1]; I.nl[3] = [2]
-for n in I.nl.keys():
-	for l in I.nl[n]:
+for n in I.radials[1]:
+	print n
+	for l in I.radials[1][n]:
 		for m in range(-l, l+1):
 			# e will be the axis that is set to a constant, planeValue, to get a 2D plot
 			for e in ['x', 'y', 'z']:
