@@ -7,7 +7,7 @@ class Cell(object):
 
 	"""Simulation cell which holds Atom objects in a 3D mesh."""
 
-	def __init__(self, xLength, yLength, zLength, gridSpacing=0.1):
+	def __init__(self, name, xLength, yLength, zLength, gridSpacing=0.1):
 		"""Constructs 3D cell with given dimensional.
 
 		Args:
@@ -16,7 +16,7 @@ class Cell(object):
 			zLength (float): Length of cell along z in Bohr radii
 			gridSpacing (float optional): Resolution of mesh points
 		"""
-
+		self.name = name
 		self.xLength = xLength
 		self.yLength = yLength
 		self.zLength = zLength
@@ -46,15 +46,18 @@ class Cell(object):
 		# Add to dict
 		self.atoms[atomKey] = atom
 
-	def setPsi(self):
+	def setPsi(self, E=None, debug=False):
 		"""Calculate complex wavefunction at all points in 3D mesh and
 		assign it to self.psi"""
 
 		# Get 3D mesh with (0+0j) at all points
 		wavefunc = np.empty_like(self.xMesh, dtype=complex)
-
+		if not E:
+			bandEnergies = sorted(self.atoms[1].coeffs.keys(), key=lambda e: abs(e))
+			E = bandEnergies[0]
 		# Iterate over all atoms stored in this cell
-		for atomKey, atom in self.atoms:
+		for atomKey in self.atoms:
+			atom = self.atoms[atomKey]
 			# Iterate over all mesh points
 			for i in range(0, self.xPoints):
 				for j in range(0, self.yPoints):
@@ -62,17 +65,11 @@ class Cell(object):
 						# Get mesh coordinates
 						x = self.xMesh[i, j, k]
 						y = self.yMesh[i, j, k]
-						z = self.xMesh[i, j, k]
+						z = self.zMesh[i, j, k]
 
-						# Calculate real and imaginary parts of the wavefunction
-						wfReal = wavefunc[i, j, k].real + atom.getPsi(x, y, z).real
-						wfImag = wavefunc[i, j, k].imag + atom.getPsi(x, y, z).imag
-
-						# Add contribution from this atom to this mesh point
-						wavefunc[i, j, k] = complex(wfReal, wfImag)
-
-			print 'Calculated atom '+str(atomKey)
+						# # Add contribution from this atom to this mesh point
+						wavefunc[i, j, k] = wavefunc[i, j, k] + atom.getPsi(E, x, y, z)
+						
+			if debug:
+				print 'Band Energy = '+str(E)+'; Calculated atom '+str(atomKey)
 		self.psi = wavefunc
-
-	def plot(self):
-		return None

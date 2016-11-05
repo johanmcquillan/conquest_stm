@@ -1,4 +1,6 @@
 
+import cmath
+import math
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
@@ -8,7 +10,12 @@ from packages.smartDict import SmartDict
 
 class Plotter(object):
 
-	"""Stores dict of Ion objects and provides methods to plot data to pdf"""
+	"""Stores dict of Ion objects and provides methods to plot data to pdf.
+
+	Attributes:
+		fname (string): Name prefix for output .pdf files
+		ions (dict): Stores Ion objects indexed by ionName
+	"""
 
 	# Spectroscopic notation dictionary
 	spectral = {0 : 's', 1 : 'p', 2 : 'd', 3 : 'f'}
@@ -18,7 +25,13 @@ class Plotter(object):
 		self.ions = ions
 
 	def plotRadials(self, points=500, printStatus=False, spectro=True):
-		"""Plot all radial functions from self.ions to 'self.filename'_radials.pdf"""
+		"""Plot all radial functions from self.ions to 'self.filename'_radials.pdf
+
+		Args:
+			points (int, optional): Number of points for plot
+			printStatus (boolean, optional): If true, print notification when finishing a plot
+			spectro (boolean, optional): If true, use spectroscopic notation
+		"""
 		with PdfPages('pdfs/'+self.fname+'_radials.pdf') as pdf:
 
 			# Plot all functions for the same ion on one graph
@@ -67,16 +80,16 @@ class Plotter(object):
 		"""Plots cross-section of basis function of ion to pdf.
 		All lengths measured in bohr radii (a0).
 
-		Input:
-		zeta:		Zeta index of Radial
-		n:			Principal quantum number for Radial
-		l:			Orbital angular momentum quantum number for Radial and spherical harmonic
-		m:			Azimuthal quantum number for spherical harmonic
-		axis:		Cartesian axis ('x', 'y', or 'z') to set to constant value given by planeValue
-		minimum:	Minimum value of coordinates measured in a0; Default is -8
-		maximum:	Maximum value of coordinates measured in a0; Default is +8
-		planeValue:	Constant value assigned to Cartesian coordinate given by axis; Default is 0.00001
-		step:		Interval between Cartesian mgrid points, measured in a0; Default is 0.1"""
+		Args:
+			zeta (int):	Zeta index of Radial
+			n (int): Principal quantum number for Radial
+			l (int): Orbital angular momentum quantum number for Radial and spherical harmonic
+			m (int): Azimuthal quantum number for spherical harmonic
+			axis (string) : Cartesian axis ('x', 'y', or 'z') to set to constant value given by planeValue
+			minimum (int, optional): Minimum value of coordinates measured in a0; Default is -8
+			maximum (int, optional): Maximum value of coordinates measured in a0; Default is +8
+			planeValue (double, optional): Constant value assigned to Cartesian coordinate given by axis; Default is 0.00001
+			step (int, optional): Interval between Cartesian mgrid points, measured in a0; Default is 0.1"""
 
 		ion = self.ions[ionName]
 		plotname = 'Basis_'+ionName+'_'+str(zeta)+'_'+str(n)+'_'+str(l)+'_'+str(m)+'_'+axis
@@ -111,10 +124,10 @@ class Plotter(object):
 						plt.xlabel('$y$ / $a_0$')
 						plt.ylabel('$z$ / $a_0$')
 
-					# Estimate value of Radial for mesh point and get psi
+					# Evaluate value of Radial at mesh point and get psi
 					R[i, j] = ion.getRadialValue(zeta, n, l, np.sqrt(space1[i, j]**2 +
-						                                                 space2[i, j]**2 +
-						                                                 planeValue**2))
+						                                                space2[i, j]**2 +
+						                                                planeValue**2))
 					psi[i, j] = Y[i, j] * R[i, j]
 
 					# Update maxpsi
@@ -144,13 +157,13 @@ class Plotter(object):
 		All lengths measured in bohr radii (a0).
 
 		Input:
-		l:			Orbital angular momentum quantum number for spherical harmonic
-		m:			Azimuthal quantum number for spherical harmonic
-		axis:		Cartesian axis ('x', 'y', or 'z') to set to constant value given by planeValue
-		minimum:	Minimum value of coordinates measured in a0; Default is -8
-		maximum:	Maximum value of coordinates measured in a0; Default is +8
-		planeValue:	Constant value assigned to Cartesian coordinate given by axis; Default is 0.00001
-		step:		Interval between Cartesian mgrid points, measured in a0; Default is 0.1"""
+		l (int): Orbital angular momentum quantum number for spherical harmonic
+		m (int): Azimuthal quantum number for spherical harmonic
+		axis (string): Cartesian axis ('x', 'y', or 'z') to set to constant value given by planeValue
+		minimum (int, optional): Minimum value of coordinates measured in a0; Default is -8
+		maximum (int, optional): Maximum value of coordinates measured in a0; Default is +8
+		planeValue (float, optional): Constant value assigned to Cartesian coordinate given by axis; Default is 0.00001
+		step (float, optional): Interval between Cartesian mgrid points, measured in a0; Default is 0.1"""
 
 		plotname = 'SPH_'+str(l)+'_'+str(m)+'_'+axis
 
@@ -198,3 +211,64 @@ class Plotter(object):
 			plt.close()
 			if printStatus:
 				print 'Finished '+plotname+'.pdf'
+
+	def plotPsiCrossSec(self, name, cell, axis, minimum=None, maximum=None, label=''):
+
+		plotname = name+'ChargeDensity_'+axis+'_'+label
+
+		if axis == 'x':
+			length2 = cell.yLength
+			points2 = cell.yPoints
+			length1 = cell.zLength
+			points1 = cell.zPoints
+			midpoint = cell.xPoints / 2
+		elif axis == 'y':
+			length2 = cell.xLength
+			points2 = cell.xPoints
+			length1 = cell.zLength
+			points1 = cell.zPoints
+			midpoint = cell.yPoints / 2
+		elif axis == 'z':
+			length2 = cell.xLength
+			points2 = cell.xPoints
+			length1 = cell.yLength
+			points1 = cell.yPoints
+			midpoint = cell.zPoints / 2
+
+		space1, space2 = np.mgrid[0.0:length1:cell.gridSpacing,
+			                         0.0:length2:cell.gridSpacing]
+
+		if minimum:
+			iStart = min(range(0.0, points1), key=lambda a:abs(minimum-space1[a,0]))
+			jStart = min(range(0.0, points2), key=lambda a:abs(minimum-space2[0,a]))
+		else:
+			iStart = 0
+			jStart = 0
+		if maximum:
+			iEnd = min(range(0.0, points1), key=lambda a:abs(maximum-space1[a,0]))
+			jEnd = min(range(0.0, points2), key=lambda a:abs(maximum-space2[0,a]))
+		else:
+			iEnd = points1
+			jEnd = points2
+
+		psi = np.empty_like(space1, dtype=complex)
+		psi2 = np.empty_like(space1, dtype=float)
+
+		for i in range(iStart, iEnd):
+			for j in range(jStart, jEnd):
+				if axis == 'x':
+					psi[i, j] = cell.psi[midpoint, i, j]
+				elif axis == 'y':
+					psi[i, j] = cell.psi[i, midpoint, j]
+				elif axis == 'z':
+					psi[i, j] = cell.psi[i, j, midpoint]
+
+				psi2[i, j] = float(abs(psi[i, j])**2)
+
+		with PdfPages('pdfs/'+plotname+'.pdf') as pdf:
+			plt.imshow(psi2, interpolation='bilinear', origin='lower', cmap=plt.cm.Blues,
+				          extent=(0.0, float(length1), 0.0, float(length2)))
+			plt.colorbar()
+			plt.grid()
+			pdf.savefig()
+			plt.close()

@@ -199,7 +199,7 @@ class Atom(Ion):
 
 	"""Stores information on an atom, extending Ion to include atomic position and basis coefficients"""
 
-	def __init__(self, ionName, radials=SmartDict(), x, y, z):
+	def __init__(self, ionName, x, y, z, radials=SmartDict()):
 		"""Constructor for atom.
 
 		Args:
@@ -227,7 +227,7 @@ class Atom(Ion):
 		self.radials = I.radials
 		self.sortPAOs()
 
-	def hasCoeff(self, zeta, n, l, m):
+	def hasCoeff(self, E, zeta, n, l, m):
 		"""Check if atom stores coefficient for given orbital.
 
 		Args:
@@ -241,14 +241,15 @@ class Atom(Ion):
 		"""
 
 		output = False
-		if self.coeffs.has_key(zeta):
-			if self.coeffs[zeta].has_key(n):
-				if self.coeffs[zeta][n].has_key(l):
-					if self.coeffs[zeta][n][l].has_key(m):
-						output = True
+		if self.coeffs.has_key(E):
+			if self.coeffs.has_key(zeta):
+				if self.coeffs[zeta].has_key(n):
+					if self.coeffs[zeta][n].has_key(l):
+						if self.coeffs[zeta][n][l].has_key(m):
+							output = True
 		return output
 
-	def addCoeff(self, PAO, coeff):
+	def addCoeff(self, E, PAO, coeff):
 		"""Add a complex coefficient to self.coeffs.
 
 		Args:
@@ -262,9 +263,9 @@ class Atom(Ion):
 		l = PAOdata[2]
 		m = PAOdata[3]
 
-		self.coeffs[zeta][n][l][m] = coeff
+		self.coeffs[E][zeta][n][l][m] = coeff
 
-	def getCoeff(self, zeta, n, l, m):
+	def getCoeff(self, E, zeta, n, l, m):
 		"""Return complex coefficient for given orbital.
 
 		Args:
@@ -277,11 +278,11 @@ class Atom(Ion):
 			complex: Coefficient for given orbital
 		"""
 		output = None
-		if self.hasCoeff(zeta, n, l, m):
-			output = self.coeffs[zeta][n][l][m]
+		if self.hasCoeff(E, zeta, n, l, m):
+			output = self.coeffs[E][zeta][n][l][m]
 		return output
 
-	def getPsi(self, x, y, z):
+	def getPsi(self, E, x, y, z):
 		"""Return complex wavefunction at (x,y,z) due to this atom only.
 
 		Args:
@@ -315,7 +316,7 @@ class Atom(Ion):
 							Y = sph(l, m, relx, rely, relz)
 
 							# Get coefficient of basis functoin
-							coeff = self.coeffs[zeta][n][l][m]
+							coeff = self.coeffs[E][zeta][n][l][m]
 
 							# Calculate and add contribution of basis function
 							psiReal = R*Y*coeff.real

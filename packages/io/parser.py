@@ -15,11 +15,11 @@ class Parser(object):
 			ionFolder (string): Relative folder path to .ion files
 			ionFiles ([string]): Ion filenames, excluding '.ion'
 			conqFolder (string): Relative folder path to .dat and Conquest_out files
-			conqFiles ([string]): Conquest ouptut filenames, excluding '.dat' 
+			conqFiles ([string]): Conquest ouptut filenames, excluding '.dat'
 		"""
 
 		self.ions = {}
-		self.atoms = {}
+		self.atoms = SmartDict()
 
 		self.ionFiles = ionFiles
 		self.ionFolder = ionFolder
@@ -90,7 +90,7 @@ class Parser(object):
 			while len(line.split()) != 8:
 				line = Fconq.next()
 
-			# Get atomic positions
+			# Read atomic positions
 			atomData = {}
 			while len(line.split()) == 8 and line.split()[0].isdigit():
 				rawData = line.split()
@@ -119,11 +119,12 @@ class Parser(object):
 				ionType = int(rawData[0])
 				ionName = rawData[1]
 
-				for atomKey, atomDataList in atomData:
+				for atomKey in atomData:
+					atomDataList = atomData[atomKey]
 					if atomDataList[3] == ionType:
 						x, y, z = atomDataList[:3]
-						self.atoms[atomKey] = atomic.Atom(ionName, x, y, z)
-						self.atoms[atomKey].setIon(self.ions[ionName])
+						self.atoms[conq][atomKey] = atomic.Atom(ionName, x, y, z)
+						self.atoms[conq][atomKey].setIon(self.ions[ionName])
 				Fconq.next()
 				line = Fconq.next()
 
@@ -134,8 +135,8 @@ class Parser(object):
 			line = Fcoeff.next()
 
 			gotCoeffs = False
-			while not gotCoeffs:
-				line = Fcoeff.next()
+
+			while True:
 				if '#Kpoint' not in line and len(line.split()) != 3:
 					data = line.split()
 					bandN = int(data[0])
@@ -143,6 +144,7 @@ class Parser(object):
 
 					line = Fcoeff.next()
 					while len(line.split()) > 2:
+
 						data = line.split()
 						a = int(data[0])
 						PAO = int(data[1])
@@ -151,9 +153,11 @@ class Parser(object):
 						coeffString = coeffString.replace(')', '')
 						complexString = coeffString.split(',')
 						complexCoeff = complex(float(complexString[0]), float(complexString[1]))
-						self.atoms[a].addCoeff(PAO, complexCoeff)
+						self.atoms[conq][a].addCoeff(bandE, PAO, complexCoeff)
 						line = Fcoeff.next()
-					gotCoeffs = True
 				else:
-					line = Fcoeff.next()
+					try:
+						line = Fcoeff.next()
+					except:
+						break
 			Fcoeff.close()

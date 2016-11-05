@@ -22,7 +22,7 @@ for atomNameRaw in conqFilesRaw:
 #ionFiles = ['C_TZTP_6.5_4.5_2.5au']
 
 # Initialise parser and get data
-Prsr = io.Parser(ionFolder, ionFiles, conqFolder, ['CH4_SZ'])
+Prsr = io.Parser(ionFolder, ionFiles, conqFolder, ['C6H6_SZ', 'CH4_SZ'])
 Prsr.parseIons()
 Prsr.parseConq()
 
@@ -30,18 +30,17 @@ print 'Parsed OK'
 
 atoms = Prsr.atoms
 
-for i in range(1, 2):
-	x = atoms[i].x
-	y = atoms[i].y
-	z = atoms[i].z
-	#print x, y, z
+print atoms
+C = cell.Cell('C6H6_SZ', 20.0, 20.0, 20.0, gridSpacing=0.2)
 
-C = cell.Cell(20.0, 20.0, 20.0, gridSpacing=0.5)
+for a in atoms['C6H6_SZ']:
+	C.addAtom(atoms['C6H6_SZ'][a], a)
 
-for i in range(1, 6):
-	C.addAtom(atoms[i], i)
+Pltr = io.Plotter('Test', {})
 
-C.setPsi()
+for E in C.atoms[1].coeffs.keys():
+	C.setPsi(E=E, debug=True)
+	Pltr.plotPsiCrossSec('C6H6', C, 'z', minimum=None, maximum=None, label=str(E))
 
 # Put Ion objects into a dict indexed by name in ionfiles
 # ions = {}
