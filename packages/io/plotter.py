@@ -212,7 +212,7 @@ class Plotter(object):
 			if printStatus:
 				print 'Finished '+plotname+'.pdf'
 
-	def plotPsiCrossSec(self, name, cell, axis, minimum=None, maximum=None, label=''):
+	def plotPsiCrossSecFull(self, name, cell, axis, minimum=None, maximum=None, label=''):
 
 		plotname = name+'ChargeDensity_'+axis+'_'+label
 
@@ -272,3 +272,221 @@ class Plotter(object):
 			plt.grid()
 			pdf.savefig()
 			plt.close()
+
+	def plotPsiCrossSecIndex(self, name, cell, E, axis, minimum=None, maximum=None, label=''):
+
+		plotname = name+'ChargeDensity_'+axis+'_'+label
+
+		if axis == 'x':
+			length2 = cell.yLength
+			points2 = cell.yPoints
+			length1 = cell.zLength
+			points1 = cell.zPoints
+			midpoint = cell.xPoints / 2
+		elif axis == 'y':
+			length2 = cell.xLength
+			points2 = cell.xPoints
+			length1 = cell.zLength
+			points1 = cell.zPoints
+			midpoint = cell.yPoints / 2
+		elif axis == 'z':
+			length2 = cell.xLength
+			points2 = cell.xPoints
+			length1 = cell.yLength
+			points1 = cell.yPoints
+			midpoint = cell.zPoints / 2
+
+		space1, space2 = np.mgrid[0.0:length1:cell.gridSpacing,
+			                         0.0:length2:cell.gridSpacing]
+
+		if minimum:
+			iStart = min(range(0, points1), key=lambda a:abs(minimum-space1[a,0]))
+			jStart = min(range(0, points2), key=lambda a:abs(minimum-space2[0,a]))
+			exMinimum1 = minimum
+			exMinimum2 = minimum
+			print jStart, space2[0, jStart]
+		else:
+			iStart = 0
+			jStart = 0
+			exMinimum1 = 0.0
+			exMinimum2 = 0.0
+		if maximum:
+			iEnd = min(range(0, points1), key=lambda a:abs(maximum-space1[a,0]))
+			jEnd = min(range(0, points2), key=lambda a:abs(maximum-space2[0,a]))
+			print jEnd, space2[0, jEnd]
+			exMaximum1 = maximum
+			exMaximum2 = maximum
+		else:
+			iEnd = points1
+			jEnd = points2
+			exMaximum1 = length1
+			exMaximum2 = length2
+
+		psi = np.empty_like(space1, dtype=complex)
+		psi2 = np.empty_like(space1, dtype=float)
+
+		for i in range(iStart, iEnd):
+			for j in range(jStart, jEnd):
+				if axis == 'x':
+					psi[i, j] = cell.getPsi(E, midpoint, i, j)
+				elif axis == 'y':
+					psi[i, j] = cell.getPsi(E, i, midpoint, j)
+				elif axis == 'z':
+					psi[i, j] = cell.getPsi(E, i, j, midpoint)
+
+				psi2[i, j] = float(abs(psi[i, j])**2)
+				print psi2[i, j]
+
+		with PdfPages('pdfs/'+plotname+'.pdf') as pdf:
+			plt.imshow(psi2, interpolation='bilinear', origin='lower', cmap=plt.cm.Blues,
+				          extent=(exMinimum1, exMaximum1, exMinimum2, exMaximum2))
+			plt.colorbar()
+			plt.grid()
+			pdf.savefig()
+			plt.close()
+
+	def plotPsiCrossSec1(self, name, cell, band, axis, gridSpacing=None, minimum=None, maximum=None, label=''):
+
+		plotname = name+'ChargeDensity_'+axis+'_'+label
+		E = cell.bands[band]
+		if not gridSpacing:
+			gridSpacing = cell.gridSpacing
+
+		if axis == 'x':
+			length2 = cell.yLength
+			points2 = cell.yPoints
+			length1 = cell.zLength
+			points1 = cell.zPoints
+			midpoint = cell.xPoints / 2
+		elif axis == 'y':
+			length2 = cell.xLength
+			points2 = cell.xPoints
+			length1 = cell.zLength
+			points1 = cell.zPoints
+			midpoint = cell.yPoints / 2
+		elif axis == 'z':
+			length2 = cell.xLength
+			points2 = cell.xPoints
+			length1 = cell.yLength
+			points1 = cell.yPoints
+			midpoint = cell.zPoints / 2
+
+		space1, space2 = np.mgrid[0.0:length1:gridSpacing,
+			                         0.0:length2:gridSpacing]
+
+		if minimum:
+			iStart = min(range(0, points1), key=lambda a:abs(minimum-space1[a,0]))
+			jStart = min(range(0, points2), key=lambda a:abs(minimum-space2[0,a]))
+			exMinimum1 = minimum
+			exMinimum2 = minimum
+			print jStart, space2[0, jStart]
+		else:
+			iStart = 0
+			jStart = 0
+			exMinimum1 = 0.0
+			exMinimum2 = 0.0
+		if maximum:
+			iEnd = min(range(0, points1), key=lambda a:abs(maximum-space1[a,0]))
+			jEnd = min(range(0, points2), key=lambda a:abs(maximum-space2[0,a]))
+			print jEnd, space2[0, jEnd]
+			exMaximum1 = maximum
+			exMaximum2 = maximum
+		else:
+			iEnd = points1
+			jEnd = points2
+			exMaximum1 = length1
+			exMaximum2 = length2
+
+		psi2 = np.empty_like(space1, dtype=float)
+
+		psi2max = 0.0
+		for i in range(iStart, iEnd):
+			for j in range(jStart, jEnd):
+				if axis == 'x':
+					x = cell.xMesh[midpoint, i, j]
+					y = cell.yMesh[midpoint, i, j]
+					z = cell.zMesh[midpoint, i, j]
+				elif axis == 'y':
+					x = cell.xMesh[i, midpoint, j]
+					y = cell.yMesh[i, midpoint, j]
+					z = cell.zMesh[i, midpoint, j]
+				elif axis == 'z':
+					x = cell.xMesh[i, j, midpoint]
+					y = cell.yMesh[i, j, midpoint]
+					z = cell.zMesh[i, j, midpoint]
+				psi = cell.getPsi(band, x, y, z)
+
+				psi2[i, j] = float(abs(psi)**2)
+				if psi2[i, j] > psi2max:
+					psi2max = psi2[i, j]
+		print psi2max
+		with PdfPages('pdfs/'+plotname+'.pdf') as pdf:
+			plt.imshow(psi2, interpolation='bilinear', origin='lower', cmap=plt.cm.Blues,
+				          extent=(exMinimum1, exMaximum1, exMinimum2, exMaximum2), vmin=0.0, vmax=psi2max)
+			plt.colorbar()
+			plt.grid()
+			pdf.savefig()
+			plt.close()
+
+	def plotPsiCrossSec(self, name, cell, band, axis, minimum, maximum, step=None, planeValue=None, label='', printStatus=False):
+
+		plotname = name+'_ChargeDensity_'+axis+'_'+label
+
+		if not step:
+			step = cell.gridSpacing
+
+		# Initialise meshes
+		# 2D cartesian mesh (x, y, or z axis determined later)
+		space1, space2 = np.mgrid[minimum:maximum:step, minimum:maximum:step]
+
+		psi2 = np.empty_like(space1) # Waveunction mesh (psi = R*Y)
+
+		maxPsi2 = 0.0 # Colour plot sets limits to -maxpsi to +maxpsi
+
+		# Plot functions to pdf
+		with PdfPages('pdfs/' + plotname + '.pdf') as pdf:
+			# Loop over all mesh points
+			for i in range(0, int((maximum - minimum) / step)):
+				for j in range(0, int((maximum - minimum) / step)):
+					# Use axis variable to determine which axes space1 and space2 refer to
+					# Evaluate spherical harmonic at mesh point
+					if axis == 'z':
+						if not planeValue:
+							planeValue = cell.zLength / 2
+						psi = cell.givePsi(space2[i, j], space1[i, j], planeValue, band=band)
+						plt.xlabel('$x$ / $a_0$')
+						plt.ylabel('$y$ / $a_0$')
+					if axis == 'y':
+						if not planeValue:
+							planeValue = cell.yLength / 2
+						psi = cell.givePsi(space2[i, j], planeValue, space1[i, j], band=band)
+						plt.xlabel('$x$ / $a_0$')
+						plt.ylabel('$z$ / $a_0$')
+					if axis == 'x':
+						if not planeValue:
+							planeValue = cell.xLength / 2
+						psi = cell.givePsi( planeValue, space2[i, j], space1[i, j], band=band)
+						plt.xlabel('$y$ / $a_0$')
+						plt.ylabel('$z$ / $a_0$')
+				
+					psi2[i, j] = abs(psi)**2
+
+					# Update maxpsi
+					if abs(psi2[i, j]) > maxPsi2:
+						maxPsi2 = psi2[i, j]
+
+			# Setup plot
+			plt.imshow(psi2, interpolation='bilinear', origin='center', cmap=plt.cm.Blues,
+				          extent=(minimum, maximum, minimum, maximum), vmin=0, vmax=maxPsi2)
+			plt.colorbar()
+			plt.grid()
+			axes = ['x', 'y', 'z']
+			axes.remove(axis)
+			ttl = (cell.name+' Charge Density in $'+axes[0]+'-'+axes[1]+'$ plane')
+			plt.title(ttl)
+
+			# Save to pdf
+			pdf.savefig()
+			plt.close()
+			if printStatus:
+				print 'Finished '+plotname+'.pdf'

@@ -66,7 +66,6 @@ class Ion(object):
 	Attributes:
 		ionName (string): Name of ion (usually from name of .ion file)
 		radials (SmartDict): Radial objects accessed by radials[zeta][n][l], where all indices are int
-		orbitals (nested dict): Which 
 
 	"""
 	def __init__(self, ionName, radialDict=SmartDict()):
@@ -197,7 +196,17 @@ class Ion(object):
 
 class Atom(Ion):
 
-	"""Stores information on an atom, extending Ion to include atomic position and basis coefficients"""
+	"""Stores information on an atom, extending Ion to include atomic position and basis coefficients
+
+	Attributes:
+		ionName (string): Name of ion (usually from name of .ion file)
+		radials (SmartDict): Radial objects accessed by radials[zeta][n][l], where all indices are int
+		x (float): Cartesian x-coordinate of atom
+		y (float): Cartesian y-coordinate of atom
+		z (float): Cartesian z-coordinate of atom
+		bands (SmartDict): Nested dict of complex basis coefficients;
+							Accessed by bands[bandEnergy][zeta][n][l][m]
+	"""
 
 	def __init__(self, ionName, x, y, z, radials=SmartDict()):
 		"""Constructor for atom.
@@ -215,13 +224,13 @@ class Atom(Ion):
 		self.x = x
 		self.y = y
 		self.z = z
-		self.coeffs = SmartDict()
+		self.bands = SmartDict()
 
 	def setIon(self, I):
 		"""Copy all attributes from an Ion to this Atom.
 
 		Args:
-			I (Ion): Ion object to copy attributes from
+			I (Ion): Ion object from which to copy attributes
 		"""
 		self.ionName = I.ionName
 		self.radials = I.radials
@@ -241,16 +250,16 @@ class Atom(Ion):
 		"""
 
 		output = False
-		if self.coeffs.has_key(E):
-			if self.coeffs.has_key(zeta):
-				if self.coeffs[zeta].has_key(n):
-					if self.coeffs[zeta][n].has_key(l):
-						if self.coeffs[zeta][n][l].has_key(m):
+		if self.bands.has_key(E):
+			if self.bands[E].has_key(zeta):
+				if self.bands[E][zeta].has_key(n):
+					if self.bands[E][zeta][n].has_key(l):
+						if self.bands[E][zeta][n][l].has_key(m):
 							output = True
 		return output
 
 	def addCoeff(self, E, PAO, coeff):
-		"""Add a complex coefficient to self.coeffs.
+		"""Add a complex coefficient to self.bands.
 
 		Args:
 			PAO (int): index of PAO as given in .dat file
@@ -263,7 +272,7 @@ class Atom(Ion):
 		l = PAOdata[2]
 		m = PAOdata[3]
 
-		self.coeffs[E][zeta][n][l][m] = coeff
+		self.bands[E][zeta][n][l][m] = coeff
 
 	def getCoeff(self, E, zeta, n, l, m):
 		"""Return complex coefficient for given orbital.
@@ -279,7 +288,7 @@ class Atom(Ion):
 		"""
 		output = None
 		if self.hasCoeff(E, zeta, n, l, m):
-			output = self.coeffs[E][zeta][n][l][m]
+			output = self.bands[E][zeta][n][l][m]
 		return output
 
 	def getPsi(self, E, x, y, z):
@@ -316,8 +325,7 @@ class Atom(Ion):
 							Y = sph(l, m, relx, rely, relz)
 
 							# Get coefficient of basis functoin
-							coeff = self.coeffs[E][zeta][n][l][m]
-
+							coeff = self.bands[E][zeta][n][l][m]
 							# Calculate and add contribution of basis function
 							psiReal = R*Y*coeff.real
 							psiImag = R*Y*coeff.imag

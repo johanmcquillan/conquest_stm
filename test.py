@@ -30,17 +30,23 @@ print 'Parsed OK'
 
 atoms = Prsr.atoms
 
-print atoms
-C = cell.Cell('C6H6_SZ', 20.0, 20.0, 20.0, gridSpacing=0.2)
+C = cell.Cell('CH4_SZ', 15.0, 15.0, 15.0, gridSpacing=0.2)
 
-for a in atoms['C6H6_SZ']:
-	C.addAtom(atoms['C6H6_SZ'][a], a)
+for a in atoms['CH4_SZ']:
+	C.addAtom(atoms['CH4_SZ'][a], a)
 
 Pltr = io.Plotter('Test', {})
 
-for E in C.atoms[1].coeffs.keys():
-	C.setPsi(E=E, debug=True)
-	Pltr.plotPsiCrossSec('C6H6', C, 'z', minimum=None, maximum=None, label=str(E))
+
+for band in range(0, len(C.bands)):
+	E = C.bands[band]
+	print band, E
+	#C.setPsi(E=E, debug=True)
+	for axis in ['x', 'y', 'z']:
+		Pltr.plotPsiCrossSec('CH4_SZ', C, band, axis, 0, 15, label=str(E), printStatus=True)
+
+
+
 
 # Put Ion objects into a dict indexed by name in ionfiles
 # ions = {}

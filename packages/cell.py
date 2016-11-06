@@ -31,6 +31,7 @@ class Cell(object):
 		                                              0:zLength:gridSpacing]
 		self.psi = np.empty_like(self.xMesh, dtype=complex)
 		self.atoms = {}
+		self.bands = []
 
 	def addAtom(self, atom, atomKey):
 		"""Add atom to self.atoms, indexed by atomKey"""
@@ -45,16 +46,19 @@ class Cell(object):
 
 		# Add to dict
 		self.atoms[atomKey] = atom
+		for band in atom.bands:
+			if band not in self.bands:
+				self.bands.append(band)
+		self.bands = sorted(self.bands)
 
-	def setPsi(self, E=None, debug=False):
+	def setPsi(self, band=0, debug=False):
 		"""Calculate complex wavefunction at all points in 3D mesh and
 		assign it to self.psi"""
 
+		E=self.bands[band]
+
 		# Get 3D mesh with (0+0j) at all points
 		wavefunc = np.empty_like(self.xMesh, dtype=complex)
-		if not E:
-			bandEnergies = sorted(self.atoms[1].coeffs.keys(), key=lambda e: abs(e))
-			E = bandEnergies[0]
 		# Iterate over all atoms stored in this cell
 		for atomKey in self.atoms:
 			atom = self.atoms[atomKey]
@@ -69,7 +73,21 @@ class Cell(object):
 
 						# # Add contribution from this atom to this mesh point
 						wavefunc[i, j, k] = wavefunc[i, j, k] + atom.getPsi(E, x, y, z)
-						
 			if debug:
-				print 'Band Energy = '+str(E)+'; Calculated atom '+str(atomKey)
+				print 'Band Energy = '+str(E)+'; Calculated Psi for Atom '+str(atomKey)
 		self.psi = wavefunc
+
+	def givePsi(self, x, y, z, band=0, debug=False):
+
+		psi = complex(0.0, 0.0)
+		E = self.bands[band]
+		for atomKey in self.atoms:
+			atom = self.atoms[atomKey]
+			if atom.bands.has_key(E):
+				psi = psi + atom.getPsi(E, x, y, z)
+			else:
+				print "Atom "+str(a)
+		return psi
+
+
+
