@@ -210,7 +210,7 @@ class Plotter(object):
 			pdf.savefig()
 			plt.close()
 			if printStatus:
-				print 'Finished '+plotname+'.pdf'
+				print 'Finished '+plotname+'.pdf'b
 
 	def plotPsiCrossSec(self, name, cell, band, axis, minimum, maximum, step=None, planeValue=None, label='', printStatus=False):
 
