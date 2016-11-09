@@ -258,12 +258,14 @@ class Atom(Ion):
 							output = True
 		return output
 
-	def addCoeff(self, E, PAO, coeff):
+	def addCoeff(self, E, PAO, coeff, combine=False):
 		"""Add a complex coefficient to self.bands.
 
 		Args:
 			PAO (int): index of PAO as given in .dat file
 			coeff (coomplex): Coefficient of PAO
+			combine (boolean, opional): If false, overwrite existing coefficient
+										If true, add value to existing
 		"""
 
 		PAOdata = self.sortPAOs()[PAO - 1]
@@ -272,7 +274,11 @@ class Atom(Ion):
 		l = PAOdata[2]
 		m = PAOdata[3]
 
-		self.bands[E][zeta][n][l][m] = coeff
+		if combine and self.hasCoeff(E, zeta, n, l, m):
+			self.bands[E][zeta][n][l][m] = self.bands[E][zeta][n][l][m] + coeff
+		else:
+			self.bands[E][zeta][n][l][m] = coeff
+			
 
 	def getCoeff(self, E, zeta, n, l, m):
 		"""Return complex coefficient for given orbital.
@@ -295,6 +301,7 @@ class Atom(Ion):
 		"""Return complex wavefunction at (x,y,z) due to this atom only.
 
 		Args:
+			E (float): Band energy
 			x (float): Cartesian x coordinate at which to evaluate wavefunction
 			y (float): Cartesian y coordinate at which to evaluate wavefunction
 			z (float): Cartesian z coordinate at which to evaluate wavefunction

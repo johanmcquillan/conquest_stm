@@ -22,18 +22,18 @@ for atomNameRaw in conqFilesRaw:
 #ionFiles = ['C_TZTP_6.5_4.5_2.5au']
 
 # Initialise parser and get data
-Prsr = io.Parser(ionFolder, ionFiles, conqFolder, ['C6H6_SZ', 'CH4_SZ'])
+Prsr = io.Parser(ionFolder, ionFiles, conqFolder, ['C6H6_SZ', 'C6H6_DZDP', 'C6H6_TZTP'])
 Prsr.parseIons()
-Prsr.parseConq()
+Prsr.parseConq(tolerance=0.0, debug=True)
 
 print 'Parsed OK'
 
 atoms = Prsr.atoms
 
-C = cell.Cell('CH4_SZ', 15.0, 15.0, 15.0, gridSpacing=0.2)
+C = cell.Cell('C6H6', 25.0, 20.0, 25.0, gridSpacing=0.1)
 
-for a in atoms['CH4_SZ']:
-	C.addAtom(atoms['CH4_SZ'][a], a)
+for a in atoms['C6H6_TZTP']:
+	C.addAtom(atoms['C6H6_TZTP'][a], a)
 
 Pltr = io.Plotter('Test', {})
 
@@ -42,8 +42,9 @@ for band in range(0, len(C.bands)):
 	E = C.bands[band]
 	print band, E
 	#C.setPsi(E=E, debug=True)
-	for axis in ['x', 'y', 'z']:
-		Pltr.plotPsiCrossSec('CH4_SZ', C, band, axis, 0, 15, label=str(E), printStatus=True)
+	for axis in ['z']:
+		if E > -1.0 and E < 1.0:
+			Pltr.plotPsiCrossSec('C6H6_TZTP', C, band, axis, 0, 25, label=str(E), tolerance=0.0, printStatus=True, debug=True)
 
 
 

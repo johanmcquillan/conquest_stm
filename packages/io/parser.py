@@ -78,7 +78,7 @@ class Parser(object):
 			self.ions[ionName] = atomic.Ion(ionName, radialDict)
 			del radialDict
 
-	def parseConq(self):
+	def parseConq(self, tolerance=0.0, debug=False):
 		"""Parse data from conqFiles to Atom objects and store in self.ions indexed by conqFile name."""
 
 		# Open Conquest_out file
@@ -134,30 +134,62 @@ class Parser(object):
 			Fcoeff = open(self.conqFolder+conq+'.dat')
 			line = Fcoeff.next()
 
-			gotCoeffs = False
-
-			while True:
-				if '#Kpoint' not in line and len(line.split()) != 3:
-					data = line.split()
-					bandN = int(data[0])
-					bandE = float(data[1])
-
+			endOfFile = False
+			while not endOfFile:
+				if '#Kpoint' in line:
 					line = Fcoeff.next()
-					while len(line.split()) > 2:
-
-						data = line.split()
-						a = int(data[0])
-						PAO = int(data[1])
-						coeffString = data[2]
-						coeffString = coeffString.replace('(', '')
-						coeffString = coeffString.replace(')', '')
-						complexString = coeffString.split(',')
-						complexCoeff = complex(float(complexString[0]), float(complexString[1]))
-						self.atoms[conq][a].addCoeff(bandE, PAO, complexCoeff)
-						line = Fcoeff.next()
-				else:
+					data = line.split()
+					k1 = float(data[0])
+					k2 = float(data[1])
+					k3 = float(data[2])
+					kpoint = [k1, k2, k3]
 					try:
 						line = Fcoeff.next()
-					except:
-						break
+						while '#Kpoint' not in line:
+							data = line.split()
+							bandN = int(data[0])
+							bandE = float(data[1])
+
+							# If a tolerance is set, add coefficients to existing band
+							if tolerance != 0.0:
+								foundExistingBand = False
+								addedAtomKeys = self.atoms[conq].keys()
+								i = 0
+								while not foundExistingBand and i < len(addedAtomKeys):
+									addedAtomKey = addedAtomKeys[i]
+									addedAtom = self.atoms[conq][addedAtomKey]
+									existingBands = addedAtom.bands.keys()
+									j = 0
+									while not foundExistingBand and j < len(existingBands):
+										E = existingBands[j]
+										if abs(E - bandE) < tolerance:
+											if debug:
+												print 'Combining band '+str(bandE)+' with '+str(E)
+											bandE = E
+											foundExistingBand = True
+
+										j = j + 1
+									i = i + 1
+
+							line = Fcoeff.next()
+							while len(line.split()) > 2:
+								data = line.split()
+								a = int(data[0])
+								PAO = int(data[1])
+								coeffString = data[2]
+								coeffString = coeffString.replace('(', '')
+								coeffString = coeffString.replace(')', '')
+								complexString = coeffString.split(',')
+								complexCoeff = complex(float(complexString[0]), float(complexString[1]))
+								self.atoms[conq][a].addCoeff(bandE, PAO, complexCoeff, combine=True)
+								line = Fcoeff.next()
+
+					except StopIteration:
+						endOfFile = True
+				else:
+					# Check if end of file
+					try:
+						line = Fcoeff.next()
+					except StopIteration:
+						endOfFile = True
 			Fcoeff.close()
