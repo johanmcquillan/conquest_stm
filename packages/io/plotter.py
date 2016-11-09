@@ -4,8 +4,10 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+import mpl_toolkits.mplot3d as mp3d
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib import cm, colors
+from skimage import measure
 
 from packages.sph import sph
 from packages.smartDict import SmartDict
@@ -153,6 +155,36 @@ class Plotter(object):
 			if printStatus:
 				print 'Finished '+plotname+'.pdf'
 
+	def plotBasis3D(self, ionName, zeta, n, l, m, offset=0.0, show=True):
+
+		THETA, PHI = np.mgrid[0:2*np.pi:50j, 0:np.pi:50j]
+		T = np.zeros_like(PHI)
+
+		ion = self.ions[ionName]
+
+		for i in range(0, len(THETA)):
+			for j in range(0, len(PHI)):
+
+				x = np.sin(THETA[i, j]) * np.cos(PHI[i, j])
+				y = np.sin(THETA[i, j]) * np.sin(PHI[i, j])
+				z = np.cos(THETA[i, j])
+
+				s = sph(l, m, x, y, z)
+				r = ion.getRadialValue(zeta, n, l, np.sqrt(x**2+y**2+z**2))
+
+				T[i, j] = abs(r * s)
+
+		X = (T + offset) * np.sin(THETA) * np.cos(PHI)
+		Y = (T + offset) * np.sin(THETA) * np.sin(PHI)
+		Z = (T + offset) * np.cos(THETA)
+
+
+		fig, ax = plt.subplots(subplot_kw=dict(projection='3d'), figsize=(12,12))
+		im = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, shade=True)
+
+		if show:
+			plt.show()
+
 	@staticmethod
 	def plotSPH(cls, l, m, axis, minimum=-8, maximum=8, planeValue=0.0, step=0.1, printStatus=False):
 		"""Plots cross-section of spherical harmonic to pdf.
@@ -217,7 +249,7 @@ class Plotter(object):
 	@staticmethod
 	def plotSPH3D(l, m, offset=0.0):
 
-		THETA, PHI = np.mgrid[0:2*np.pi:100j, 0:np.pi:100j]
+		THETA, PHI = np.mgrid[0:2*np.pi:50j, 0:np.pi:50j]
 		R = np.zeros_like(PHI)
 
 		for i in range(0, len(THETA)):
@@ -227,7 +259,6 @@ class Plotter(object):
 				y = np.sin(THETA[i, j]) * np.sin(PHI[i, j])
 				z = np.cos(THETA[i, j])
 				R[i, j] = abs(sph(l, m, x, y, z))
-
 
 		X = (R + offset) * np.sin(THETA) * np.cos(PHI)
 		Y = (R + offset) * np.sin(THETA) * np.sin(PHI)
@@ -316,4 +347,43 @@ class Plotter(object):
 			if printStatus:
 				print 'Finished '+plotname+'.pdf'
 
-	
+	def plotChargeDensity3D(self, cell, band, offset=0.0, minimum=-20, maximum=+20, step=0.2, show=True):
+
+		X, Y, Z = np.mgrid[minimum:maximum:step, minimum:maximum:step, minimum:maximum:step]
+
+		T = np.zeros_like(X, dtype=float)
+		Tmax = 0
+		for i in range(0, int((maximum-minimum)/step)):
+			for j in range(0, int((maximum-minimum)/step)):
+				for k in range(0, int((maximum-minimum)/step)):
+
+					x = X[i, j, k]
+					y = Y[i, j, k]
+					z = Z[i, j, k]
+
+					p = cell.givePsi(x, y, z, band=band)
+
+					T[i, j, k] = abs(p)**2
+					if T[i, j, k] > Tmax:
+						Tmax = T[i, j, k]
+
+		# X = (T + offset) * np.sin(THETA) * np.cos(PHI)
+		# Y = (T + offset) * np.sin(THETA) * np.sin(PHI)
+		# Z = (T + offset) * np.cos(THETA)
+		mes = measure.marching_cubes(T, 0.9*Tmax)
+
+		verts = mes[0]
+		faces = mes[1]
+
+		print np.shape(faces)
+
+		fig, ax = plt.subplots(subplot_kw=dict(projection='3d'), figsize=(12,12))
+		
+		#im = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, shade=True)
+
+		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], lw=1)
+
+		if show:
+			plt.show()
+
+
