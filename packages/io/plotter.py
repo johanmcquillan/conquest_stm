@@ -24,11 +24,10 @@ class Plotter(object):
 	# Spectroscopic notation dictionary
 	spectral = {0 : 's', 1 : 'p', 2 : 'd', 3 : 'f'}
 
-	def __init__(self, filename, ions):
+	def __init__(self, filename):
 		self.fname = filename
-		self.ions = ions
 
-	def plotRadials(self, points=500, printStatus=False, spectro=True):
+	def plotRadials(self, ions, points=500, printStatus=False, spectro=True):
 		"""Plot all radial functions from self.ions to 'self.filename'_radials.pdf
 
 		Args:
@@ -39,9 +38,9 @@ class Plotter(object):
 		with PdfPages('pdfs/'+self.fname+'_radials.pdf') as pdf:
 
 			# Plot all functions for the same ion on one graph
-			ionNames = sorted(self.ions.keys())
+			ionNames = sorted(ions.keys())
 			for ionName in ionNames:
-				ion = self.ions[ionName]
+				ion = ions[ionName]
 
 				# Setup plot
 				plt.title('PAOs for '+ionName+'.ion')
@@ -80,7 +79,7 @@ class Plotter(object):
 				pdf.savefig()
 				plt.close()
 
-	def plotBasis(self, ionName, zeta, n, l, m, axis, minimum=-8, maximum=8, planeValue=0.0, step=0.1, printStatus=False, spectro=True):
+	def plotBasis(self, ionName, ion, zeta, n, l, m, axis, minimum=-8, maximum=8, planeValue=0.0, step=0.1, printStatus=False, spectro=True):
 		"""Plots cross-section of basis function of ion to pdf.
 		All lengths measured in bohr radii (a0).
 
@@ -95,7 +94,6 @@ class Plotter(object):
 			planeValue (double, optional): Constant value assigned to Cartesian coordinate given by axis; Default is 0.00001
 			step (int, optional): Interval between Cartesian mgrid points, measured in a0; Default is 0.1"""
 
-		ion = self.ions[ionName]
 		plotname = 'Basis_'+ionName+'_'+str(zeta)+'_'+str(n)+'_'+str(l)+'_'+str(m)+'_'+axis
 
 		# Initialise meshes
@@ -271,7 +269,7 @@ class Plotter(object):
 
 		plt.show()
 
-	def plotPsiCrossSec(self, name, cell, band, axis, minimum, maximum, tolerance=0.0, step=None, planeValue=None, label='', printStatus=False, debug=False):
+	def plotPsiCrossSec(self, name, cell, bandNumber, axis, minimum, maximum, tolerance=0.0, step=None, planeValue=None, label='', printStatus=False, debug=False):
 
 		plotname = name+'_ChargeDensity_'+axis+'_'+label
 
@@ -286,21 +284,21 @@ class Plotter(object):
 
 		maxPsi2 = 0.0 # Colour plot sets limits to -maxpsi to +maxpsi
 
-		bands = [band]
+		bandNumbers = [bandNumber]
 		if tolerance != 0.0:
 			for i in range(0, len(cell.bands)):
-				if (abs(cell.bands[band] - cell.bands[i]) < tolerance) and i != band:
-					bands.append(i)
+				if (abs(cell.bands[bandNumber] - cell.bands[i]) < tolerance) and i != bandNumber:
+					bandNumbers.append(i)
 
 		if debug:
 			debugString = ''
-			for b in bands:
+			for b in bandNumbers:
 				debugString += str(cell.bands[b])+' '
 			print debugString
 
 		# Plot functions to pdf
 		with PdfPages('pdfs/' + plotname + '.pdf') as pdf:
-			for b in bands:
+			for b in bandNumbers:
 				# Loop over all mesh points
 				for i in range(0, int((maximum - minimum) / step)):
 					for j in range(0, int((maximum - minimum) / step)):
@@ -347,43 +345,65 @@ class Plotter(object):
 			if printStatus:
 				print 'Finished '+plotname+'.pdf'
 
-	def plotChargeDensity3D(self, cell, band, offset=0.0, minimum=-20, maximum=+20, step=0.2, show=True):
+	def plotChargeDensity3D(self, cell, bandNumber, offset=0.0, xrange=None, yrange=None, zrange=None, step=0.5, fraction=0.8, alpha=1.0, show=True):
 
-		X, Y, Z = np.mgrid[minimum:maximum:step, minimum:maximum:step, minimum:maximum:step]
+		bandEnergy = cell.bands[bandNumber]
+		# If plot limits not given, set to limits of cell
+		if not xrange:
+			xrange = (0.0, cell.xLength)
+		if not yrange:
+			yrange = (0.0, cell.yLength)
+		if not zrange:
+			zrange = (0.0, cell.zLength)
 
-		T = np.zeros_like(X, dtype=float)
-		Tmax = 0
-		for i in range(0, int((maximum-minimum)/step)):
-			for j in range(0, int((maximum-minimum)/step)):
-				for k in range(0, int((maximum-minimum)/step)):
+		# Cartesian mesh
+		X, Y, Z = np.mgrid[xrange[0]:xrange[1]:step,
+		                      yrange[0]:yrange[1]:step,
+		                      zrange[0]:zrange[1]:step]
 
+		psi2 = np.zeros_like(X, dtype=float)
+
+		psi2max = 0.0
+
+		# Loop over all mesh points
+		for i in range(int((xrange[1] - xrange[0]) / step)):
+			for j in range(int((yrange[1] - yrange[0]) / step)):
+				for k in range(int((zrange[1] - zrange[0]) / step)):
+					# Get coordinates
 					x = X[i, j, k]
 					y = Y[i, j, k]
 					z = Z[i, j, k]
 
-					p = cell.givePsi(x, y, z, band=band)
+					# Calculate wavefunction
+					psi = cell.givePsi(x, y, z, band=bandNumber)
 
-					T[i, j, k] = abs(p)**2
-					if T[i, j, k] > Tmax:
-						Tmax = T[i, j, k]
+					# Get charge density
+					psi2[i, j, k] = abs(psi)**2
 
-		# X = (T + offset) * np.sin(THETA) * np.cos(PHI)
-		# Y = (T + offset) * np.sin(THETA) * np.sin(PHI)
-		# Z = (T + offset) * np.cos(THETA)
-		mes = measure.marching_cubes(T, 0.9*Tmax)
+					# Set max value
+					if psi2[i, j, k] > psi2max:
+						psi2max = psi2[i, j, k]
 
+		# Make isosurface at psi2 = fraction * psi2max
+		mes = measure.marching_cubes(psi2, fraction*psi2max)
 		verts = mes[0]
 		faces = mes[1]
 
-		print np.shape(faces)
-
+		# Set up plot
 		fig, ax = plt.subplots(subplot_kw=dict(projection='3d'), figsize=(12,12))
-		
-		#im = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, shade=True)
+		title = (cell.name+' Charge Density at Band Energy '+str(bandEnergy)+' Ha')
+		plt.title(title)
 
-		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], lw=1)
+		# Set axes
+		ax.set_xlim3d(xrange[0]/step, xrange[1]/step)
+		ax.set_ylim3d(yrange[0]/step, yrange[1]/step)
+		ax.set_zlim3d(zrange[0]/step, zrange[1]/step)
+		ax.set_xlabel("x / $a_0$")
+		ax.set_ylabel("y / $a_0$")
+		ax.set_zlabel("z / $a_0$")
 
+		# Plot surface
+		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], color=(1,0,0,alpha), lw=1)
 		if show:
 			plt.show()
-
 
