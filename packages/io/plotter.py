@@ -7,6 +7,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import mpl_toolkits.mplot3d as mp3d
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib import cm, colors
+from matplotlib import rc
 from skimage import measure
 
 from packages.sph import sph
@@ -390,20 +391,20 @@ class Plotter(object):
 		faces = mes[1]
 
 		# Set up plot
-		fig, ax = plt.subplots(subplot_kw=dict(projection='3d'), figsize=(12,12))
-		title = (cell.name+' Charge Density at Band Energy '+str(bandEnergy)+' Ha')
+		fig, ax = plt.subplots(subplot_kw=dict(projection='3d'), figsize=(10,10))
+		title = (cell.name+' Charge Density Isosurface at Density '+str(fraction*psi2max)+' for \n Band Energy '+str(bandEnergy)+' Ha with Fermi Level '+str(cell.fermiLevel)+' Ha')
 		plt.title(title)
 
 		# Set axes
 		ax.set_xlim3d(xrange[0]/step, xrange[1]/step)
 		ax.set_ylim3d(yrange[0]/step, yrange[1]/step)
 		ax.set_zlim3d(zrange[0]/step, zrange[1]/step)
-		ax.set_xlabel("x / $a_0$")
-		ax.set_ylabel("y / $a_0$")
-		ax.set_zlabel("z / $a_0$")
+		ax.set_xlabel("x")
+		ax.set_ylabel("y")
+		ax.set_zlabel("z")
 
 		# Plot surface
-		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], color=(1,0,0,alpha), lw=1)
+		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], color=(1,0,0,alpha), lw=0)
 		if show:
 			plt.show()
 

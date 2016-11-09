@@ -7,13 +7,14 @@ prsr = io.Parser('ions/', ['C_SZ_6.5au', 'C_DZDP_6.5_2.5au', 'H_SZ_6.5au', 'H_DZ
 prsr.parseIons()
 prsr.parseConq()
 atoms = prsr.atoms
+fl = prsr.fermiLevels
 
 pltr = io.Plotter('test')
 
 
-C = cell.Cell('CH4_SZ', 15.0, 15.0, 15.0, gridSpacing=0.5)
-for a in atoms['CH4_SZ']:
-	C.addAtom(atoms['CH4_SZ'][a], a)
+C = cell.Cell('C6H6_SZ', fl['C6H6_SZ'], 15.0, 15.0, 15.0, gridSpacing=0.5)
+for a in atoms['C6H6_SZ']:
+	C.addAtom(atoms['C6H6_SZ'][a], a)
 
 for i in range(0, len(C.bands)):
 	E = C.bands[i]

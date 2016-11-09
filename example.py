@@ -27,10 +27,10 @@ for ionNameRaw in ionFilesRaw:
 # This handles reading data from several different input files and locations,
 #  which will be needed as we need to combine info from .ion, Conquest_out
 #  and coefficient .dat files.
-Prsr = io.Parser(ionFolder, ionFilesAll, '', [])
+Prsr = io.Parser()
 
 # Currently, Parser only works for .ion files
-Prsr.parseIons()
+Prsr.parseIons(ionFolder, ionFilesAll)
 
 # Prsr now holds all the info about the ions.
 # In the final code, we would run something like

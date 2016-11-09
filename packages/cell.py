@@ -7,7 +7,7 @@ class Cell(object):
 
 	"""Simulation cell which holds Atom objects in a 3D mesh."""
 
-	def __init__(self, name, xLength, yLength, zLength, gridSpacing=0.1):
+	def __init__(self, name, fermiLevel, xLength, yLength, zLength, gridSpacing=0.1):
 		"""Constructs 3D cell with given dimensional.
 
 		Args:
@@ -20,6 +20,7 @@ class Cell(object):
 		self.xLength = xLength
 		self.yLength = yLength
 		self.zLength = zLength
+		self.fermiLevel = fermiLevel
 		self.gridSpacing = gridSpacing
 
 		self.xPoints = int(xLength / gridSpacing)

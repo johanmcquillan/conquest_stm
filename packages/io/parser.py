@@ -20,6 +20,7 @@ class Parser(object):
 
 		self.ions = {}
 		self.atoms = SmartDict()
+		self.fermiLevels = {}
 
 		self.ionFiles = ionFiles
 		self.ionFolder = ionFolder
@@ -193,3 +194,12 @@ class Parser(object):
 					except StopIteration:
 						endOfFile = True
 			Fcoeff.close()
+
+			FDoS = open(self.conqFolder+conq+'.dos')
+			line = FDoS.next()
+			FDoS.close()
+
+			data = line.split()
+			fermiLevel = float(data[2])
+
+			self.fermiLevels[conq] = fermiLevel
