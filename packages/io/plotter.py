@@ -19,7 +19,6 @@ class Plotter(object):
 
 	Attributes:
 		fname (string): Name prefix for output .pdf files
-		ions (dict): Stores Ion objects indexed by ionName
 	"""
 
 	# Spectroscopic notation dictionary
@@ -80,7 +79,7 @@ class Plotter(object):
 				pdf.savefig()
 				plt.close()
 
-	def plotBasis(self, ionName, ion, zeta, n, l, m, axis, minimum=-8, maximum=8, planeValue=0.0, step=0.1, printStatus=False, spectro=True):
+	def plotBasis2D(self, ionName, ion, zeta, n, l, m, axis, minimum=-8, maximum=8, planeValue=0.0, step=0.1, printStatus=False, spectro=True):
 		"""Plots cross-section of basis function of ion to pdf.
 		All lengths measured in bohr radii (a0).
 
@@ -185,7 +184,7 @@ class Plotter(object):
 			plt.show()
 
 	@staticmethod
-	def plotSPH(cls, l, m, axis, minimum=-8, maximum=8, planeValue=0.0, step=0.1, printStatus=False):
+	def plotSPH2D(cls, l, m, axis, minimum=-8, maximum=8, planeValue=0.0, step=0.1, printStatus=False):
 		"""Plots cross-section of spherical harmonic to pdf.
 		All lengths measured in bohr radii (a0).
 
@@ -270,7 +269,7 @@ class Plotter(object):
 
 		plt.show()
 
-	def plotPsiCrossSec(self, name, cell, bandNumber, axis, minimum, maximum, tolerance=0.0, step=None, planeValue=None, label='', printStatus=False, debug=False):
+	def plotChargeDensity2D(self, name, cell, bandNumber, axis, minimum, maximum, tolerance=0.0, step=None, planeValue=None, label='', printStatus=False, debug=False):
 
 		plotname = name+'_ChargeDensity_'+axis+'_'+label
 
