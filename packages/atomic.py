@@ -2,6 +2,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+from scipy.interpolate import interp1d
 
 from packages.sph import sph
 from packages.smartDict import SmartDict
@@ -28,9 +29,10 @@ class Radial(object):
 		self.l = l
 		self.radii = radii
 		self.radialFuncValues = radialFuncValues
+		self.radialInterpolator = interp1d(radii, radialFuncValues, kind='cubic')
 		self.cutoff = cutoff
 
-	def getValue(self, distance):
+	def getValueLinear(self, distance):
 		"""Use linear interpolation to evaluate radial function at distance.
 		
 		Args:
@@ -57,6 +59,22 @@ class Radial(object):
 
 			# Calculate via interpolation
 			value = y1 + (distance - x1) * (y2 - y1) / (x2 - x1)
+		return value
+
+	def getValueCubic(self, distance):
+		"""Use cubic interpolation to evaluate radial function at distance.
+		
+		Args:
+		    distance (float): Distance from origin in Bohr radii
+		
+		Returns:
+		    float: Value of radial part
+		"""
+
+		if distance > self.cutoff or distance > self.radii[-1]:
+			value = 0.0
+		else:
+			value = self.radialInterpolator(distance)
 		return value
 
 class Ion(object):
@@ -160,7 +178,7 @@ class Ion(object):
 			output = self.radials[zeta][n][l]
 		return output
 
-	def getRadialValue(self, zeta, n, l, r):
+	def getRadialValue(self, zeta, n, l, r, interpolation='cubic'):
 		"""Use linear interpolation to evaluate radial function at distance r.
 
 		Encapsulation needed such that self.radials (SmartDict) does not create
@@ -178,7 +196,10 @@ class Ion(object):
 
 		output = None
 		if self.hasRadial(zeta, n, l):
-			output = self.radials[zeta][n][l].getValue(r)
+			if interpolation == 'cubic':
+				output = self.radials[zeta][n][l].getValueCubic(r)
+			elif interpolation == 'linear':
+				output = self.radials[zeta][n][l].getValueLinear(r)
 		return output
 
 	def getMaxCutoff(self):
