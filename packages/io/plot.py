@@ -265,7 +265,8 @@ def plotSPH3D(l, m, offset=0.0):
 
 	plt.show()
 
-def plotChargeDensity2D(cell, bandNumber, axis, minimum, maximum, tolerance=0.0, step=None, planeValue=None, label='', printStatus=False, debug=False):
+def plotChargeDensity2D(cell, bandNumber, axis, minimum, maximum, tolerance=0.0, step=None,
+	                       planeValue=None, normalise=False, label='', printStatus=False, debug=False):
 	"""Plots cross-section of charge density to pdf.
 	All lengths measured in bohr radii (a0).
 
@@ -283,6 +284,9 @@ def plotChargeDensity2D(cell, bandNumber, axis, minimum, maximum, tolerance=0.0,
 
 	if not step:
 		step = cell.gridSpacing
+
+	if normalise:
+		cell.normaliseBand(bandNumber)
 
 	# Initialise meshes
 	# 2D cartesian mesh (x, y, or z axis determined later)
@@ -354,7 +358,7 @@ def plotChargeDensity2D(cell, bandNumber, axis, minimum, maximum, tolerance=0.0,
 			print 'Finished '+plotname+'.pdf'
 
 def plotChargeDensity3D(cell, bandNumber, xrange=(0.0, 0.0), yrange=(0.0, 0.0), zrange=(0.0, 0.0),
-	                       step=0.0, fraction=0.8, alpha=1.0, cmap=False):
+	                       step=0.0, fraction=0.8, alpha=1.0, cmap=False, normalise=False):
 	"""Plots charge density isosurface.
 
 	All lengths measured in Bohr radii (a0).
@@ -383,6 +387,9 @@ def plotChargeDensity3D(cell, bandNumber, xrange=(0.0, 0.0), yrange=(0.0, 0.0), 
 	# If step not given, set to cell.gridSpacing
 	if step == 0.0:
 		step = cell.gridSpacing
+
+	if normalise:
+		cell.normaliseBand(bandNumber)
 
 	# Cartesian mesh
 	X, Y, Z = np.mgrid[xrange[0]:xrange[1]:step,

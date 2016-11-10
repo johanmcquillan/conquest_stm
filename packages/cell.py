@@ -177,17 +177,15 @@ class Cell(object):
 					# Add to charge
 					totalCharge += abs(psi)**2 * self.gridSpacing**3
 		
+		# Check if difference between actual and calculated charge is large than tolerance
 		if abs(self.electrons - totalCharge) > 0.001:
 			if debug:
 				print "Total Electron Charge Unnormalised = "+str(totalCharge)
 
+			# Apply normalisation factor to basis coefficients
 			factor =  np.sqrt(float(self.electrons) / totalCharge)
 			for atomKey in self.atoms:
 				self.atoms[atomKey].applyFactor(factor, bandEnergy)
+
 		elif debug:
 			print "Total Electron Charge Already Normalised"
-
-
-
-
-
