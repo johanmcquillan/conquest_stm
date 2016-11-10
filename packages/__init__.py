@@ -4,4 +4,4 @@ from atomic import Ion
 from atomic import Atom
 
 from io import parser
-from io import plotter
+from io import plot

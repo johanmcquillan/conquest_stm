@@ -103,19 +103,22 @@ class Cell(object):
 		# Iterate over all atoms stored in this cell
 		for atomKey in self.atoms:
 			atom = self.atoms[atomKey]
-			# Iterate over all mesh points
-			for i in range(0, self.xPoints):
-				for j in range(0, self.yPoints):
-					for k in range(0, self.zPoints):
-						# Get mesh coordinates
-						x = self.xMesh[i, j, k]
-						y = self.yMesh[i, j, k]
-						z = self.zMesh[i, j, k]
+			if atom.bands.has_key(bandEnergy):
+				# Iterate over all mesh points
+				for i in range(0, self.xPoints):
+					for j in range(0, self.yPoints):
+						for k in range(0, self.zPoints):
+							# Get mesh coordinates
+							x = self.xMesh[i, j, k]
+							y = self.yMesh[i, j, k]
+							z = self.zMesh[i, j, k]
 
-						# # Add contribution from this atom to this mesh point
-						wavefunc[i, j, k] = wavefunc[i, j, k] + atom.getPsi(bandEnergy, x, y, z)
-			if debug:
-				print 'Band Energy = '+str(E)+'; Calculated Psi for Atom '+str(atomKey)
+							# # Add contribution from this atom to this mesh point
+							wavefunc[i, j, k] = wavefunc[i, j, k] + atom.getPsi(bandEnergy, x, y, z)
+				if debug:
+					print 'Band Energy = '+str(bandEnergy)+'; Calculated Psi for Atom '+str(atomKey)
+			elif debug:
+				print "Atom "+str(a)+" has no band "+str(bandNumber)+": "+str(bandEnergy)
 		self.psi = wavefunc
 
 	def givePsi(self, x, y, z, bandNumber=0, debug=False):
@@ -139,7 +142,7 @@ class Cell(object):
 		# Get wavefunction contribution from each atom and add to psi
 		for atomKey in self.atoms:
 			atom = self.atoms[atomKey]
-			if atom.bands.has_key(E):
+			if atom.bands.has_key(bandEnergy):
 				psi = psi + atom.getPsi(bandEnergy, x, y, z)
 			elif debug:
 				print "Atom "+str(a)+" has no band "+str(bandNumber)+": "+str(bandEnergy)
