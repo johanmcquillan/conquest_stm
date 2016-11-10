@@ -299,7 +299,19 @@ class Atom(Ion):
 			self.bands[E][zeta][n][l][m] = self.bands[E][zeta][n][l][m] + coeff
 		else:
 			self.bands[E][zeta][n][l][m] = coeff
-			
+
+	def combineCoeffs(self, Esource, Edestination):
+
+		for zeta in self.bands[Esource]:
+			for n in self.bands[Esource][zeta]:
+				for l in self.bands[Esource][zeta][n]:
+					for m in self.bands[Esource][zeta][n][l]:
+						coeff = self.bands[Esource][zeta][n][l][m]
+						if self.hasCoeff(Edestination, zeta, n, l, m):
+							self.bands[Edestination][zeta][n][l][m] = self.bands[Edestination][zeta][n][l][m] + coeff
+						else:
+							self.bands[Edestination][zeta][n][l][m] = coeff
+		del self.bands[Esource]
 
 	def getCoeff(self, E, zeta, n, l, m):
 		"""Return complex coefficient for given orbital.

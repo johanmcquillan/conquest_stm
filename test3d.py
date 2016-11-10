@@ -9,19 +9,20 @@ atoms = prsr.atoms
 fl = prsr.fermiLevels
 electrons = prsr.electrons
 
-molecule = 'C6H6_SZ'
+molecule = 'C6H6_DZDP'
 
 C = cell.Cell(molecule, fl[molecule], electrons[molecule], 25.0, 20.0, 25.0, gridSpacing=.5)
 for a in atoms[molecule]:
 	C.addAtom(atoms[molecule][a], a)
 
+C.combineBands((0.05, 0.1), normalise=True, debug=True)
+
 for i in range(0, len(C.bands)):
 	E = C.bands[i]
-	if abs(E - 0.0) < 0.02:
+	if abs(E - 0.75) < 0.025:
 		N = i
 		break
-print C.electrons
-C.normaliseBand(N, debug=True)
+
 io.plot.plotChargeDensity3D(C, N, xrange=(0.0, 20.0), zrange=(0.0, 20.0), fraction=0.06, alpha=0.5, cmap=True)
 
 #pltr.plotBasis3D('C_SZP_6.5au', 1, 3, 2, 0, show=False)
