@@ -2,11 +2,13 @@
 import cmath
 import math
 import numpy as np
+
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d as mp3d
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib import cm, colors
+
 from skimage import measure
 
 from packages.sph import sph
@@ -352,7 +354,7 @@ def plotChargeDensity2D(cell, bandNumber, axis, minimum, maximum, tolerance=0.0,
 			print 'Finished '+plotname+'.pdf'
 
 def plotChargeDensity3D(cell, bandNumber, xrange=(0.0, 0.0), yrange=(0.0, 0.0), zrange=(0.0, 0.0),
-	                       step=0.0, fraction=0.8, alpha=1.0):
+	                       step=0.0, fraction=0.8, alpha=1.0, cmap=False):
 	"""Plots charge density isosurface.
 
 	All lengths measured in Bohr radii (a0).
@@ -366,6 +368,7 @@ def plotChargeDensity3D(cell, bandNumber, xrange=(0.0, 0.0), yrange=(0.0, 0.0), 
 		step (float, opt.): Interval between Cartesian mgrid points; Default is cell.gridSpacing
 		fraction (float, opt.): Sets value of isosurface to this fraction of max charge density
 		alpha (float, opt.): Transparency of plot surfaces
+		cmap (boolean, opt.): If true, colour surface opaquely (ignoring alpha) according to z-value
 	"""
 
 	bandEnergy = cell.bands[bandNumber]
@@ -427,6 +430,9 @@ def plotChargeDensity3D(cell, bandNumber, xrange=(0.0, 0.0), yrange=(0.0, 0.0), 
 	ax.set_zlabel("z")
 
 	# Plot surface and show
-	ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], color=(1,0,0,alpha), lw=0.1)
+	if cmap:
+		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Spectral, lw=0.1)
+	else:
+		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], color=(1,0,0,alpha), lw=0.1)
 	plt.show()
 

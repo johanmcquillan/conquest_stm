@@ -8,18 +8,19 @@ prsr.parseConq()
 atoms = prsr.atoms
 fl = prsr.fermiLevels
 
-molecule = 'C6H6_SZ'
+molecule = 'CH4_SZ'
 
-C = cell.Cell(molecule, fl[molecule], 20.0, 20.0, 20.0, gridSpacing=0.5)
+C = cell.Cell(molecule, fl[molecule], 15.0, 15.0, 15.0, gridSpacing=0.5)
 for a in atoms[molecule]:
 	C.addAtom(atoms[molecule][a], a)
 
 for i in range(0, len(C.bands)):
 	E = C.bands[i]
-	if abs(E - 0.0) < 0.1:
+	if abs(E - 0.0) < 0.3:
 		N = i
+		break
 
-io.plot.plotChargeDensity3D(C, N, fraction=0.05, alpha=0.5)
+io.plot.plotChargeDensity3D(C, N, fraction=0.1, alpha=0.5, cmap=True)
 
 #pltr.plotBasis3D('C_SZP_6.5au', 1, 3, 2, 0, show=False)
 #plt.show()
