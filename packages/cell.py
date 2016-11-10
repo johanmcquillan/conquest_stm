@@ -5,17 +5,42 @@ import numpy as np
 
 class Cell(object):
 
-	"""Simulation cell which holds Atom objects in a 3D mesh."""
+	"""Simulation cell which holds Atom objects in a 3D mesh.
+	
+	Attributes:
+		name (string): Name of simulation; used for plot titles
+			fermiLevel (float): Fermi Level of simulation
+			xLength (float): Length of cell along x
+			yLength (float): Length of cell along y
+			zLength (float): Length of cell along z
+			gridSpacing (float): Resolution of mesh points
+			xPoints (float): Number of points on x mesh
+			yPoints (float): Number of points on y mesh
+			zPoints (float): Number of points on z mesh
+			xMesh (3D mgrid): Mesh of x values
+			yMesh (3D mgrid): Mesh of y values
+			zMesh (3D mgrid): Mesh of z values
+			atoms (int : Atom): Atom objects of simulation
+								indexed by atom number
+			bands ([float]): Energies of bands in ascending order
+			psi (3D mgrid): Mesh of wavefunction values
+	"""
 
 	def __init__(self, name, fermiLevel, xLength, yLength, zLength, gridSpacing=0.1):
 		"""Constructs 3D cell with given dimensional.
 
+		All lengths measured in bohr radii (a0);
+		All energies measured in Hartrees (Ha).
+
 		Args:
-			xLength (float): Length of cell along x in Bohr radii
-			yLength (float): Length of cell along y in Bohr radii
-			zLength (float): Length of cell along z in Bohr radii
-			gridSpacing (float optional): Resolution of mesh points
+			name (string): Name of simulation; used for plot titles
+			fermiLevel (float): Fermi Level of simulation
+			xLength (float): Length of cell along x
+			yLength (float): Length of cell along y
+			zLength (float): Length of cell along z
+			gridSpacing (float, opt.): Resolution of mesh points
 		"""
+
 		self.name = name
 		self.xLength = xLength
 		self.yLength = yLength
@@ -23,19 +48,28 @@ class Cell(object):
 		self.fermiLevel = fermiLevel
 		self.gridSpacing = gridSpacing
 
+		# Calculater number of points
 		self.xPoints = int(xLength / gridSpacing)
 		self.yPoints = int(yLength / gridSpacing)
 		self.zPoints = int(zLength / gridSpacing)
 
+		# Form Cartesian meshes
 		self.xMesh, self.yMesh, self.zMesh = np.mgrid[0:xLength:gridSpacing,
 		                                              0:yLength:gridSpacing,
 		                                              0:zLength:gridSpacing]
-		self.psi = np.empty_like(self.xMesh, dtype=complex)
+
+		# Initialise psi, atoms, and bands
+		self.psi = np.zeros_like(self.xMesh, dtype=complex)
 		self.atoms = {}
 		self.bands = []
 
 	def addAtom(self, atom, atomKey):
-		"""Add atom to self.atoms, indexed by atomKey"""
+		"""Add atom to self.atoms, indexed by atomKey
+
+		Args:
+			atom (Atom): Atom object to add to simulation
+			atomKey (int): Atom number, as given in Conquest_out
+		"""
 
 		# Reassign atom coordinates to nearest mesh points
 		atom.x = self.gridSpacing*min(range(0, self.xPoints),
@@ -47,16 +81,22 @@ class Cell(object):
 
 		# Add to dict
 		self.atoms[atomKey] = atom
+
+		# Add band energy if not already stored
 		for band in atom.bands:
 			if band not in self.bands:
 				self.bands.append(band)
 		self.bands = sorted(self.bands)
 
-	def setPsi(self, band=0, debug=False):
+	def setPsi(self, bandNumber=0, debug=False):
 		"""Calculate complex wavefunction at all points in 3D mesh and
-		assign it to self.psi"""
+		assign it to self.psi
 
-		E=self.bands[band]
+		band (int, opt.): Number of band at which to evaluate psi
+		debug (boolean, opt.): If true, print extra information during runtime
+		"""
+
+		bandEnergy=self.bands[bandNumber]
 
 		# Get 3D mesh with (0+0j) at all points
 		wavefunc = np.empty_like(self.xMesh, dtype=complex)
@@ -73,21 +113,37 @@ class Cell(object):
 						z = self.zMesh[i, j, k]
 
 						# # Add contribution from this atom to this mesh point
-						wavefunc[i, j, k] = wavefunc[i, j, k] + atom.getPsi(E, x, y, z)
+						wavefunc[i, j, k] = wavefunc[i, j, k] + atom.getPsi(bandEnergy, x, y, z)
 			if debug:
 				print 'Band Energy = '+str(E)+'; Calculated Psi for Atom '+str(atomKey)
 		self.psi = wavefunc
 
-	def givePsi(self, x, y, z, band=0, debug=False):
+	def givePsi(self, x, y, z, bandNumber=0, debug=False):
+		"""Evaluate complex wavefunction at specific point.
 
+		Args:
+			x (float): Cartesian x coordinate
+			y (float): Cartesian y coordinate
+			z (float): Cartesian z coordinate
+			bandNumber (int, opt.): Band number at which to evaluate
+			debug (boolean, opt.): If true, print extra information during runtime
+
+		Returns:
+			complex: Wavefunction value
+		"""
+
+		# Initialise psi and get band energy
 		psi = complex(0.0, 0.0)
-		E = self.bands[band]
+		bandEnergy = self.bands[bandNumber]
+
+		# Get wavefunction contribution from each atom and add to psi
 		for atomKey in self.atoms:
 			atom = self.atoms[atomKey]
 			if atom.bands.has_key(E):
-				psi = psi + atom.getPsi(E, x, y, z)
-			else:
-				print "Atom "+str(a)
+				psi = psi + atom.getPsi(bandEnergy, x, y, z)
+			elif debug:
+				print "Atom "+str(a)+" has no band "+str(bandNumber)+": "+str(bandEnergy)
+		
 		return psi
 
 

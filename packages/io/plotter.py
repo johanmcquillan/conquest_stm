@@ -92,7 +92,8 @@ class Plotter(object):
 			minimum (int, optional): Minimum value of coordinates measured in a0; Default is -8
 			maximum (int, optional): Maximum value of coordinates measured in a0; Default is +8
 			planeValue (double, optional): Constant value assigned to Cartesian coordinate given by axis; Default is 0.00001
-			step (int, optional): Interval between Cartesian mgrid points, measured in a0; Default is 0.1"""
+			step (int, optional): Interval between Cartesian mgrid points, measured in a0; Default is 0.1
+		"""
 
 		plotname = 'Basis_'+ionName+'_'+str(zeta)+'_'+str(n)+'_'+str(l)+'_'+str(m)+'_'+axis
 
@@ -184,18 +185,19 @@ class Plotter(object):
 			plt.show()
 
 	@staticmethod
-	def plotSPH2D(cls, l, m, axis, minimum=-8, maximum=8, planeValue=0.0, step=0.1, printStatus=False):
+	def plotSPH2D(cls, l, m, axis, minimum=-8.0, maximum=8.0, planeValue=0.0, step=0.1, printStatus=False):
 		"""Plots cross-section of spherical harmonic to pdf.
 		All lengths measured in bohr radii (a0).
 
-		Input:
-		l (int): Orbital angular momentum quantum number for spherical harmonic
-		m (int): Azimuthal quantum number for spherical harmonic
-		axis (string): Cartesian axis ('x', 'y', or 'z') to set to constant value given by planeValue
-		minimum (int, optional): Minimum value of coordinates measured in a0; Default is -8
-		maximum (int, optional): Maximum value of coordinates measured in a0; Default is +8
-		planeValue (float, optional): Constant value assigned to Cartesian coordinate given by axis; Default is 0.00001
-		step (float, optional): Interval between Cartesian mgrid points, measured in a0; Default is 0.1"""
+		Args:
+			l (int): Orbital angular momentum quantum number for spherical harmonic
+			m (int): Azimuthal quantum number for spherical harmonic
+			axis (string): Cartesian axis ('x', 'y', or 'z') to set to constant value given by planeValue
+			minimum (int, optional): Minimum value of coordinates measured in a0; Default is -8
+			maximum (int, optional): Maximum value of coordinates measured in a0; Default is +8
+			planeValue (float, optional): Constant value assigned to Cartesian coordinate given by axis; Default is 0.00001
+			step (float, optional): Interval between Cartesian mgrid points, measured in a0; Default is 0.1
+		"""
 
 		plotname = 'SPH_'+str(l)+'_'+str(m)+'_'+axis
 
@@ -246,6 +248,12 @@ class Plotter(object):
 
 	@staticmethod
 	def plotSPH3D(l, m, offset=0.0):
+		"""Plots 3D spherical harmonic isosurface.
+
+		Input:
+			l (int): Orbital angular momentum quantum number for spherical harmonic
+			m (int): Azimuthal quantum number for spherical harmonic
+		"""
 
 		THETA, PHI = np.mgrid[0:2*np.pi:50j, 0:np.pi:50j]
 		R = np.zeros_like(PHI)
@@ -269,9 +277,21 @@ class Plotter(object):
 
 		plt.show()
 
-	def plotChargeDensity2D(self, name, cell, bandNumber, axis, minimum, maximum, tolerance=0.0, step=None, planeValue=None, label='', printStatus=False, debug=False):
+	def plotChargeDensity2D(self, cell, bandNumber, axis, minimum, maximum, tolerance=0.0, step=None, planeValue=None, label='', printStatus=False, debug=False):
+		"""Plots cross-section of charge density to pdf.
+		All lengths measured in bohr radii (a0).
 
-		plotname = name+'_ChargeDensity_'+axis+'_'+label
+		Args:
+			cell (Cell): Simulation cell to plot
+			bandNumber (int): Band number to plot
+			axis (string): Cartesian axis ('x', 'y', or 'z') to set to constant value given by planeValue
+			minimum (int, opt.): Minimum value of coordinates measured in a0; Default is -8
+			maximum (int, opt.): Maximum value of coordinates measured in a0; Default is +8
+			planeValue (float, opt.): Constant value assigned to Cartesian coordinate given by axis; Default is 0.0
+			step (float, opt.): Interval between Cartesian mgrid points, measured in a0; Default is cell.gridSpacing
+		"""
+
+		plotname = cell.name+'_ChargeDensity_'+axis+'_'+label
 
 		if not step:
 			step = cell.gridSpacing
@@ -307,19 +327,19 @@ class Plotter(object):
 						if axis == 'z':
 							if not planeValue:
 								planeValue = cell.zLength / 2
-							psi = cell.givePsi(space2[i, j], space1[i, j], planeValue, band=b)
+							psi = cell.givePsi(space2[i, j], space1[i, j], planeValue, bandNumber=b)
 							plt.xlabel('$x$ / $a_0$')
 							plt.ylabel('$y$ / $a_0$')
 						if axis == 'y':
 							if not planeValue:
 								planeValue = cell.yLength / 2
-							psi = cell.givePsi(space2[i, j], planeValue, space1[i, j], band=b)
+							psi = cell.givePsi(space2[i, j], planeValue, space1[i, j], bandNumber=b)
 							plt.xlabel('$x$ / $a_0$')
 							plt.ylabel('$z$ / $a_0$')
 						if axis == 'x':
 							if not planeValue:
 								planeValue = cell.xLength / 2
-							psi = cell.givePsi( planeValue, space2[i, j], space1[i, j], band=b)
+							psi = cell.givePsi( planeValue, space2[i, j], space1[i, j], bandNumber=b)
 							plt.xlabel('$y$ / $a_0$')
 							plt.ylabel('$z$ / $a_0$')
 					
@@ -345,16 +365,35 @@ class Plotter(object):
 			if printStatus:
 				print 'Finished '+plotname+'.pdf'
 
-	def plotChargeDensity3D(self, cell, bandNumber, offset=0.0, xrange=None, yrange=None, zrange=None, step=0.5, fraction=0.8, alpha=1.0, show=True):
+	def plotChargeDensity3D(self, cell, bandNumber, xrange=(0.0, 0.0), yrange=(0.0, 0.0), zrange=(0.0, 0.0),
+		                       step=0.0, fraction=0.8, alpha=1.0):
+		"""Plots charge density isosurface.
+
+		All lengths measured in Bohr radii (a0).
+
+		Args:
+			cell (Cell): Simulation cell to plot
+			bandNumber (int): Band number to plot
+			xrange((float), opt.): Limits of x axis
+			yrange((float), opt.): Limits of y axis
+			zrange((float), opt.): Limits of z axis
+			step (float, opt.): Interval between Cartesian mgrid points; Default is cell.gridSpacing
+			fraction (float, opt.): Sets value of isosurface to this fraction of max charge density
+			alpha (float, opt.): Transparency of plot surfaces
+		"""
 
 		bandEnergy = cell.bands[bandNumber]
 		# If plot limits not given, set to limits of cell
-		if not xrange:
+		if xrange == (0.0, 0.0):
 			xrange = (0.0, cell.xLength)
-		if not yrange:
+		if yrange == (0.0, 0.0):
 			yrange = (0.0, cell.yLength)
-		if not zrange:
+		if zrange == (0.0, 0.0):
 			zrange = (0.0, cell.zLength)
+
+		# If step not given, set to cell.gridSpacing
+		if step == 0.0:
+			step = cell.gridSpacing
 
 		# Cartesian mesh
 		X, Y, Z = np.mgrid[xrange[0]:xrange[1]:step,
@@ -362,7 +401,6 @@ class Plotter(object):
 		                      zrange[0]:zrange[1]:step]
 
 		psi2 = np.zeros_like(X, dtype=float)
-
 		psi2max = 0.0
 
 		# Loop over all mesh points
@@ -375,7 +413,7 @@ class Plotter(object):
 					z = Z[i, j, k]
 
 					# Calculate wavefunction
-					psi = cell.givePsi(x, y, z, band=bandNumber)
+					psi = cell.givePsi(x, y, z, bandNumber=bandNumber)
 
 					# Get charge density
 					psi2[i, j, k] = abs(psi)**2
@@ -402,8 +440,7 @@ class Plotter(object):
 		ax.set_ylabel("y")
 		ax.set_zlabel("z")
 
-		# Plot surface
-		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], color=(1,0,0,alpha), lw=0)
-		if show:
-			plt.show()
+		# Plot surface and show
+		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], color=(1,0,0,alpha), lw=0.1)
+		plt.show()
 
