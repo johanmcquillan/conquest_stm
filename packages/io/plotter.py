@@ -3,11 +3,10 @@ import cmath
 import math
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 import mpl_toolkits.mplot3d as mp3d
+from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib import cm, colors
-from matplotlib import rc
 from skimage import measure
 
 from packages.sph import sph
@@ -22,7 +21,7 @@ class Plotter(object):
 	"""
 
 	# Spectroscopic notation dictionary
-	spectral = {0 : 's', 1 : 'p', 2 : 'd', 3 : 'f'}
+	spectral = {0:'s', 1:'p', 2:'d', 3:'f', 4:'g', 5:'h', 6:'i', 7:'j', 8:'k'}
 
 	def __init__(self, filename):
 		self.fname = filename
@@ -138,7 +137,7 @@ class Plotter(object):
 						maxpsi = abs(psi[i, j])
 
 			# Setup plot
-			plt.imshow(psi, interpolation='bilinear', origin='center', cmap=plt.cm.bwr,
+			plt.imshow(psi, interpolation='bilinear', origin='center', cmap=cm.bwr,
 				          extent=(minimum, maximum, minimum, maximum), vmin=-maxpsi, vmax=maxpsi)
 			plt.colorbar()
 			plt.grid()
@@ -230,7 +229,7 @@ class Plotter(object):
 						maxY = abs(Y[i, j])
 
 			# Setup plot
-			plt.imshow(Y, interpolation='bilinear', origin='center', cmap=plt.cm.bwr,
+			plt.imshow(Y, interpolation='bilinear', origin='center', cmap=cm.bwr,
 				          extent=(minimum, maximum, minimum, maximum), vmin=-maxY, vmax=maxY)
 			plt.colorbar()
 			plt.grid()
@@ -350,7 +349,7 @@ class Plotter(object):
 							maxPsi2 = psi2[i, j]
 
 			# Setup plot
-			plt.imshow(psi2, interpolation='bilinear', origin='center', cmap=plt.cm.Blues,
+			plt.imshow(psi2, interpolation='bilinear', origin='center', cmap=cm.Blues,
 				          extent=(minimum, maximum, minimum, maximum), vmin=0.0, vmax=maxPsi2)
 			plt.colorbar()
 			plt.grid()
