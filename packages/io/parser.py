@@ -21,6 +21,7 @@ class Parser(object):
 		self.ions = {}
 		self.atoms = SmartDict()
 		self.fermiLevels = {}
+		self.electrons = {}
 
 		self.ionFiles = ionFiles
 		self.ionFolder = ionFolder
@@ -119,6 +120,7 @@ class Parser(object):
 
 				ionType = int(rawData[0])
 				ionName = rawData[1]
+				numberOfElectrons = int(rawData[5])
 
 				for atomKey in atomData:
 					atomDataList = atomData[atomKey]
@@ -126,6 +128,9 @@ class Parser(object):
 						x, y, z = atomDataList[:3]
 						self.atoms[conq][atomKey] = atomic.Atom(ionName, x, y, z)
 						self.atoms[conq][atomKey].setIon(self.ions[ionName])
+						if not self.electrons.has_key(conq):
+							self.electrons[conq] = 0
+						self.electrons[conq] += numberOfElectrons
 				Fconq.next()
 				line = Fconq.next()
 

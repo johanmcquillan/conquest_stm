@@ -23,10 +23,9 @@ class Cell(object):
 			atoms (int : Atom): Atom objects of simulation
 								indexed by atom number
 			bands ([float]): Energies of bands in ascending order
-			psi (3D mgrid): Mesh of wavefunction values
 	"""
 
-	def __init__(self, name, fermiLevel, xLength, yLength, zLength, gridSpacing=0.1):
+	def __init__(self, name, fermiLevel, electrons, xLength, yLength, zLength, gridSpacing=0.1):
 		"""Constructs 3D cell with given dimensional.
 
 		All lengths measured in bohr radii (a0);
@@ -42,10 +41,11 @@ class Cell(object):
 		"""
 
 		self.name = name
+		self.fermiLevel = fermiLevel
+		self.electrons = electrons
 		self.xLength = xLength
 		self.yLength = yLength
 		self.zLength = zLength
-		self.fermiLevel = fermiLevel
 		self.gridSpacing = gridSpacing
 
 		# Calculater number of points
@@ -58,8 +58,7 @@ class Cell(object):
 		                                              0:yLength:gridSpacing,
 		                                              0:zLength:gridSpacing]
 
-		# Initialise psi, atoms, and bands
-		self.psi = np.zeros_like(self.xMesh, dtype=complex)
+		# Initialise atoms and bands
 		self.atoms = {}
 		self.bands = []
 
@@ -88,12 +87,13 @@ class Cell(object):
 				self.bands.append(band)
 		self.bands = sorted(self.bands)
 
-	def setPsi(self, bandNumber=0, debug=False):
+	def getPsiMesh(self, bandNumber=0, debug=False):
 		"""Calculate complex wavefunction at all points in 3D mesh and
 		assign it to self.psi
 
 		band (int, opt.): Number of band at which to evaluate psi
-		debug (boolean, opt.): If true, print extra information during runtime
+		debug (bool., opt.): If true, print extra information during runtime
+		
 		"""
 
 		bandEnergy=self.bands[bandNumber]
@@ -119,7 +119,7 @@ class Cell(object):
 					print 'Band Energy = '+str(bandEnergy)+'; Calculated Psi for Atom '+str(atomKey)
 			elif debug:
 				print "Atom "+str(a)+" has no band "+str(bandNumber)+": "+str(bandEnergy)
-		self.psi = wavefunc
+		return wavefunc
 
 	def givePsi(self, x, y, z, bandNumber=0, debug=False):
 		"""Evaluate complex wavefunction at specific point.
@@ -129,7 +129,7 @@ class Cell(object):
 			y (float): Cartesian y coordinate
 			z (float): Cartesian z coordinate
 			bandNumber (int, opt.): Band number at which to evaluate
-			debug (boolean, opt.): If true, print extra information during runtime
+			debug (bool., opt.): If true, print extra information during runtime
 
 		Returns:
 			complex: Wavefunction value
@@ -148,6 +148,46 @@ class Cell(object):
 				print "Atom "+str(a)+" has no band "+str(bandNumber)+": "+str(bandEnergy)
 		
 		return psi
+
+	def normaliseBand(self, bandNumber, debug=False):
+		"""Normalise coefficients of a band to give a total electron charge of unity.
+
+		Args:
+			bandNumber (int): Number of band to normalise
+			debug (bool, opt.): If true, print extra information during runtime
+		"""
+
+		totalCharge = 0.0
+		bandEnergy=self.bands[bandNumber]
+
+		# Iterate over all mesh points
+		for i in range(0, self.xPoints):
+			for j in range(0, self.yPoints):
+				for k in range(0, self.zPoints):
+					# Get mesh coordinates
+					x = self.xMesh[i, j, k]
+					y = self.yMesh[i, j, k]
+					z = self.zMesh[i, j, k]
+					psi = 0.0
+					# Sum contributions to psi from all atoms
+					for atomKey in self.atoms:
+						atom = self.atoms[atomKey]
+						if atom.bands.has_key(bandEnergy):
+							psi += atom.getPsi(bandEnergy, x, y, z)
+					# Add to charge
+					totalCharge += abs(psi)**2 * self.gridSpacing**3
+		
+		if abs(self.electrons - totalCharge) > 0.001:
+			if debug:
+				print "Total Electron Charge Unnormalised = "+str(totalCharge)
+
+			factor =  np.sqrt(float(self.electrons) / totalCharge)
+			for atomKey in self.atoms:
+				self.atoms[atomKey].applyFactor(factor, bandEnergy)
+		elif debug:
+			print "Total Electron Charge Already Normalised"
+
+
 
 
 

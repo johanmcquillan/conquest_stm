@@ -359,3 +359,19 @@ class Atom(Ion):
 							psiImag = R*Y*coeff.imag
 							psi += complex(psiReal, psiImag)
 		return psi
+
+	def applyFactor(self, factor, E):
+		"""Apply a normalisation factor to all coefficients for a given band.
+
+		Args:
+			factor (float): Normalisation factor to be applied
+			E (float): Energy of band to which to apply factor
+		"""
+
+		for zeta in self.bands[E]:
+			for n in self.bands[E][zeta]:
+				for l in self.bands[E][zeta][n]:
+					for m in self.bands[E][zeta][n][l]:
+						self.bands[E][zeta][n][l][m] *= factor
+
+
