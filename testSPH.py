@@ -1,7 +1,7 @@
 
 from packages import io
 
-lMax = 3
+lMax = 4
 
 print "3-DIMENSIONAL SPHERICAL HARMONICS"
 print "   Enter 'q' to quit"
@@ -21,7 +21,7 @@ while not quit:
 				else:
 					gotL = True
 			except ValueError:
-				print "l must be between an integer between 0 and 3 inclusive"
+				print "l must be between an integer between 0 and "+str(lMax)+" inclusive"
 
 	if not quit:
 		if l == 0:
