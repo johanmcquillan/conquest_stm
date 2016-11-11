@@ -259,9 +259,12 @@ def plotSPH3D(l, m, offset=0.0):
 	Z = (R + offset) * np.cos(THETA)
 
 
-	fig, ax = plt.subplots(subplot_kw=dict(projection='3d'), figsize=(12,12))
-	im = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, shade=True)
+	fig, ax = plt.subplots(subplot_kw=dict(projection='3d'), figsize=(10,10))
+	ax.set_xlim3d(-1.0, 1.0)
+	ax.set_ylim3d(-1.0, 1.0)
+	ax.set_zlim3d(-1.0, 1.0)
 
+	im = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, shade=False)
 
 	plt.show()
 
