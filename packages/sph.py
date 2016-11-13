@@ -37,7 +37,7 @@ def sph(l, m, x, y, z):
 		z (float): Cartesian z coordinate at which to evaluate spherical harmonic
 
 	Returns:
-		harmonic (float): Spherical harmonic for given l and m, evaluated at (x, y, z)"""
+		harmonic (float): Real spherical harmonic for given l and m, evaluated at (x, y, z)"""
 
 	harmonic = 0.0
 

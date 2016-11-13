@@ -15,11 +15,11 @@ C = cell.Cell(molecule, fl[molecule], electrons[molecule], 25.0, 20.0, 25.0, gri
 for a in atoms[molecule]:
 	C.addAtom(atoms[molecule][a], a)
 
-C.combineBands((0.05, 0.1), normalise=True, debug=True)
+#C.combineBands((0.05, 0.1), normalise=True, debug=True)
 
 for i in range(0, len(C.bands)):
 	E = C.bands[i]
-	if abs(E - 0.75) < 0.025:
+	if abs(E - 0.0) < 0.3:
 		N = i
 		break
 
