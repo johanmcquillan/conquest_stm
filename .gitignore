@@ -2,6 +2,7 @@
 Thumbs.db
 
 *.pdf
+*.png
 *.pyc
 
 *.sublime-workspace
