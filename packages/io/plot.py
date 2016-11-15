@@ -3,6 +3,7 @@ import cmath
 import math
 import numpy as np
 
+# Import matplotlib packages
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d as mp3d
 from mpl_toolkits.mplot3d import Axes3D
@@ -361,7 +362,7 @@ def plotChargeDensity2D(cell, bandNumber, axis, minimum, maximum, tolerance=0.0,
 			print 'Finished '+plotname+'.pdf'
 
 def plotChargeDensity3D(cell, bandNumber, xrange=(0.0, 0.0), yrange=(0.0, 0.0), zrange=(0.0, 0.0),
-	                       step=0.0, fraction=0.8, alpha=1.0, cmap=False, normalise=False):
+	                       step=0.0, fraction=0.8, alpha=1.0, cmap=False, normalise=False, show=True, save=False):
 	"""Plots charge density isosurface.
 
 	All lengths measured in Bohr radii (a0).
@@ -444,5 +445,11 @@ def plotChargeDensity3D(cell, bandNumber, xrange=(0.0, 0.0), yrange=(0.0, 0.0), 
 		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Spectral, lw=0.1)
 	else:
 		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], color=(1,0,0,alpha), lw=0.1)
-	plt.show()
+	
+	if save:
+		saveName = cell.name+"_ChargeDensity3D_"+str(fraction)+"_"+str(bandEnergy)
+		plt.savefig("figures3D/"+saveName+".png")
+	if show:
+		plt.show()
+	plt.close()
 
