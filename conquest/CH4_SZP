@@ -1,0 +1,398 @@
+
+            ______________________________________________________
+            ______________________________________________________
+                                                                  
+                                    CONQUEST                      
+                                                                  
+                Concurrent Order N QUantum Electronic STructure   
+            ______________________________________________________
+                                                                  
+                                   Written by:                    
+                                                                  
+                   David Bowler           Tsuyoshi Miyazaki       
+                    (UCL,NIMS)                 (NIMS)             
+                                                                  
+                 Antonio Torralba         Veronika Brazdova       
+                    (UCL,NIMS)                 (UCL)              
+                                                                  
+                  Lianheng Tong            Michiaki Arita         
+                      (UCL)                    (NIMS)             
+                                                                  
+                    Alex Sena             Umberto Terranova       
+                      (UCL)                    (UCL)              
+                                                                  
+                 Rathin Choudhury           Mike Gillan           
+                      (UCL)                    (UCL)              
+                                                                  
+                           Early Development by                   
+                                                                  
+                   Chris Goringe             Edward Hernandez     
+                      (Keele)                     (Keele)         
+                                                                  
+                                  Ian Bush                        
+                                 (Daresbury)                      
+            ______________________________________________________
+            ______________________________________________________
+
+
+          SIESTA pseudopotential will be used. 
+         1     7.49201049     7.49464138     7.50000010  2 T T T
+         2     5.42547714     7.51115559     7.49999998  1 T T T
+         3     8.20167654     9.43631640     7.50000028  1 T T T
+         4     8.16670551     6.51461551     5.80937604  1 T T T
+         5     8.16670553     6.51461532     9.19062390  1 T T T
+        Number of processor groups for k-point parallelisation:     1
+ 
+           1 symmetry inequivalent Kpoints in Cartesian 
+             (inverse Angstrom) form: 
+            1       0.000000       0.000000       0.000000       1.000
+
+        Finished reading Kpoints
+
+          Temperature used for smearing:   0.001000
+
+          Detected system type: bulk
+
+        This calculation includes non-local pseudopotentials,
+         with a maximum core radius of      1.83678294
+        WARNING ! S range greater than L !
+
+          This job was run on 2016/11/14 at 12:13
+
+
+          Code compiled on: Wed Nov 2 13:55:34 GMT 2016
+          Version comment: 
+          Git Branch: STMOutput; tag, hash: v0.50-37-g12d2427
+
+          Job title: 
+          CH4_SZP                                                                         
+
+          Solving for the K matrix using diagonalisation 
+
+          Using Fermi-Dirac smearing
+
+          The simulation box has the following dimensions
+          a =    15.00000 b =    15.00000 c =    15.00000 a0
+
+          The number of cell grid points in each direction is :
+                       32 cell grid points along x
+                       32 cell grid points along y
+                       32 cell grid points along z
+
+          The number of cell grid points in each block is :
+                        4 cell grid points along x
+                        4 cell grid points along y
+                        4 cell grid points along z
+
+          integration grid spacing along x   0.46875 a0
+          integration grid spacing along y   0.46875 a0
+          integration grid spacing along z   0.46875 a0
+
+          The number of atomic species in the system is :    2
+
+      ------------------------------------------------------------------
+         #   Label     Mass (a.u.)   Charge (e)  NLPF Rad (a0)   NSF  
+      ------------------------------------------------------------------
+         1   H_SZP_6.5au                       1.00000    1.00000    1.47081           4
+             PAO basis
+         2   C_SZP_6.5au                      12.01000    4.00000    1.83678           9
+             PAO basis
+      ------------------------------------------------------------------
+
+
+          Energy tolerance required:               0.00001000
+          L-matrix convergence tolerance:          0.00000010
+          Self consistent convergence tolerance:   0.00000010
+
+          The pseudopotentials are of type:
+                 Species               Type  
+                    H_SZP_6.5au                              Non Local
+                    C_SZP_6.5au                              Non Local
+
+          The calculation will be performed on     1 processors
+
+          The functional used will be LSDA PW92      
+
+          The maximum number of support iterations will be    10 consisting of:
+                       50 L matrix variations.
+
+          Support region radius =  6.6000 a0 
+          Density Matrix range  =  1.0000 a0
+
+          Species  1 Non-local Hamiltonian radius =  6.6000 a0
+
+          Species  2 Non-local Hamiltonian radius =  6.6000 a0
+          Minimum blocs/proc is      512. Maximum blocs/proc is      512
+          ispecies =  1  eshift for  6  8 10 times fine mesh =   0.8988512D+00
+                                                                 0.8988514D+00
+                                                                 0.8988514D+00
+                                                        diff =  -0.6654694D-07
+          ispecies =  2  eshift for  6  8 10 times fine mesh =   0.3576862D+01
+                                                                 0.3576862D+01
+                                                                 0.3576863D+01
+                                                        diff =  -0.2782551D-06
+          In set_density, electrons (spin=1):       4.000000000000
+          Using PAOs as basis set for support functions
+          initial_phis: n_species:  2
+          initial_phis: r_h:    6.600000
+          Fermi energy for spin = 1 is     -0.01708707580 Ha
+          Energy as 2Tr[K.H]:     -4.67050622485 Ha
+          2Tr[S.G]:      4.67050622485 Ha
+        Starting self-consistency.  Tolerance:  0.10000E-06
+
+        Starting Pulay mixing, A_up =  0.400 A_dn =  0.400
+        Spin non-polarised calculation.
+          Fermi energy for spin = 1 is     -0.01708707580 Ha
+          Energy as 2Tr[K.H]:     -4.67050622485 Ha
+          2Tr[S.G]:      4.67050622485 Ha
+          Band Energy, 2Tr[K.H]            :        -4.670506224845074 Ha
+          Hartree Energy (delta rho)       :         0.000000005848195 Ha
+          Hartree Energy (drho-atom rho)   :         0.000429295347769 Ha
+          X-C     Energy                   :        -2.765255790284811 Ha
+          X only  Energy                   :        -2.375935869327523 Ha
+          C only  Energy                   :        -0.389319920957288 Ha
+          EXX Energy, -Tr[K.X]             :         0.000000000000000 Ha
+          Neutral Atom  Energy             :        -5.480267662729021 Ha
+          NonLocal PsePot Energy           :        -0.850952137461899 Ha
+          Kinetic Energy                   :         6.781692429559805 Ha
+          Screened Ion-Ion Energy          :        -4.188710967920290 Ha
+          Ha Correction                    :        -0.000000005848195 Ha
+          XC Correction                    :         0.847481114981903 Ha
+          Harris-Foulkes Energy            :        -8.012165378979425 Ha
+          (TS=0 as O(N) or entropic contribution is negligible)
+          Total number of electrons        :         8.000217964423911
+        Pulay iteration     1 Residual is  0.19035E-01
+          Fermi energy for spin = 1 is     -0.16935691400 Ha
+          Energy as 2Tr[K.H]:     -3.86662368278 Ha
+          2Tr[S.G]:      3.86662368278 Ha
+          Band Energy, 2Tr[K.H]            :        -3.866623682783847 Ha
+          Hartree Energy (delta rho)       :         0.030584345362009 Ha
+          Hartree Energy (drho-atom rho)   :         0.749930610814263 Ha
+          X-C     Energy                   :        -2.910388402293372 Ha
+          X only  Energy                   :        -2.511474190191310 Ha
+          C only  Energy                   :        -0.398914212102062 Ha
+          EXX Energy, -Tr[K.X]             :         0.000000000000000 Ha
+          Neutral Atom  Energy             :        -5.944730917247864 Ha
+          NonLocal PsePot Energy           :        -0.823567096815110 Ha
+          Kinetic Energy                   :         6.115914463452221 Ha
+          Screened Ion-Ion Energy          :        -4.188710967920290 Ha
+          Ha Correction                    :        -0.030584345362009 Ha
+          XC Correction                    :         0.893312501881752 Ha
+          Harris-Foulkes Energy            :        -7.942537104998657 Ha
+          (TS=0 as O(N) or entropic contribution is negligible)
+          Total number of electrons        :         8.000149682652889
+        Pulay iteration     2 Residual is  0.67768E-02
+          Fermi energy for spin = 1 is     -0.14947821695 Ha
+          Energy as 2Tr[K.H]:     -3.70686402193 Ha
+          2Tr[S.G]:      3.70686402193 Ha
+          Band Energy, 2Tr[K.H]            :        -3.706864021932573 Ha
+          Hartree Energy (delta rho)       :         0.040974048691991 Ha
+          Hartree Energy (drho-atom rho)   :         0.908221852510581 Ha
+          X-C     Energy                   :        -2.949977448906897 Ha
+          X only  Energy                   :        -2.548032356573900 Ha
+          C only  Energy                   :        -0.401945092332996 Ha
+          EXX Energy, -Tr[K.X]             :         0.000000000000000 Ha
+          Neutral Atom  Energy             :        -6.000826115525287 Ha
+          NonLocal PsePot Energy           :        -0.818742490652535 Ha
+          Kinetic Energy                   :         6.053631371687973 Ha
+          Screened Ion-Ion Energy          :        -4.188710967920290 Ha
+          Ha Correction                    :        -0.040974048691991 Ha
+          XC Correction                    :         0.905725002717948 Ha
+          Harris-Foulkes Energy            :        -7.939045888337488 Ha
+          (TS=0 as O(N) or entropic contribution is negligible)
+          Total number of electrons        :         8.000106580267772
+        Pulay iteration     3 Residual is  0.42307E-02
+          Fermi energy for spin = 1 is     -0.13006026708 Ha
+          Energy as 2Tr[K.H]:     -3.55312155461 Ha
+          2Tr[S.G]:      3.55312155461 Ha
+          Band Energy, 2Tr[K.H]            :        -3.553121554605575 Ha
+          Hartree Energy (delta rho)       :         0.054289032573580 Ha
+          Hartree Energy (drho-atom rho)   :         1.061227271339952 Ha
+          X-C     Energy                   :        -2.994860103442960 Ha
+          X only  Energy                   :        -2.589283680818349 Ha
+          C only  Energy                   :        -0.405576422624611 Ha
+          EXX Energy, -Tr[K.X]             :         0.000000000000000 Ha
+          Neutral Atom  Energy             :        -6.030193581010043 Ha
+          NonLocal PsePot Energy           :        -0.814522820900368 Ha
+          Kinetic Energy                   :         6.037184684412026 Ha
+          Screened Ion-Ion Energy          :        -4.188710967920290 Ha
+          Ha Correction                    :        -0.054289032573580 Ha
+          XC Correction                    :         0.919758612323682 Ha
+          Harris-Foulkes Energy            :        -7.937590214115716 Ha
+          (TS=0 as O(N) or entropic contribution is negligible)
+          Total number of electrons        :         8.000045956074844
+        Pulay iteration     4 Residual is  0.17716E-03
+          Fermi energy for spin = 1 is     -0.12871405650 Ha
+          Energy as 2Tr[K.H]:     -3.54212507539 Ha
+          2Tr[S.G]:      3.54212507539 Ha
+          Band Energy, 2Tr[K.H]            :        -3.542125075385725 Ha
+          Hartree Energy (delta rho)       :         0.055349014840305 Ha
+          Hartree Energy (drho-atom rho)   :         1.071826610346030 Ha
+          X-C     Energy                   :        -2.996982907153314 Ha
+          X only  Energy                   :        -2.591217564636787 Ha
+          C only  Energy                   :        -0.405765342516527 Ha
+          EXX Energy, -Tr[K.X]             :         0.000000000000000 Ha
+          Neutral Atom  Energy             :        -6.031385104414520 Ha
+          NonLocal PsePot Energy           :        -0.814193320592809 Ha
+          Kinetic Energy                   :         6.031190065770136 Ha
+          Screened Ion-Ion Energy          :        -4.188710967920290 Ha
+          Ha Correction                    :        -0.055349014840305 Ha
+          XC Correction                    :         0.920419656810470 Ha
+          Harris-Foulkes Energy            :        -7.937592011681881 Ha
+          (TS=0 as O(N) or entropic contribution is negligible)
+          Total number of electrons        :         8.000040152492408
+        Pulay iteration     5 Residual is  0.97466E-04
+          Fermi energy for spin = 1 is     -0.12947337773 Ha
+          Energy as 2Tr[K.H]:     -3.54829550510 Ha
+          2Tr[S.G]:      3.54829550510 Ha
+          Band Energy, 2Tr[K.H]            :        -3.548295505096417 Ha
+          Hartree Energy (delta rho)       :         0.054724295629258 Ha
+          Hartree Energy (drho-atom rho)   :         1.065810239791145 Ha
+          X-C     Energy                   :        -2.995491623318715 Ha
+          X only  Energy                   :        -2.589835731790945 Ha
+          C only  Energy                   :        -0.405655891527770 Ha
+          EXX Energy, -Tr[K.X]             :         0.000000000000000 Ha
+          Neutral Atom  Energy             :        -6.028509727415705 Ha
+          NonLocal PsePot Energy           :        -0.814413325616033 Ha
+          Kinetic Energy                   :         6.034795427244979 Ha
+          Screened Ion-Ion Energy          :        -4.188710967920290 Ha
+          Ha Correction                    :        -0.054724295629258 Ha
+          XC Correction                    :         0.919950927828740 Ha
+          Harris-Foulkes Energy            :        -7.937590080608371 Ha
+          (TS=0 as O(N) or entropic contribution is negligible)
+          Total number of electrons        :         8.000041213594020
+        Pulay iteration     6 Residual is  0.16380E-05
+          Fermi energy for spin = 1 is     -0.12947203350 Ha
+          Energy as 2Tr[K.H]:     -3.54828782983 Ha
+          2Tr[S.G]:      3.54828782983 Ha
+          Band Energy, 2Tr[K.H]            :        -3.548287829830256 Ha
+          Hartree Energy (delta rho)       :         0.054725610259490 Ha
+          Hartree Energy (drho-atom rho)   :         1.065819572058159 Ha
+          X-C     Energy                   :        -2.995501119358034 Ha
+          X only  Energy                   :        -2.589844483015668 Ha
+          C only  Energy                   :        -0.405656636342366 Ha
+          EXX Energy, -Tr[K.X]             :         0.000000000000000 Ha
+          Neutral Atom  Energy             :        -6.028511999996709 Ha
+          NonLocal PsePot Energy           :        -0.814413410473602 Ha
+          Kinetic Energy                   :         6.034828496975516 Ha
+          Screened Ion-Ion Energy          :        -4.188710967920290 Ha
+          Ha Correction                    :        -0.054725610259490 Ha
+          XC Correction                    :         0.919953899638970 Ha
+          Harris-Foulkes Energy            :        -7.937590080429223 Ha
+          (TS=0 as O(N) or entropic contribution is negligible)
+          Total number of electrons        :         8.000041220978627
+        Pulay iteration     7 Residual is  0.58147E-06
+          Fermi energy for spin = 1 is     -0.12947269846 Ha
+          Energy as 2Tr[K.H]:     -3.54829287677 Ha
+          2Tr[S.G]:      3.54829287677 Ha
+          Band Energy, 2Tr[K.H]            :        -3.548292876767516 Ha
+          Hartree Energy (delta rho)       :         0.054724910688954 Ha
+          Hartree Energy (drho-atom rho)   :         1.065814362069134 Ha
+          X-C     Energy                   :        -2.995498367688175 Ha
+          X only  Energy                   :        -2.589841938830627 Ha
+          C only  Energy                   :        -0.405656428857549 Ha
+          EXX Energy, -Tr[K.X]             :         0.000000000000000 Ha
+          Neutral Atom  Energy             :        -6.028513557357273 Ha
+          NonLocal PsePot Energy           :        -0.814413448276274 Ha
+          Kinetic Energy                   :         6.034821830199677 Ha
+          Screened Ion-Ion Energy          :        -4.188710967920290 Ha
+          Ha Correction                    :        -0.054724910688954 Ha
+          XC Correction                    :         0.919953037031512 Ha
+          Harris-Foulkes Energy            :        -7.937590080414383 Ha
+          (TS=0 as O(N) or entropic contribution is negligible)
+          Total number of electrons        :         8.000041228298358
+        Pulay iteration     8 Residual is  0.40965E-07
+        Reached self-consistency tolerance after      8 iterations
+    Finished initialise
+        Starting self-consistency.  Tolerance:  0.10000E-06
+
+        Starting Pulay mixing, A_up =  0.400 A_dn =  0.400
+        Spin non-polarised calculation.
+          Fermi energy for spin = 1 is     -0.12947269846 Ha
+          Energy as 2Tr[K.H]:     -3.54829287677 Ha
+          2Tr[S.G]:      3.54829287677 Ha
+          Band Energy, 2Tr[K.H]            :        -3.548292876767516 Ha
+          Hartree Energy (delta rho)       :         0.054724910688954 Ha
+          Hartree Energy (drho-atom rho)   :         1.065814362069134 Ha
+          X-C     Energy                   :        -2.995498367688175 Ha
+          X only  Energy                   :        -2.589841938830627 Ha
+          C only  Energy                   :        -0.405656428857549 Ha
+          EXX Energy, -Tr[K.X]             :         0.000000000000000 Ha
+          Neutral Atom  Energy             :        -6.028513557357273 Ha
+          NonLocal PsePot Energy           :        -0.814413448276274 Ha
+          Kinetic Energy                   :         6.034821830199677 Ha
+          Screened Ion-Ion Energy          :        -4.188710967920290 Ha
+          Ha Correction                    :        -0.054724910688954 Ha
+          XC Correction                    :         0.919953037031512 Ha
+          Harris-Foulkes Energy            :        -7.937590080414383 Ha
+          (TS=0 as O(N) or entropic contribution is negligible)
+          Total number of electrons        :         8.000041228298358
+        Pulay iteration     1 Residual is  0.40965E-07
+        Reached self-consistency tolerance after      1 iterations
+ nl_energy
+ k_energy
+ band_energy
+ exx_energy
+ electrons_tot2 start
+ electrons_tot2 stop
+ 
+           |* band energy as 2Tr[K.H] =        -3.548292876767516 Ha
+           |  hartree energy (drho)   =         0.054724910688954 Ha
+           |  screened ion-ion energy =        -4.188710967920290 Ha
+           |  kinetic energy          =         6.034821830199677 Ha
+           
+           |* xc total energy         =        -2.995498367688175 Ha
+           |    DFT exchange          =        -2.589841938830627 Ha
+           |    DFT correlation       =        -0.405656428857549 Ha
+           |    EXX contribution      =         0.000000000000000 Ha
+           
+           |* pseudo/NA energy        =        -6.842927005633547 Ha
+           |    NA contribution       =        -6.028513557357273 Ha
+           |    nonlocal contribution =        -0.814413448276274 Ha
+           
+           |  Ha correction           =        -1.120539272758088 Ha
+           |  XC correction           =         0.919953037031512 Ha
+           
+           |* Harris-Foulkes energy   =        -7.937590080414383 Ha
+           |* DFT total energy        =        -7.937589600353381 Ha
+           |  estimated accuracy      =        -0.000000480061002 Ha
+ 
+           |* check for accuracy      = 
+           |  number of e- num. int.  =         8.000041228298358 
+           |  number of e- as 2Tr[KS] =         0.000000000000000 
+           |* virial V/T              =        -2.315298085625628 
+ 
+          Fermi energy for spin = 1 is     -0.12947269846 Ha
+          Energy as 2Tr[K.H]:     -3.54829287677 Ha
+          2Tr[S.G]:      3.54829287677 Ha
+
+                    Forces on atoms (Ha/a0)
+
+                      Atom   X              Y              Z
+                         1  -0.0004505829  -0.0018584206  -0.0000000225
+                         2  -0.0316637918   0.0007056275   0.0000000079
+                         3   0.0106086069   0.0299611304   0.0000000033
+                         4   0.0107569588  -0.0152071874  -0.0251156864
+                         5   0.0107569567  -0.0152072180   0.0251157180
+    Maximum force :      0.03166379(Ha/a0) on atom, component         2        1
+
+                                    X              Y              Z
+    Stress contributions:
+
+    Total stress:         -0.06166360    -0.05913027    -0.05772582 Ha
+    Finished control
+  Max mem use for area    1 is      0.243 MB
+  Max mem use for area    2 is      0.394 MB
+  Max mem use for area    3 is      1.251 MB
+  Max mem use for area    4 is      0.251 MB
+  Max mem use for area    5 is      6.441 MB
+  Max mem use for area    6 is      0.000 MB
+  Max mem use for area    7 is      0.251 MB
+  Max mem use for area    8 is     17.068 MB
+  Max mem use for area    9 is      0.034 MB
+  Max mem use for area   10 is      0.403 MB
+  Max mem use for area   11 is      0.754 MB
+  Max mem use for area   12 is      0.308 MB
+  Max mem use for area   13 is      0.000 MB
+  Max total mem use is     19.973 MB
+  Total run time was:                5.577 seconds
