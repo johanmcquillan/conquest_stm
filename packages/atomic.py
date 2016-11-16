@@ -41,7 +41,7 @@ class Radial(object):
 		Returns:
 		    float: Value of radial part
 		"""
-		if distance > self.cutoff or distance > self.radii[-1]:
+		if distance > self.cutoff:
 			value = 0.0
 		else:
 			# Find the first r value larger than distance
@@ -71,7 +71,7 @@ class Radial(object):
 		    float: Value of radial part
 		"""
 
-		if distance > self.cutoff or distance > self.radii[-1]:
+		if distance > self.cutoff:
 			value = 0.0
 		else:
 			value = self.radialInterpolator(distance)
@@ -367,9 +367,7 @@ class Atom(Ion):
 							# Get coefficient of basis functoin
 							coeff = self.bands[E][zeta][n][l][m]
 							# Calculate and add contribution of basis function
-							psiReal = R*Y*coeff.real
-							psiImag = R*Y*coeff.imag
-							psi += complex(psiReal, psiImag)
+							psi += R*Y*coeff
 		return psi
 
 	def applyFactor(self, factor, E):

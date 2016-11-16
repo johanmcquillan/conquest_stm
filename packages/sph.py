@@ -5,7 +5,7 @@ import numpy as np
 # Numbers in variable names refer to l and absolute value of m
 SPH0 = 1.0/2.0 * np.sqrt(1.0 / np.pi)
 
-SPH1 = 1.0/2.0 * np.sqrt(3.0 / (4.0*np.pi))
+SPH1 = 1.0/2.0 * np.sqrt(3.0 / np.pi)
 
 SPH2 = 1.0/2.0 * np.sqrt(15.0 / np.pi)
 

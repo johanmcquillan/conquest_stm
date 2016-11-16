@@ -1,72 +1,54 @@
 
-import glob
-
+from packages import cell
 from packages import io
 from packages import atomic
 
-# First, we need to provide the folder of the .ion files.
+# Folder of the .ion files.
 ionFolder = 'ions/'
+# ion files to be read, excluding .ion
+ionFiles = ['H_SZ_6.5au', 'C_SZ_6.5au']
 
-# We can either tell it which specific .ion files to read...
-ionFilesSpecific = ['H_SZ_6.5au', 'C_SZ_6.5au'] # File names, excluding .ion
-#  or we can use glob to get all .ion files within ionFolder.
-ionFilesRaw = glob.glob(ionFolder+'*.ion')
+# Folder of Conquest output files
+conqFolder = 'conquest/'
+# Name of simulation files
+conqFile = 'C6H6_SZ'
+# This denotes the files C6H6_SZ (Conquest_out), C6H6_SZ.dat (Process0000001WF.dat),
+#  and C6H6_SZ.dos (DOSout.dat)
 
-# ionFilesRaw will store the full path eg. 'ion_parse/ions/H_SZ_6.5au.ion'
-# We need to get rid of the folder info and the .ion extension.
-ionFilesAll = []
-tempName = ''
-for ionNameRaw in ionFilesRaw:
-	tempName = ionNameRaw[len(ionFolder):len(ionNameRaw)-4]
-	ionFilesAll.append(tempName)
+# To parse the data, instantiate a Parser object.
+prsr = io.Parser(ionFolder, ionFiles, conqFolder, [conqFile])
 
-# ionFilesAll now holds the names of the ions like in ionFilesSpecific,
-#  but for all ions within ionFolder.
+# First, parse ions into Ion objects.
+#  These hold all of the radial functions, indexed by zeta, n, and l
+prsr.parseIons()
+# Then combine with Conquest output
+prsr.parseConquestOutput()
+# Parser now holds Atom objects, which extend the Ion class and stores
+#  atomic position and coefficients
 
-# To parse the data, we instantiate a Parser object.
-# This handles reading data from several different input files and locations,
-#  which will be needed as we need to combine info from .ion, Conquest_out
-#  and coefficient .dat files.
-Prsr = io.Parser()
+# Currently, atoms, Fermi levels, and total number of electrons must be taken
+#  from Parser and put into a cell, but I plan to write a method to get the cell
+#  directly from Parser
 
-# Currently, Parser only works for .ion files
-Prsr.parseIons(ionFolder, ionFilesAll)
+# Parser can hold data from several simulations at once, so when getting data
+#  from it, they are indexed by simulation name
+atoms = prsr.atoms[conqFile] # Dict of Atom objects
+fermi = prsr.fermiLevels[conqFile]
+electrons = prsr.electrons[conqFile]
 
-# Prsr now holds all the info about the ions.
-# In the final code, we would run something like
-#  Prsr.parseAtoms(atomFolder, atomFiles)
-#  which would combine the ion data with the other input files to get the atoms
+# Create a 3D cell with dimensions 20 x 20 x 15 a0
+C = cell.Cell(conqFile+'_EXAMPLE', fermi, electrons, 20.0, 20.0, 15.0, gridSpacing=.5)
 
-# For now, we get the ions from Prsr
-ions = Prsr.ions
+# Add the atoms to the cell
+for atomKey in atoms:
+	C.addAtom(atoms[atomKey], atomKey)
 
-# ions is a dict of all the Ion objects, indexed by the names given in ionFilesAll
-# An Ion object stores the corresponding Radial objects, which are the PAO's given
-#  in the .ion file.
-# To see the radial functions, we use Plotter
-Pltr = io.Plotter('example', ions)
-Pltr.plotRadials(printStatus=True)
+# For 7th band, plot charge density isosurface with surface value of 5% of max value
+io.plot.plotChargeDensity3D(C, 6, fraction=0.05, show=True, save=True, cmap=True)
 
-# Running this code will produce example_radials.pdf in the folder pdfs
-
-# The Ion class combines the Radial data with the spherical harmonics
-#  to form the basis functions. We can plot a 2D cross section of the
-#  basis functions. Currently, this is done as a method in Ion class,
-#  but will be moved to the Plotter class such that output can be put
-#  into a single pdf.
-
-ionName = 'C_TZTP_6.5_4.5_2.5au'
-ion = ions[ionName]
-
-for n in ion.radials[1]:
-	for l in ion.radials[1][n]:
-		for m in range(-l, l+1):
-			# e will be the axis that is set to a constant, planeValue, to get a 2D plot
-			for e in ['x', 'y', 'z']:
-				Pltr.plotBasis(ionName, 1, n, l, m, e, step=0.1, planeValue=0.0, printStatus=True)
-
-# The plots will be output to pdfs folder
-
-# The next step will involve an Atom class that inherits from the Ion
-#  class and also stores the coefficients such that the wavefunction
-#  around the atom can be found.
+# C.bands is an ordered list of band energies for the cell
+#  This loop, when activated, will save 3D plots of all bands to folder figures3D
+#  (You may have to create the folder locally first)
+if True:
+	for i in range(len(C.bands)):
+		io.plot.plotChargeDensity3D(C, i, fraction=0.05, show=False, save=True, cmap=True)

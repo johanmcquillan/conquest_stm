@@ -191,6 +191,9 @@ class Cell(object):
 			print "Total Electron Charge Already Normalised"
 
 	def combineBands(self, Erange, normalise=True, outputBandData=False, debug=False):
+		"""Combine bands with energies within Erange.
+
+		"""
 
 		Emin = Erange[0]
 		Emax = Erange[1]

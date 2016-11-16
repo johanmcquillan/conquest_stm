@@ -1,7 +1,7 @@
 import math
 
-from .. import atomic
-from ..smartDict import SmartDict
+from packages import atomic
+from packages.smartDict import SmartDict
 
 class Parser(object):
 
@@ -80,7 +80,7 @@ class Parser(object):
 			self.ions[ionName] = atomic.Ion(ionName, radialDict)
 			del radialDict
 
-	def parseConq(self, tolerance=0.0, debug=False):
+	def parseConquestOutput(self, tolerance=0.0, debug=False):
 		"""Parse data from conqFiles to Atom objects and store in self.ions indexed by conqFile name."""
 
 		# Open Conquest_out file

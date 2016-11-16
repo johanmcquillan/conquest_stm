@@ -1,6 +1,3 @@
-
-import cmath
-import math
 import numpy as np
 
 # Import matplotlib packages
@@ -16,15 +13,16 @@ from packages.sph import sph
 from packages.smartDict import SmartDict
 
 # Spectroscopic notation dictionary
-SPECTRAL = {0:'s', 1:'p', 2:'d', 3:'f', 4:'g', 5:'h', 6:'i', 7:'j', 8:'k'}
+SPECTRAL = {0: 's', 1: 'p', 2: 'd', 3: 'f', 4: 'g',
+               5: 'h', 6: 'i', 7: 'j', 8: 'k'}
 
 def plotRadials(ions, points=500, printStatus=False, spectro=True):
 	"""Plot all radial functions from self.ions to 'self.filename'_radials.pdf
 
 	Args:
-		points (int, optional): Number of points for plot
-		printStatus (boolean, optional): If true, print notification when finishing a plot
-		spectro (boolean, optional): If true, use spectroscopic notation
+		points (int, opt.): Number of points for plot
+		printStatus (boolean, opt.): If true, print notification when finishing a plot
+		spectro (boolean, opt.): If true, use spectroscopic notation
 	"""
 	with PdfPages('pdfs/radials.pdf') as pdf:
 
@@ -69,111 +67,6 @@ def plotRadials(ions, points=500, printStatus=False, spectro=True):
 			plt.legend()
 			pdf.savefig()
 			plt.close()
-
-def plotBasis2D(ionName, ion, zeta, n, l, m, axis, minimum=-8, maximum=8, planeValue=0.0, step=0.1, printStatus=False, spectro=True):
-	"""Plots cross-section of basis function of ion to pdf.
-	All lengths measured in bohr radii (a0).
-
-	Args:
-		zeta (int):	Zeta index of Radial
-		n (int): Principal quantum number for Radial
-		l (int): Orbital angular momentum quantum number for Radial and spherical harmonic
-		m (int): Azimuthal quantum number for spherical harmonic
-		axis (string) : Cartesian axis ('x', 'y', or 'z') to set to constant value given by planeValue
-		minimum (int, optional): Minimum value of coordinates measured in a0; Default is -8
-		maximum (int, optional): Maximum value of coordinates measured in a0; Default is +8
-		planeValue (double, optional): Constant value assigned to Cartesian coordinate given by axis; Default is 0.00001
-		step (int, optional): Interval between Cartesian mgrid points, measured in a0; Default is 0.1
-	"""
-
-	plotname = 'Basis_'+ionName+'_'+str(zeta)+'_'+str(n)+'_'+str(l)+'_'+str(m)+'_'+axis
-
-	# Initialise meshes
-	# 2D cartesian mesh (x, y, or z axis determined later)
-	space1, space2 = np.mgrid[minimum:maximum:step, minimum:maximum:step]
-
-	Y = np.empty_like(space1) # Spherical Harmonic mesh
-	R = np.empty_like(space1) # Radial Function mesh
-	psi = np.empty_like(space1) # Basis Function mesh (psi = R*Y)
-
-	maxpsi = 0.1 # Colour plot sets limits to -maxpsi to +maxpsi
-
-	# Plot functions to pdf
-	with PdfPages('pdfs/' + plotname + '.pdf') as pdf:
-		# Loop over all mesh points
-		for i in range(0, int((maximum - minimum) / step)):
-			for j in range(0, int((maximum - minimum) / step)):
-				# Use axis variable to determine which axes space1 and space2 refer to
-				# Evaluate spherical harmonic at mesh point
-				if axis == 'z':
-					Y[i, j] = sph(l, m, space2[i, j], space1[i, j], planeValue)
-					plt.xlabel('$x$ / $a_0$')
-					plt.ylabel('$y$ / $a_0$')
-				if axis == 'y':
-					Y[i, j] = sph(l, m, space2[i, j], planeValue, space1[i, j])
-					plt.xlabel('$x$ / $a_0$')
-					plt.ylabel('$z$ / $a_0$')
-				if axis == 'x':
-					Y[i, j] = sph(l, m, planeValue, space2[i, j], space1[i, j])
-					plt.xlabel('$y$ / $a_0$')
-					plt.ylabel('$z$ / $a_0$')
-
-				# Evaluate value of Radial at mesh point and get psi
-				R[i, j] = ion.getRadialValue(zeta, n, l, np.sqrt(space1[i, j]**2 +
-					                                                space2[i, j]**2 +
-					                                                planeValue**2))
-				psi[i, j] = Y[i, j] * R[i, j]
-
-				# Update maxpsi
-				if abs(psi[i, j]) > maxpsi:
-					maxpsi = abs(psi[i, j])
-
-		# Setup plot
-		plt.imshow(psi, interpolation='bilinear', origin='center', cmap=cm.bwr,
-			          extent=(minimum, maximum, minimum, maximum), vmin=-maxpsi, vmax=maxpsi)
-		plt.colorbar()
-		plt.grid()
-		axes = ['x', 'y', 'z']
-		axes.remove(axis)
-		ttl = (ionName+' Basis Function for \n \n $\zeta='+str(zeta)+'$, $n='+
-			      str(n)+'$, $l='+str(l)+'$, $m_l='+str(m)+'$ in $'+axes[0]+'-'+axes[1]+'$ plane')
-		plt.title(ttl)
-
-		# Save to pdf
-		pdf.savefig()
-		plt.close()
-		if printStatus:
-			print 'Finished '+plotname+'.pdf'
-
-def plotBasis3D(ionName, zeta, n, l, m, offset=0.0, show=True):
-
-	THETA, PHI = np.mgrid[0:2*np.pi:50j, 0:np.pi:50j]
-	T = np.zeros_like(PHI)
-
-	ion = self.ions[ionName]
-
-	for i in range(0, len(THETA)):
-		for j in range(0, len(PHI)):
-
-			x = np.sin(THETA[i, j]) * np.cos(PHI[i, j])
-			y = np.sin(THETA[i, j]) * np.sin(PHI[i, j])
-			z = np.cos(THETA[i, j])
-
-			s = sph(l, m, x, y, z)
-			r = ion.getRadialValue(zeta, n, l, np.sqrt(x**2+y**2+z**2))
-
-			T[i, j] = abs(r * s)
-
-	X = (T + offset) * np.sin(THETA) * np.cos(PHI)
-	Y = (T + offset) * np.sin(THETA) * np.sin(PHI)
-	Z = (T + offset) * np.cos(THETA)
-
-
-	fig, ax = plt.subplots(subplot_kw=dict(projection='3d'), figsize=(12,12))
-	im = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, shade=True)
-
-	if show:
-		plt.show()
 
 def plotSPH2D(l, m, axis, minimum=-8.0, maximum=8.0, planeValue=0.0, step=0.1, printStatus=False):
 	"""Plots cross-section of spherical harmonic to pdf.
@@ -236,40 +129,121 @@ def plotSPH2D(l, m, axis, minimum=-8.0, maximum=8.0, planeValue=0.0, step=0.1, p
 		if printStatus:
 			print 'Finished '+plotname+'.pdf'
 
-def plotSPH3D(l, m, offset=0.0):
+def plotSPH3D(l, m):
 	"""Plots 3D spherical harmonic isosurface.
 
 	Input:
-		l (int): Orbital angular momentum quantum number for spherical harmonic
-		m (int): Azimuthal quantum number for spherical harmonic
+		l (int): Degree of spherical harmonic
+		m (int): Order of spherical harmonic
 	"""
 
+	# Get mesh of angles
 	THETA, PHI = np.mgrid[0:2*np.pi:50j, 0:np.pi:50j]
-	R = np.zeros_like(PHI)
+	# Initialise mesh of 
+	SPH = np.zeros_like(PHI)
 
-	for i in range(0, len(THETA)):
-		for j in range(0, len(PHI)):
-
+	# Loop over mesh
+	for i in range(0, SPH.shape[0]):
+		for j in range(0, SPH.shape[1]):
+			# Get cartesian point
 			x = np.sin(THETA[i, j]) * np.cos(PHI[i, j])
 			y = np.sin(THETA[i, j]) * np.sin(PHI[i, j])
 			z = np.cos(THETA[i, j])
-			R[i, j] = abs(sph(l, m, x, y, z))
+			SPH[i, j] = abs(sph(l, m, x, y, z))
 
-	X = (R + offset) * np.sin(THETA) * np.cos(PHI)
-	Y = (R + offset) * np.sin(THETA) * np.sin(PHI)
-	Z = (R + offset) * np.cos(THETA)
+	# Get cartesian mesh
+	X = SPH * np.sin(THETA) * np.cos(PHI)
+	Y = SPH * np.sin(THETA) * np.sin(PHI)
+	Z = SPH * np.cos(THETA)
 
-
+	# Plot surface
 	fig, ax = plt.subplots(subplot_kw=dict(projection='3d'), figsize=(10,10))
 	ax.set_xlim3d(-1.0, 1.0)
 	ax.set_ylim3d(-1.0, 1.0)
 	ax.set_zlim3d(-1.0, 1.0)
-
 	im = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, shade=False)
 
 	plt.show()
+	plt.close()
 
-def plotChargeDensity2D(cell, bandNumber, axis, minimum, maximum, tolerance=0.0, step=None,
+def plotBasis2D(ionName, ion, zeta, n, l, m, axis, minimum=-8, maximum=8, planeValue=0.0, step=0.1, printStatus=False, spectro=True):
+	"""Plots cross-section of basis function of ion to pdf.
+	All lengths measured in bohr radii (a0).
+
+	Args:
+		zeta (int):	Zeta index of Radial
+		n (int): Principal quantum number for Radial
+		l (int): Orbital angular momentum quantum number for Radial and spherical harmonic
+		m (int): Azimuthal quantum number for spherical harmonic
+		axis (string) : Cartesian axis ('x', 'y', or 'z') to set to constant value given by planeValue
+		minimum (int, opt.): Minimum value of coordinates measured in a0; Default is -8
+		maximum (int, opt.): Maximum value of coordinates measured in a0; Default is +8
+		planeValue (double, opt.): Constant value assigned to Cartesian coordinate given by axis; Default is 0.00001
+		step (int, opt.): Interval between Cartesian mgrid points, measured in a0; Default is 0.1
+		printStatus (boolean, opt.): If true, print notification when finishing a plot
+		spectro (boolean, opt.): If true, use spectroscopic notation
+	"""
+
+	plotname = 'Basis_'+ionName+'_'+str(zeta)+'_'+str(n)+'_'+str(l)+'_'+str(m)+'_'+axis
+
+	# Initialise meshes
+	# 2D cartesian mesh (x, y, or z axis determined later)
+	space1, space2 = np.mgrid[minimum:maximum:step, minimum:maximum:step]
+
+	Y = np.empty_like(space1) # Spherical Harmonic mesh
+	R = np.empty_like(space1) # Radial Function mesh
+	psi = np.empty_like(space1) # Basis Function mesh (psi = R*Y)
+
+	maxpsi = 0.1 # Colour plot sets limits to -maxpsi to +maxpsi
+
+	# Plot functions to pdf
+	with PdfPages('pdfs/' + plotname + '.pdf') as pdf:
+		# Loop over all mesh points
+		for i in range(0, int((maximum - minimum) / step)):
+			for j in range(0, int((maximum - minimum) / step)):
+				# Use axis variable to determine which axes space1 and space2 refer to
+				# Evaluate spherical harmonic at mesh point
+				if axis == 'z':
+					Y[i, j] = sph(l, m, space2[i, j], space1[i, j], planeValue)
+					plt.xlabel('$x$ / $a_0$')
+					plt.ylabel('$y$ / $a_0$')
+				if axis == 'y':
+					Y[i, j] = sph(l, m, space2[i, j], planeValue, space1[i, j])
+					plt.xlabel('$x$ / $a_0$')
+					plt.ylabel('$z$ / $a_0$')
+				if axis == 'x':
+					Y[i, j] = sph(l, m, planeValue, space2[i, j], space1[i, j])
+					plt.xlabel('$y$ / $a_0$')
+					plt.ylabel('$z$ / $a_0$')
+
+				# Evaluate value of Radial at mesh point and get psi
+				distance = np.sqrt(space1[i, j]**2 + space2[i, j]**2 + planeValue**2)
+				R[i, j] = ion.getRadialValue(zeta, n, l, distance)
+				psi[i, j] = Y[i, j] * R[i, j]
+
+				# Update maxpsi
+				if abs(psi[i, j]) > maxpsi:
+					maxpsi = abs(psi[i, j])
+
+		# Setup plot
+		plt.imshow(psi, interpolation='bilinear', origin='center', cmap=cm.bwr,
+			          extent=(minimum, maximum, minimum, maximum), vmin=-maxpsi, vmax=maxpsi)
+		plt.colorbar()
+		plt.grid()
+		axes = ['x', 'y', 'z']
+		axes.remove(axis)
+		ttl = (ionName+' Basis Function for \n \n $\zeta='+str(zeta)+'$, $n='+
+			      str(n)+'$, $l='+str(l)+'$, $m_l='+str(m)+'$ in $'+axes[0]+'-'+axes[1]+'$ plane')
+		plt.title(ttl)
+
+		# Save to pdf
+		pdf.savefig()
+		plt.close()
+
+		if printStatus:
+			print 'Finished '+plotname+'.pdf'
+
+def plotChargeDensity2D(cell, bandNumber, axis, minimum, maximum, step=None,
 	                       planeValue=None, normalise=False, label='', printStatus=False, debug=False):
 	"""Plots cross-section of charge density to pdf.
 	All lengths measured in bohr radii (a0).
@@ -278,19 +252,24 @@ def plotChargeDensity2D(cell, bandNumber, axis, minimum, maximum, tolerance=0.0,
 		cell (Cell): Simulation cell to plot
 		bandNumber (int): Band number to plot
 		axis (string): Cartesian axis ('x', 'y', or 'z') to set to constant value given by planeValue
-		minimum (int, opt.): Minimum value of coordinates measured in a0; Default is -8
-		maximum (int, opt.): Maximum value of coordinates measured in a0; Default is +8
+		minimum (int): Minimum value of coordinates
+		maximum (int): Maximum value of coordinates
 		planeValue (float, opt.): Constant value assigned to Cartesian coordinate given by axis; Default is 0.0
-		step (float, opt.): Interval between Cartesian mgrid points, measured in a0; Default is cell.gridSpacing
+		normalise (bool, opt.): If true, normalise basis coefficients before plot
+		step (float, opt.): Interval between Cartesian mgrid points, measured in a0;
+							Default is cell.gridSpacing
+		label (string, opt.): Optional string to append to end of filename
+		debug (bool, opt.): If true, print extra information during runtime
 	"""
 
-	plotname = cell.name+'_ChargeDensity_'+axis+'_'+label
-
+	# If no step given, set to gridSpacing
 	if not step:
 		step = cell.gridSpacing
-
+	# Normalise basis coefficients
 	if normalise:
 		cell.normaliseBand(bandNumber)
+
+	plotname = cell.name+'_ChargeDensity_'+axis+'_'+label
 
 	# Initialise meshes
 	# 2D cartesian mesh (x, y, or z axis determined later)
@@ -300,12 +279,7 @@ def plotChargeDensity2D(cell, bandNumber, axis, minimum, maximum, tolerance=0.0,
 
 	maxPsi2 = 0.0 # Colour plot sets limits to -maxpsi to +maxpsi
 
-	bandNumbers = [bandNumber]
-	if tolerance != 0.0:
-		for i in range(0, len(cell.bands)):
-			if (abs(cell.bands[bandNumber] - cell.bands[i]) < tolerance) and i != bandNumber:
-				bandNumbers.append(i)
-
+	# Print debug info
 	if debug:
 		debugString = ''
 		for b in bandNumbers:
@@ -314,36 +288,35 @@ def plotChargeDensity2D(cell, bandNumber, axis, minimum, maximum, tolerance=0.0,
 
 	# Plot functions to pdf
 	with PdfPages('pdfs/' + plotname + '.pdf') as pdf:
-		for b in bandNumbers:
-			# Loop over all mesh points
-			for i in range(0, int((maximum - minimum) / step)):
-				for j in range(0, int((maximum - minimum) / step)):
-					# Use axis variable to determine which axes space1 and space2 refer to
-					# Evaluate spherical harmonic at mesh point
-					if axis == 'z':
-						if not planeValue:
-							planeValue = cell.zLength / 2
-						psi = cell.givePsi(space2[i, j], space1[i, j], planeValue, bandNumber=b)
-						plt.xlabel('$x$ / $a_0$')
-						plt.ylabel('$y$ / $a_0$')
-					if axis == 'y':
-						if not planeValue:
-							planeValue = cell.yLength / 2
-						psi = cell.givePsi(space2[i, j], planeValue, space1[i, j], bandNumber=b)
-						plt.xlabel('$x$ / $a_0$')
-						plt.ylabel('$z$ / $a_0$')
-					if axis == 'x':
-						if not planeValue:
-							planeValue = cell.xLength / 2
-						psi = cell.givePsi( planeValue, space2[i, j], space1[i, j], bandNumber=b)
-						plt.xlabel('$y$ / $a_0$')
-						plt.ylabel('$z$ / $a_0$')
-				
-					psi2[i, j] = psi2[i, j] + abs(psi)**2
+		# Loop over all mesh points
+		for i in range(0, int((maximum - minimum) / step)):
+			for j in range(0, int((maximum - minimum) / step)):
+				# Use axis variable to determine which axes space1 and space2 refer to
+				# Evaluate spherical harmonic at mesh point
+				if axis == 'z':
+					if not planeValue:
+						planeValue = cell.zLength / 2
+					psi = cell.givePsi(space2[i, j], space1[i, j], planeValue, bandNumber=bandNumber)
+					plt.xlabel('$x$ / $a_0$')
+					plt.ylabel('$y$ / $a_0$')
+				if axis == 'y':
+					if not planeValue:
+						planeValue = cell.yLength / 2
+					psi = cell.givePsi(space2[i, j], planeValue, space1[i, j], bandNumber=bandNumber)
+					plt.xlabel('$x$ / $a_0$')
+					plt.ylabel('$z$ / $a_0$')
+				if axis == 'x':
+					if not planeValue:
+						planeValue = cell.xLength / 2
+					psi = cell.givePsi( planeValue, space2[i, j], space1[i, j], bandNumber=bandNumber)
+					plt.xlabel('$y$ / $a_0$')
+					plt.ylabel('$z$ / $a_0$')
+			
+				psi2[i, j] = psi2[i, j] + abs(psi)**2
 
-					# Update maxpsi
-					if abs(psi2[i, j]) > maxPsi2:
-						maxPsi2 = psi2[i, j]
+				# Update maxpsi
+				if abs(psi2[i, j]) > maxPsi2:
+					maxPsi2 = psi2[i, j]
 
 		# Setup plot
 		plt.imshow(psi2, interpolation='bilinear', origin='center', cmap=cm.Blues,
@@ -376,7 +349,10 @@ def plotChargeDensity3D(cell, bandNumber, xrange=(0.0, 0.0), yrange=(0.0, 0.0), 
 		step (float, opt.): Interval between Cartesian mgrid points; Default is cell.gridSpacing
 		fraction (float, opt.): Sets value of isosurface to this fraction of max charge density
 		alpha (float, opt.): Transparency of plot surfaces
-		cmap (boolean, opt.): If true, colour surface opaquely (ignoring alpha) according to z-value
+		cmap (bool, opt.): If true, colour surface opaquely (ignoring alpha) according to z-value
+		normalise (bool, opt.): If true, normalise basis coefficients before plot
+		show (bool, opt.): If true, show plot
+		save (bool, opt.): If true, save plot
 	"""
 
 	bandEnergy = cell.bands[bandNumber]
@@ -440,16 +416,17 @@ def plotChargeDensity3D(cell, bandNumber, xrange=(0.0, 0.0), yrange=(0.0, 0.0), 
 	ax.set_ylabel("y")
 	ax.set_zlabel("z")
 
-	# Plot surface and show
+	# Plot surface
 	if cmap:
 		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Spectral, lw=0.1)
 	else:
 		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], color=(1,0,0,alpha), lw=0.1)
-	
+
+	# Save plot as png
 	if save:
 		saveName = cell.name+"_ChargeDensity3D_"+str(fraction)+"_"+str(bandEnergy)
 		plt.savefig("figures3D/"+saveName+".png")
+	# Show plot
 	if show:
 		plt.show()
 	plt.close()
-
