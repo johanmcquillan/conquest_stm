@@ -2,6 +2,8 @@ IO.Title    Si000_SZP
 IO.Coordinates    ../Si000_surf.in
 IO.FractionalCoordinates T 
 IO.Iprint 2
+IO.writeDOS T
+IO.output_STM T
 
 ## General Parameters
 General.NumberOfSpecies 1

@@ -1,0 +1,54 @@
+IO.Title    C6H6_DZDP
+IO.Coordinates    ../Benzene.coord
+IO.FractionalCoordinates T 
+IO.Iprint 1 
+IO.writeDOS T
+IO.output_STM T
+IO.min_DOS_E -0.1255
+IO.max_DOS_E -0.1250
+
+## General Parameters
+General.NumberOfSpecies 2
+General.PseudopotentialType  siesta
+General.FunctionalType 3
+General.PartitionMethod  Hilbert 
+
+## Moving Atoms
+AtomMove.TypeOfRun static
+
+## Basis Sets
+Basis.BasisSet PAOs
+
+## Energy Minimisation
+minE.SelfConsistent T
+minE.SCTolerance 1.0e-7
+SC.LinearMixingFactor 0.4
+SC.KerkerFactor 0.01
+
+##Integration Grid
+Grid.GridCutoff 20
+
+## Finding Density Matrix
+DM.SolutionMethod diagon
+Diag.NumKpts 1
+%block Diag.Kpoints
+0.00	0.00	0.00	2.00
+%endblock Diag.Kpoints
+
+## Atomic Information
+%block ChemicalSpeciesLabel
+1 1.00 H_DZDP_6.5_2.5au
+2 12.01 C_DZDP_6.5_2.5au
+%endblock ChemicalSpeciesLabel
+
+%block H_DZDP_6.5_2.5au
+Atom.ValenceCharge 1.00
+Atom.NumberOfSupports 8
+Atom.SupportFunctionRange 6.6
+%endblock H_DZDP_6.5_2.5au
+
+%block C_DZDP_6.5_2.5au
+Atom.ValenceCharge 4.00
+Atom.NumberOfSupports 18
+Atom.SupportFunctionRange 6.6
+%endblock C_DZDP_6.5_2.5au

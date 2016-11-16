@@ -57,7 +57,7 @@
          with a maximum core radius of      1.83678294
         WARNING ! S range greater than L !
 
-          This job was run on 2016/11/13 at 21:50
+          This job was run on 2016/11/16 at 17:35
 
 
           Code compiled on: Wed Nov 2 13:55:34 GMT 2016
@@ -395,4 +395,4 @@
   Max mem use for area   12 is      0.356 MB
   Max mem use for area   13 is      0.000 MB
   Max total mem use is     34.453 MB
-  Total run time was:                4.787 seconds
+  Total run time was:               10.146 seconds
