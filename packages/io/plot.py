@@ -20,6 +20,7 @@ def plotRadials(ions, points=500, printStatus=False, spectro=True):
 	"""Plot all radial functions from self.ions to 'self.filename'_radials.pdf
 
 	Args:
+		ions ({string : Ion}): Dict of Ion objects, indexed by ion name
 		points (int, opt.): Number of points for plot
 		printStatus (boolean, opt.): If true, print notification when finishing a plot
 		spectro (boolean, opt.): If true, use spectroscopic notation
@@ -50,12 +51,12 @@ def plotRadials(ions, points=500, printStatus=False, spectro=True):
 						r = np.arange(0.0, radial.cutoff, step)
 						R = np.empty_like(r)
 						for i in range(0, len(r)):
-							R[i] = radial.getValue(r[i])
+							R[i] = radial.getValueCubic(r[i])
 
 						# Add radial info to legend and add to plot
 						# If spectro, use spectroscopic notation for legend
 						if spectro:
-							label = '$\zeta ='+str(zeta)+'$, $'+str(n)+self.SPECTRAL[l]+'$'
+							label = '$\zeta ='+str(zeta)+'$, $'+str(n)+SPECTRAL[l]+'$'
 						else:
 							label = '$\zeta ='+str(zeta)+'$, $n='+str(n)+'$, $l='+str(l)+'$'
 						plt.plot(r, R, label=label)
@@ -150,7 +151,6 @@ def plotSPH3D(l, m):
 			y = np.sin(THETA[i, j]) * np.sin(PHI[i, j])
 			z = np.cos(THETA[i, j])
 			SPH[i, j] = abs(sph(l, m, x, y, z))
-
 	# Get cartesian mesh
 	X = SPH * np.sin(THETA) * np.cos(PHI)
 	Y = SPH * np.sin(THETA) * np.sin(PHI)
@@ -158,10 +158,15 @@ def plotSPH3D(l, m):
 
 	# Plot surface
 	fig, ax = plt.subplots(subplot_kw=dict(projection='3d'), figsize=(10,10))
+	ax.set_xlabel("x")
+	ax.set_ylabel("y")
+	ax.set_zlabel("z")
 	ax.set_xlim3d(-1.0, 1.0)
 	ax.set_ylim3d(-1.0, 1.0)
 	ax.set_zlim3d(-1.0, 1.0)
-	im = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, shade=False)
+	title = "Real Spherical Harmonic for Degree $l="+str(l)+"$ and Order $m="+str(m)+"$"
+	plt.title(title)
+	im = ax.plot_surface(X, Y, Z, rstride=1, cstride=1)
 
 	plt.show()
 	plt.close()

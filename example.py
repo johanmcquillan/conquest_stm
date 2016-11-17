@@ -43,6 +43,8 @@ C = cell.Cell(conqFile+'_EXAMPLE', fermi, electrons, 20.0, 20.0, 15.0, gridSpaci
 for atomKey in atoms:
 	C.addAtom(atoms[atomKey], atomKey)
 
+# io.plot has methods to plot 2D and 3D
+
 # For 7th band, plot charge density isosurface with surface value of 5% of max value
 io.plot.plotChargeDensity3D(C, 6, fraction=0.05, show=True, save=True, cmap=True)
 
