@@ -1,7 +1,7 @@
 import math
 
-from packages import atomic
-from packages.smartDict import SmartDict
+import atomic
+from smartDict import SmartDict
 
 class Parser(object):
 

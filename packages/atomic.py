@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from scipy.interpolate import interp1d
 
-from packages.sph import sph
-from packages.smartDict import SmartDict
+from sph import sph
+from smartDict import SmartDict
 
 class Radial(object):
 

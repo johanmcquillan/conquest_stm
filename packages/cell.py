@@ -1,6 +1,4 @@
 
-import packages.atomic
-
 import numpy as np
 
 class Cell(object):

@@ -1,5 +1,5 @@
 
-from packages import io
+import packages.plot as plot
 
 lMax = 4
 
@@ -46,4 +46,4 @@ while not quit:
 							print "m must be and integer "+str(-l)+" and "+str(+l)+" inclusive"
 		if not quit:
 			print "Showing Spherical Harmonic for l="+str(l)+" and m="+str(m)
-			io.plot.plotSPH3D(l, m)
+			plot.plotSPH3D(l, m)

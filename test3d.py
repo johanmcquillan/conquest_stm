@@ -1,11 +1,12 @@
 
-from packages import io, cell
+import packages.plot
+from packages.parser import Parser
 
 molecule = 'C6H6_DZDP'
 
-prsr = io.Parser('ions/', ['C_SZ_6.5au', 'C_SZP_6.5au', 'C_DZDP_6.5_2.5au', 'C_TZTP_6.5_4.5_2.5au', 'H_SZ_6.5au', 'H_SZP_6.5au', 'H_DZDP_6.5_2.5au', 'H_TZTP_6.5_4.5_2.5au'], 'conquest/', [molecule])
+prsr = Parser('ions/', ['C_SZ_6.5au', 'C_SZP_6.5au', 'C_DZDP_6.5_2.5au', 'C_TZTP_6.5_4.5_2.5au', 'H_SZ_6.5au', 'H_SZP_6.5au', 'H_DZDP_6.5_2.5au', 'H_TZTP_6.5_4.5_2.5au'], 'conquest/', [molecule])
 prsr.parseIons()
-prsr.parseConq()
+prsr.parseConquestOutput()
 atoms = prsr.atoms
 fl = prsr.fermiLevels
 electrons = prsr.electrons
@@ -19,7 +20,7 @@ for a in atoms[molecule]:
 #C.combineBands((0.05, 0.1), normalise=True, debug=True)
 
 for i in range(0, len(C.bands)):
-	io.plot.plotChargeDensity3D(C, i, fraction=0.05, cmap=True, save=True, show=False)
+	plot.plotChargeDensity3D(C, i, fraction=0.05, cmap=True, save=True, show=False)
 
 #pltr.plotBasis3D('C_SZP_6.5au', 1, 3, 2, 0, show=False)
 #plt.show()

@@ -1,7 +1,11 @@
 
-from packages import cell
-from packages import io
-from packages import atomic
+# from packages import cell
+# from packages import io
+# from packages import atomic
+
+from packages.parser import Parser
+from packages.cell import Cell
+import packages.plot as plot
 
 # Folder of the .ion files.
 ionFolder = 'ions/'
@@ -16,7 +20,7 @@ conqFile = 'C6H6_SZ'
 #  and C6H6_SZ.dos (DOSout.dat)
 
 # To parse the data, instantiate a Parser object.
-prsr = io.Parser(ionFolder, ionFiles, conqFolder, [conqFile])
+prsr = Parser(ionFolder, ionFiles, conqFolder, [conqFile])
 
 # First, parse ions into Ion objects.
 #  These hold all of the radial functions, indexed by zeta, n, and l
@@ -37,20 +41,20 @@ fermi = prsr.fermiLevels[conqFile]
 electrons = prsr.electrons[conqFile]
 
 # Create a 3D cell with dimensions 20 x 20 x 15 a0
-C = cell.Cell(conqFile+'_EXAMPLE', fermi, electrons, 20.0, 20.0, 15.0, gridSpacing=.5)
+cell = Cell(conqFile+'_EXAMPLE', fermi, electrons, 20.0, 20.0, 15.0, gridSpacing=.5)
 
 # Add the atoms to the cell
 for atomKey in atoms:
-	C.addAtom(atoms[atomKey], atomKey)
+	cell.addAtom(atoms[atomKey], atomKey)
 
 # io.plot has methods to plot 2D and 3D
 
 # For 7th band, plot charge density isosurface with surface value of 5% of max value
-io.plot.plotChargeDensity3D(C, 6, fraction=0.05, show=True, save=True, cmap=True)
+plot.plotChargeDensity3D(cell, 6, fraction=0.05, show=True, save=True, cmap=True)
 
 # C.bands is an ordered list of band energies for the cell
 #  This loop, when activated, will save 3D plots of all bands to folder figures3D
 #  (You may have to create the folder locally first)
-if True:
-	for i in range(len(C.bands)):
-		io.plot.plotChargeDensity3D(C, i, fraction=0.05, show=False, save=True, cmap=True)
+if False:
+	for i in range(len(cell.bands)):
+		plot.plotChargeDensity3D(cell, i, fraction=0.05, show=False, save=True, cmap=True)

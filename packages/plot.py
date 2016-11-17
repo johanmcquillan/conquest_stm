@@ -9,8 +9,7 @@ from matplotlib import cm, colors
 
 from skimage import measure
 
-from packages.sph import sph
-from packages.smartDict import SmartDict
+from sph import sph
 
 # Spectroscopic notation dictionary
 SPECTRAL = {0: 's', 1: 'p', 2: 'd', 3: 'f', 4: 'g',
