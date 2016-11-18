@@ -3,7 +3,7 @@ import packages.plot as plot
 from packages.parser import Parser
 from packages.cell import Cell
 
-molecule = 'C6H6_DZDP'
+molecule = 'C6H6_TZTP'
 
 prsr = Parser('ions/', ['C_SZ_6.5au', 'C_SZP_6.5au', 'C_DZDP_6.5_2.5au', 'C_TZTP_6.5_4.5_2.5au', 'H_SZ_6.5au', 'H_SZP_6.5au', 'H_DZDP_6.5_2.5au', 'H_TZTP_6.5_4.5_2.5au'], 'conquest/', [molecule])
 prsr.parseIons()

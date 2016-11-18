@@ -409,7 +409,7 @@ def plotChargeDensity3D(cell, bandNumber, xrange=(0.0, 0.0), yrange=(0.0, 0.0), 
 
 	# Set up plot
 	fig, ax = plt.subplots(subplot_kw=dict(projection='3d'), figsize=(10,10))
-	title = (cell.name+' Charge Density Isosurface at '+str(fraction)+' of Maximum Density for \n Band Energy '+str(bandEnergy)+' Ha with Fermi Level '+str(cell.fermiLevel)+' Ha')
+	title = (cell.name+' Charge Density Isosurface at '+str(fraction)+' of Maximum Density for \n Band Energy '+str(bandEnergy)+' eV with Fermi Level '+str(cell.fermiLevel)+' eV')
 	plt.title(title)
 
 	# Set axes

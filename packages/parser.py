@@ -3,6 +3,8 @@ import math
 import atomic
 from smartDict import SmartDict
 
+HA_TO_EV = 0.03674932 # Factor to convert Hartrees to electron volts
+
 class Parser(object):
 
 	"""Parses and stores data from input files.
@@ -154,7 +156,7 @@ class Parser(object):
 						while '#Kpoint' not in line:
 							data = line.split()
 							bandN = int(data[0])
-							bandE = float(data[1])
+							bandE = float(data[1])*HA_TO_EV
 
 							# If a tolerance is set, add coefficients to existing band
 							if tolerance != 0.0:
@@ -205,6 +207,6 @@ class Parser(object):
 			FDoS.close()
 
 			data = line.split()
-			fermiLevel = float(data[2])
+			fermiLevel = float(data[2])*HA_TO_EV
 
 			self.fermiLevels[conq] = fermiLevel
