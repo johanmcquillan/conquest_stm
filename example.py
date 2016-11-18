@@ -10,12 +10,12 @@ import packages.plot as plot
 # Folder of the .ion files.
 ionFolder = 'ions/'
 # ion files to be read, excluding .ion
-ionFiles = ['H_SZ_6.5au', 'C_SZ_6.5au']
+ionFiles = ['H_DZDP_6.5_2.5au', 'C_DZDP_6.5_2.5au']
 
 # Folder of Conquest output files
 conqFolder = 'conquest/'
 # Name of simulation files
-conqFile = 'C6H6_SZ'
+conqFile = 'C6H6_DZDP'
 # This denotes the files C6H6_SZ (Conquest_out), C6H6_SZ.dat (Process0000001WF.dat),
 #  and C6H6_SZ.dos (DOSout.dat)
 

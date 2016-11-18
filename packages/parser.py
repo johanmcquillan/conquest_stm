@@ -72,7 +72,7 @@ class Parser(object):
 					R.append(y)
 
 				# Create Radial object and store in dict
-				radialDict[zeta][n][l] = atomic.Radial(zeta, n, l, r, R, cutoff)
+				radialDict[l][zeta] = atomic.Radial(n, l, zeta, r, R, cutoff)
 				line = f.next()
 			f.close()
 

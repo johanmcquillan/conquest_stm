@@ -13,7 +13,7 @@ class Radial(object):
 	ie. quantum numbers (n and l) and zeta index.
 	"""
 
-	def __init__(self, zeta, n, l, radii, radialFuncValues, cutoff):
+	def __init__(self, n, l, zeta, radii, radialFuncValues, cutoff):
 		"""Constructs radial part of a basis function.
 
 		Args:
@@ -103,7 +103,7 @@ class Ion(object):
 		
 		Returns:
 		    list: Ordered list of PAO data;
-		    		Each element is a list containing [zeta, n, l, m] for the PAO
+		    		Each element is a list containing [l, zeta, m] for the PAO
 		"""
 		sortedPAOs = []
 
@@ -114,7 +114,7 @@ class Ion(object):
 			zetaList = sorted(self.radials[l])
 			for zeta in zetaList:
 				for m in range(-l, l+1):
-						sortedPAOs.append([zeta, l, m])
+						sortedPAOs.append([l, zeta, m])
 		return sortedPAOs
 
 	def hasRadial(self, l, zeta):
@@ -284,9 +284,9 @@ class Atom(Ion):
 		"""
 
 		PAOdata = self.sortPAOs()[PAO - 1]
-		zeta = PAOdata[0]
-		l = PAOdata[2]
-		m = PAOdata[3]
+		l = PAOdata[0]
+		zeta = PAOdata[1]
+		m = PAOdata[2]
 
 		if combine and self.hasCoeff(E, l, zeta, m):
 			self.bands[E][l][zeta][m] = self.bands[E][l][zeta][m] + coeff

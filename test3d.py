@@ -1,6 +1,7 @@
 
-import packages.plot
+import packages.plot as plot
 from packages.parser import Parser
+from packages.cell import Cell
 
 molecule = 'C6H6_DZDP'
 
@@ -13,7 +14,7 @@ electrons = prsr.electrons
 del prsr
 
 
-C = cell.Cell(molecule+'_161116D', fl[molecule], electrons[molecule], 20.0, 20.0, 15.0, gridSpacing=.5)
+C = Cell(molecule+'_161118A', fl[molecule], electrons[molecule], 20.0, 20.0, 15.0, gridSpacing=.5)
 for a in atoms[molecule]:
 	C.addAtom(atoms[molecule][a], a)
 

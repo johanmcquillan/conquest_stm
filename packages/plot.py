@@ -41,27 +41,27 @@ def plotRadials(ions, points=500, printStatus=False, spectro=True):
 
 			# Loop over all radial functions
 
-			for zeta in ion.radials:
-				for n in ion.radials[zeta]:
-					for l in ion.radials[zeta][n]:
-						# Get Radial and data from ion
-						radial = ion.getRadial(zeta, n, l)
-						step = radial.cutoff / points
-						r = np.arange(0.0, radial.cutoff, step)
-						R = np.empty_like(r)
-						for i in range(0, len(r)):
-							R[i] = radial.getValueCubic(r[i])
+			for l in ion.radials:
+				for zeta in ion.radials[l]:
+					# Get Radial and data from ion
+					radial = ion.getRadial(l, zeta)
+					n = radial.n
+					step = radial.cutoff / points
+					r = np.arange(0.0, radial.cutoff, step)
+					R = np.empty_like(r)
+					for i in range(0, len(r)):
+						R[i] = radial.getValueCubic(r[i])
 
-						# Add radial info to legend and add to plot
-						# If spectro, use spectroscopic notation for legend
-						if spectro:
-							label = '$\zeta ='+str(zeta)+'$, $'+str(n)+SPECTRAL[l]+'$'
-						else:
-							label = '$\zeta ='+str(zeta)+'$, $n='+str(n)+'$, $l='+str(l)+'$'
-						plt.plot(r, R, label=label)
+					# Add radial info to legend and add to plot
+					# If spectro, use spectroscopic notation for legend
+					if spectro:
+						label = '$\zeta ='+str(zeta)+'$, $'+str(n)+SPECTRAL[l]+'$'
+					else:
+						label = '$\zeta ='+str(zeta)+'$, $n='+str(n)+'$, $l='+str(l)+'$'
+					plt.plot(r, R, label=label)
 
-						if printStatus:
-							print "Finished Radial "+ion.ionName+"_"+str(zeta)+"_"+str(n)+"_"+str(l)
+					if printStatus:
+						print "Finished Radial "+ion.ionName+"_"+str(zeta)+"_"+str(n)+"_"+str(l)
 
 			# Add plot to pdf and reset plt
 			plt.legend()
@@ -222,7 +222,7 @@ def plotBasis2D(ionName, ion, zeta, n, l, m, axis, minimum=-8, maximum=8, planeV
 
 				# Evaluate value of Radial at mesh point and get psi
 				distance = np.sqrt(space1[i, j]**2 + space2[i, j]**2 + planeValue**2)
-				R[i, j] = ion.getRadialValue(zeta, n, l, distance)
+				R[i, j] = ion.getRadialValue(l, zeta, distance)
 				psi[i, j] = Y[i, j] * R[i, j]
 
 				# Update maxpsi
