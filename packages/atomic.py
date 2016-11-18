@@ -109,17 +109,15 @@ class Ion(object):
 
 		# Dict keys not necessarily in order
 		# Order key list by lowest to highest for each index
-		zetaList = sorted(self.radials.keys())
-		for zeta in zetaList:
-			nList = sorted(self.radials[zeta].keys())
-			for n in nList:
-				lList = sorted(self.radials[zeta][n])
-				for l in lList:
-					for m in range(-l, l+1):
-						sortedPAOs.append([zeta, n, l, m])
+		lList = sorted(self.radials.keys())
+		for l in lList:
+			zetaList = sorted(self.radials[l])
+			for zeta in zetaList:
+				for m in range(-l, l+1):
+						sortedPAOs.append([zeta, l, m])
 		return sortedPAOs
 
-	def hasRadial(self, zeta, n, l):
+	def hasRadial(self, l, zeta):
 		"""Check if Ion has radial object for specified object without creating
 		a dict.
 
@@ -135,10 +133,9 @@ class Ion(object):
 			boolean: True if Radial is stored, false if not
 		"""
 		output = False
-		if self.radials.has_key(zeta):
-			if self.radials[zeta].has_key(n):
-				if self.radials[zeta][n].has_key(l):
-					return True
+		if self.radials.has_key(l):
+			if self.radials[l].has_key(zeta):
+				return True
 		return output
 
 	def addRadial(self, radial):
@@ -151,14 +148,13 @@ class Ion(object):
 
 		# Get metadata
 		zeta = radial.zeta
-		n = radial.n
 		l = radial.l
 
 		# Add Radial
-		self.radials[zeta][n][l] = radial
+		self.radials[l][zeta] = radial
 		self.sortPAOs()
 
-	def getRadial(self, zeta, n, l):
+	def getRadial(self, l, zeta):
 		"""Return Radial object for specified orbital.
 
 		Encapsulation needed such that self.radials (SmartDict) does not create
@@ -174,11 +170,11 @@ class Ion(object):
 		"""
 
 		output = None
-		if self.hasRadial(zeta, n, l):
-			output = self.radials[zeta][n][l]
+		if self.hasRadial(l, zeta):
+			output = self.radials[l][zeta]
 		return output
 
-	def getRadialValue(self, zeta, n, l, r, interpolation='cubic'):
+	def getRadialValue(self, l, zeta, r, interpolation='cubic'):
 		"""Use linear interpolation to evaluate radial function at distance r.
 
 		Encapsulation needed such that self.radials (SmartDict) does not create
@@ -195,11 +191,11 @@ class Ion(object):
 		"""
 
 		output = None
-		if self.hasRadial(zeta, n, l):
+		if self.hasRadial(l, zeta):
 			if interpolation == 'cubic':
-				output = self.radials[zeta][n][l].getValueCubic(r)
+				output = self.radials[l][zeta].getValueCubic(r)
 			elif interpolation == 'linear':
-				output = self.radials[zeta][n][l].getValueLinear(r)
+				output = self.radials[l][zeta].getValueLinear(r)
 		return output
 
 	def getMaxCutoff(self):
@@ -208,11 +204,10 @@ class Ion(object):
 		Beyond the cutoff the radial part of the wavefunction is defined to be 0.		
 		"""
 		maxcut = 0.0
-		for zeta in self.radials:
-			for n in self.radials[zeta]:
-				for l in self.radials[zeta][n]:
-					if maxcut < self.radials[zeta][n][l].cutoff:
-						maxcut = self.radials[zeta][n][l].cutoff
+		for l in self.radials:
+			for zeta in self.radials[l]:
+				if maxcut < self.radials[l][zeta].cutoff:
+					maxcut = self.radials[l][zeta].cutoff
 		return maxcut
 
 class Atom(Ion):
@@ -257,7 +252,7 @@ class Atom(Ion):
 		self.radials = I.radials
 		self.sortPAOs()
 
-	def hasCoeff(self, E, zeta, n, l, m):
+	def hasCoeff(self, E, l, zeta, m):
 		"""Check if atom stores coefficient for given orbital.
 
 		Args:
@@ -272,11 +267,10 @@ class Atom(Ion):
 
 		output = False
 		if self.bands.has_key(E):
-			if self.bands[E].has_key(zeta):
-				if self.bands[E][zeta].has_key(n):
-					if self.bands[E][zeta][n].has_key(l):
-						if self.bands[E][zeta][n][l].has_key(m):
-							output = True
+			if self.bands[E].has_key(l):
+				if self.bands[E][l].has_key(zeta):
+					if self.bands[E][l][zeta].has_key(m):
+						output = True
 		return output
 
 	def addCoeff(self, E, PAO, coeff, combine=False):
@@ -291,29 +285,27 @@ class Atom(Ion):
 
 		PAOdata = self.sortPAOs()[PAO - 1]
 		zeta = PAOdata[0]
-		n = PAOdata[1]
 		l = PAOdata[2]
 		m = PAOdata[3]
 
-		if combine and self.hasCoeff(E, zeta, n, l, m):
-			self.bands[E][zeta][n][l][m] = self.bands[E][zeta][n][l][m] + coeff
+		if combine and self.hasCoeff(E, l, zeta, m):
+			self.bands[E][l][zeta][m] = self.bands[E][l][zeta][m] + coeff
 		else:
-			self.bands[E][zeta][n][l][m] = coeff
+			self.bands[E][l][zeta][m] = coeff
 
 	def combineCoeffs(self, Esource, Edestination):
 
-		for zeta in self.bands[Esource]:
-			for n in self.bands[Esource][zeta]:
-				for l in self.bands[Esource][zeta][n]:
-					for m in self.bands[Esource][zeta][n][l]:
-						coeff = self.bands[Esource][zeta][n][l][m]
-						if self.hasCoeff(Edestination, zeta, n, l, m):
-							self.bands[Edestination][zeta][n][l][m] = self.bands[Edestination][zeta][n][l][m] + coeff
-						else:
-							self.bands[Edestination][zeta][n][l][m] = coeff
+		for l in self.bands[Esource]:
+			for zeta in self.bands[Esource][l]:
+				for m in self.bands[Esource][l][zeta]:
+					coeff = self.bands[Esource][l][zeta][m]
+					if self.hasCoeff(Edestination, l, zeta, m):
+						self.bands[Edestination][l][zeta][m] = self.bands[Edestination][l][zeta][m] + coeff
+					else:
+						self.bands[Edestination][l][zeta][m] = coeff
 		del self.bands[Esource]
 
-	def getCoeff(self, E, zeta, n, l, m):
+	def getCoeff(self, E, l, zeta, m):
 		"""Return complex coefficient for given orbital.
 
 		Args:
@@ -326,8 +318,8 @@ class Atom(Ion):
 			complex: Coefficient for given orbital
 		"""
 		output = None
-		if self.hasCoeff(E, zeta, n, l, m):
-			output = self.bands[E][zeta][n][l][m]
+		if self.hasCoeff(E, l, zeta, m):
+			output = self.bands[E][l][zeta][m]
 		return output
 
 	def getPsi(self, E, x, y, z):
@@ -354,20 +346,19 @@ class Atom(Ion):
 
 		# If r is beyond atoms range, return 0.0+0.0j
 		if r <= self.getMaxCutoff(): # Loop over all radial functions
-			for zeta in self.radials:
-				for n in self.radials[zeta]:
-					for l in self.radials[zeta][n]:
-						# Evaluate R(r) using linear interpolation
-						R = self.getRadialValue(zeta, n, l, r)
+			for l in self.radials:
+				for zeta in self.radials[l]:
+					# Evaluate R(r) using linear interpolation
+					R = self.getRadialValue(l, zeta, r)
 
-						for m in range(-l, l+1):
-							# Calculate spherical harmonic
-							Y = sph(l, m, relx, rely, relz)
+					for m in range(-l, l+1):
+						# Calculate spherical harmonic
+						Y = sph(l, m, relx, rely, relz)
 
-							# Get coefficient of basis functoin
-							coeff = self.bands[E][zeta][n][l][m]
-							# Calculate and add contribution of basis function
-							psi += R*Y*coeff
+						# Get coefficient of basis function
+						coeff = self.bands[E][l][zeta][m]
+						# Calculate and add contribution of basis function
+						psi += R*Y*coeff
 		return psi
 
 	def applyFactor(self, factor, E):
@@ -378,10 +369,9 @@ class Atom(Ion):
 			E (float): Energy of band to which to apply factor
 		"""
 
-		for zeta in self.bands[E]:
-			for n in self.bands[E][zeta]:
-				for l in self.bands[E][zeta][n]:
-					for m in self.bands[E][zeta][n][l]:
-						self.bands[E][zeta][n][l][m] *= factor
+		for l in self.bands[E]:
+			for zeta in self.bands[E][l]:
+					for m in self.bands[E][l][zeta]:
+						self.bands[E][l][zeta][m] *= factor
 
 
