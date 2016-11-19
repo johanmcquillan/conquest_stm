@@ -1,6 +1,7 @@
 import math
 
 import atomic
+from cell import Cell
 from smartDict import SmartDict
 
 HA_TO_EV = 0.03674932 # Factor to convert Hartrees to electron volts
@@ -24,6 +25,7 @@ class Parser(object):
 		self.atoms = SmartDict()
 		self.fermiLevels = {}
 		self.electrons = {}
+		self.cellDimensions = {}
 
 		self.ionFiles = ionFiles
 		self.ionFolder = ionFolder
@@ -110,6 +112,17 @@ class Parser(object):
 				line = Fconq.next()
 
 			# Skip lines until more atom data
+
+			while "The simulation box has the following dimensions" not in line:
+				line = Fconq.next()
+			line = Fconq.next()
+			rawData =line.split()
+			cellLengthX = float(rawData[2])
+			cellLengthY = float(rawData[5])
+			cellLengthZ = float(rawData[8])
+			self.cellDimensions[conq] = [cellLengthX, cellLengthY, cellLengthZ]
+
+			# 
 			while line.split() != ['------------------------------------------------------------------']:
 				line = Fconq.next()
 			Fconq.next()
@@ -210,3 +223,19 @@ class Parser(object):
 			fermiLevel = float(data[2])*HA_TO_EV
 
 			self.fermiLevels[conq] = fermiLevel
+
+	def getCell(self, conq, gridSpacing=0.5):
+
+		electrons = self.electrons[conq]
+		fermi = self.fermiLevels[conq]
+		x = self.cellDimensions[conq][0]
+		y = self.cellDimensions[conq][1]
+		z = self.cellDimensions[conq][2]
+		
+		C = Cell(conq, fermi, electrons, x, y, z, gridSpacing=.5)
+
+		for atomKey in self.atoms[conq]:
+			C.addAtom(self.atoms[conq][atomKey], atomKey)
+
+		return C
+
