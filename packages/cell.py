@@ -147,14 +147,15 @@ class Cell(object):
 		
 		return psi
 
-	def normaliseBand(self, bandNumber, debug=False):
-		"""Normalise coefficients of a band to give a total electron charge of unity.
+	def getTotalCharge(self, bandNumber):
+		"""Integrate charge density of band over cell to get total charge
 
 		Args:
-			bandNumber (int): Number of band to normalise
-			debug (bool, opt.): If true, print extra information during runtime
-		"""
+			bandNumber (int): Number of band to integrate
 
+		Returns:
+			float: Total charge
+		"""
 		totalCharge = 0.0
 		bandEnergy=self.bands[bandNumber]
 
@@ -174,7 +175,20 @@ class Cell(object):
 							psi += atom.getPsi(bandEnergy, x, y, z)
 					# Add to charge
 					totalCharge += abs(psi)**2 * self.gridSpacing**3
+
+		return totalCharge
+
+	def normaliseBand(self, bandNumber, debug=False):
+		"""Normalise coefficients of a band to give correct number of electrons.
+
+		Args:
+			bandNumber (int): Number of band to normalise
+			debug (bool, opt.): If true, print extra information during runtime
+		"""
+		totalCharge = self.getTotalCharge(bandNumber)
 		
+		bandEnergy = self.bands[bandNumber]
+
 		# Check if difference between actual and calculated charge is large than tolerance
 		if abs(self.electrons - totalCharge) > 0.001:
 			if debug:
