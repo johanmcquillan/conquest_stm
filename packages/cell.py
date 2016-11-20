@@ -179,23 +179,22 @@ class Cell(object):
 		return totalCharge
 
 	def normaliseBand(self, bandNumber, debug=False):
-		"""Normalise coefficients of a band to give correct number of electrons.
+		"""Normalise coefficients of a band to give total charge of unity.
 
 		Args:
 			bandNumber (int): Number of band to normalise
 			debug (bool, opt.): If true, print extra information during runtime
 		"""
 		totalCharge = self.getTotalCharge(bandNumber)
-		
 		bandEnergy = self.bands[bandNumber]
 
 		# Check if difference between actual and calculated charge is large than tolerance
-		if abs(self.electrons - totalCharge) > 0.001:
+		if abs(1.0 - totalCharge) > 0.001:
 			if debug:
 				print "Total Electron Charge Unnormalised = "+str(totalCharge)
 
 			# Apply normalisation factor to basis coefficients
-			factor =  np.sqrt(float(self.electrons) / totalCharge)
+			factor =  np.sqrt(1.0 / totalCharge)
 			for atomKey in self.atoms:
 				self.atoms[atomKey].applyFactor(factor, bandEnergy)
 
