@@ -1,4 +1,6 @@
+
 import numpy as np
+import datetime as dt
 
 # Import matplotlib packages
 import matplotlib.pyplot as plt
@@ -24,7 +26,9 @@ def plotRadials(ions, points=500, printStatus=False, spectro=True):
 		printStatus (boolean, opt.): If true, print notification when finishing a plot
 		spectro (boolean, opt.): If true, use spectroscopic notation
 	"""
-	with PdfPages('pdfs/radials.pdf') as pdf:
+	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
+
+	with PdfPages('pdfs/radials'+timeStamp+'.pdf') as pdf:
 
 		# Plot all functions for the same ion on one graph
 		ionNames = sorted(ions.keys())
@@ -187,8 +191,8 @@ def plotBasis2D(ionName, ion, zeta, n, l, m, axis, minimum=-8, maximum=8, planeV
 		printStatus (boolean, opt.): If true, print notification when finishing a plot
 		spectro (boolean, opt.): If true, use spectroscopic notation
 	"""
-
-	plotname = 'Basis_'+ionName+'_'+str(zeta)+'_'+str(n)+'_'+str(l)+'_'+str(m)+'_'+axis
+	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
+	plotname = 'Basis_'+ionName+'_'+str(zeta)+'_'+str(n)+'_'+str(l)+'_'+str(m)+'_'+axis+timeStamp
 
 	# Initialise meshes
 	# 2D cartesian mesh (x, y, or z axis determined later)
@@ -201,7 +205,7 @@ def plotBasis2D(ionName, ion, zeta, n, l, m, axis, minimum=-8, maximum=8, planeV
 	maxpsi = 0.1 # Colour plot sets limits to -maxpsi to +maxpsi
 
 	# Plot functions to pdf
-	with PdfPages('pdfs/' + plotname + '.pdf') as pdf:
+	with PdfPages('pdfs/'+plotname+'.pdf') as pdf:
 		# Loop over all mesh points
 		for i in range(0, int((maximum - minimum) / step)):
 			for j in range(0, int((maximum - minimum) / step)):
@@ -273,7 +277,8 @@ def plotChargeDensity2D(cell, bandNumber, axis, minimum, maximum, step=None,
 	if normalise:
 		cell.normaliseBand(bandNumber)
 
-	plotname = cell.name+'_ChargeDensity_'+axis+'_'+label
+	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
+	plotname = cell.name+'_ChargeDensity_'+axis+'_'+label+timeStamp
 
 	# Initialise meshes
 	# 2D cartesian mesh (x, y, or z axis determined later)
@@ -428,7 +433,8 @@ def plotChargeDensity3D(cell, bandNumber, xrange=(0.0, 0.0), yrange=(0.0, 0.0), 
 
 	# Save plot as png
 	if save:
-		saveName = cell.name+"_ChargeDensity3D_"+str(fraction)+"_"+str(bandEnergy)
+		timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
+		saveName = cell.name+"_ChargeDensity3D_"+str(fraction)+"_"+str(bandEnergy)+timeStamp
 		plt.savefig("figures3D/"+saveName+".png")
 	# Show plot
 	if show:
