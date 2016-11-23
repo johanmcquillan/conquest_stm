@@ -1,8 +1,7 @@
-
 import numpy as np
 
-class Cell(object):
 
+class Cell(object):
 	"""Simulation cell which holds Atom objects in a 3D mesh.
 
 	All lengths measured in Bohr radii (a0).
@@ -55,9 +54,8 @@ class Cell(object):
 		self.zPoints = int(zLength / gridSpacing)
 
 		# Form Cartesian meshes
-		self.xMesh, self.yMesh, self.zMesh = np.mgrid[0:xLength:gridSpacing,
-		                                              0:yLength:gridSpacing,
-		                                              0:zLength:gridSpacing]
+		self.xMesh, self.yMesh, self.zMesh = np.mgrid[
+												0:xLength:gridSpacing, 0:yLength:gridSpacing, 0:zLength:gridSpacing]
 
 		# Initialise atoms and bands
 		self.atoms = {}
@@ -72,12 +70,9 @@ class Cell(object):
 		"""
 
 		# Reassign atom coordinates to nearest mesh points
-		atom.x = self.gridSpacing*min(range(0, self.xPoints),
-			                             key=lambda i: abs(self.xMesh[i, 0, 0]-atom.x))
-		atom.y = self.gridSpacing*min(range(0, self.yPoints),
-			                             key=lambda i: abs(self.yMesh[0, i, 0]-atom.y))
-		atom.z = self.gridSpacing*min(range(0, self.zPoints),
-			                             key=lambda i: abs(self.zMesh[0, 0, i]-atom.z))
+		atom.x = self.gridSpacing * min(range(0, self.xPoints), key=lambda i: abs(self.xMesh[i, 0, 0] - atom.x))
+		atom.y = self.gridSpacing * min(range(0, self.yPoints), key=lambda i: abs(self.yMesh[0, i, 0] - atom.y))
+		atom.z = self.gridSpacing * min(range(0, self.zPoints), key=lambda i: abs(self.zMesh[0, 0, i] - atom.z))
 
 		# Add to dict
 		self.atoms[atomKey] = atom
@@ -94,17 +89,16 @@ class Cell(object):
 
 		band (int, opt.): Number of band at which to evaluate psi
 		debug (bool., opt.): If true, print extra information during runtime
-		
 		"""
 
-		bandEnergy=self.bands[bandNumber]
+		bandEnergy = self.bands[bandNumber]
 
 		# Get 3D mesh with (0+0j) at all points
 		wavefunc = np.empty_like(self.xMesh, dtype=complex)
 		# Iterate over all atoms stored in this cell
 		for atomKey in self.atoms:
 			atom = self.atoms[atomKey]
-			if atom.bands.has_key(bandEnergy):
+			if bandEnergy in atom.bands:
 				# Iterate over all mesh points
 				for i in range(0, self.xPoints):
 					for j in range(0, self.yPoints):
@@ -117,9 +111,9 @@ class Cell(object):
 							# # Add contribution from this atom to this mesh point
 							wavefunc[i, j, k] = wavefunc[i, j, k] + atom.getPsi(bandEnergy, x, y, z)
 				if debug:
-					print 'Band Energy = '+str(bandEnergy)+'; Calculated Psi for Atom '+str(atomKey)
+					print 'Band Energy = ' + str(bandEnergy) + '; Calculated Psi for Atom ' + str(atomKey)
 			elif debug:
-				print "Atom "+str(a)+" has no band "+str(bandNumber)+": "+str(bandEnergy)
+				print "Atom " + str(atomKey) + " has no band " + str(bandNumber) + ": " + str(bandEnergy)
 		return wavefunc
 
 	def givePsi(self, x, y, z, bandNumber=0, debug=False):
@@ -143,11 +137,11 @@ class Cell(object):
 		# Get wavefunction contribution from each atom and add to psi
 		for atomKey in self.atoms:
 			atom = self.atoms[atomKey]
-			if atom.bands.has_key(bandEnergy):
+			if bandEnergy in atom.bands:
 				psi = psi + atom.getPsi(bandEnergy, x, y, z)
 			elif debug:
-				print "Atom "+str(a)+" has no band "+str(bandNumber)+": "+str(bandEnergy)
-		
+				print "Atom " + str(atomKey) + " has no band " + str(bandNumber) + ": " + str(bandEnergy)
+
 		return psi
 
 	def getTotalCharge(self, bandNumber):
@@ -160,7 +154,7 @@ class Cell(object):
 			float: Total charge
 		"""
 		totalCharge = 0.0
-		bandEnergy=self.bands[bandNumber]
+		bandEnergy = self.bands[bandNumber]
 
 		# Iterate over all mesh points
 		for i in range(0, self.xPoints):
@@ -174,10 +168,10 @@ class Cell(object):
 					# Sum contributions to psi from all atoms
 					for atomKey in self.atoms:
 						atom = self.atoms[atomKey]
-						if atom.bands.has_key(bandEnergy):
+						if bandEnergy in atom.bands:
 							psi += atom.getPsi(bandEnergy, x, y, z)
 					# Add to charge
-					totalCharge += abs(psi)**2 * self.gridSpacing**3
+					totalCharge += abs(psi) ** 2 * self.gridSpacing ** 3
 
 		return totalCharge
 
@@ -194,10 +188,10 @@ class Cell(object):
 		# Check if difference between actual and calculated charge is large than tolerance
 		if abs(1.0 - totalCharge) > 0.001:
 			if debug:
-				print "Total Electron Charge Unnormalised = "+str(totalCharge)
+				print "Total Electron Charge Unnormalised = " + str(totalCharge)
 
 			# Apply normalisation factor to basis coefficients
-			factor =  np.sqrt(1.0 / totalCharge)
+			factor = np.sqrt(1.0 / totalCharge)
 			for atomKey in self.atoms:
 				self.atoms[atomKey].applyFactor(factor, bandEnergy)
 
@@ -208,24 +202,24 @@ class Cell(object):
 		"""Combine bands with energies within Erange.
 
 		Args:
-			Erange ((float)): Energy range to combine, (Emin, Emax)
+			Erange (tuple, float): Energy range to combine, (Emin, Emax)
 			normalise (bool, opt.): If true, normalise bands before combination
 			debug (bool, opt.): If true, print extra information during runtime
 		"""
 		Emin = Erange[0]
 		Emax = Erange[1]
-		Eavg = (Emax + Emin) / 2.0 # Energy of new band
+		Eavg = (Emax + Emin) / 2.0  # Energy of new band
 
 		bandsToCombine = []
 		bandsToCombineEnergies = []
 
 		# Find bands within energy range
 		for i in range(len(self.bands)):
-			if Emin < self.bands[i] and Emax > self.bands[i]:
+			if Emin < self.bands[i] < Emax:
 				bandsToCombine.append(i)
 				bandsToCombineEnergies.append(self.bands[i])
 
-		# If fewer than two bands, 
+		# If fewer than two bands,
 		if len(bandsToCombine) > 1:
 			for band in bandsToCombine:
 				bandEnergy = self.bands[band]
@@ -233,11 +227,11 @@ class Cell(object):
 				if normalise:
 					self.normaliseBand(band, debug=debug)
 					if debug:
-						print 'Normalised band '+str(bandEnergy)+' eV'
+						print 'Normalised band ' + str(bandEnergy) + ' eV'
 
 				for atomKey in self.atoms:
 					self.atoms[atomKey].combineCoeffs(bandEnergy, Eavg)
-			
+
 			for bandE in bandsToCombineEnergies:
 				self.bands.remove(bandE)
 
@@ -260,5 +254,5 @@ class Cell(object):
 					debugString = 'Only single band'
 				else:
 					debugString = 'No bands'
-				print debugString+' within range '+str(Emin)+' eV and '+str(Emax)+' eV'
+				print debugString + ' within range ' + str(Emin) + ' eV and ' + str(Emax) + ' eV'
 			return None, None

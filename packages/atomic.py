@@ -1,4 +1,3 @@
-
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
@@ -7,8 +6,8 @@ from scipy.interpolate import interp1d
 from sph import sph
 from smartDict import SmartDict
 
-class Radial(object):
 
+class Radial(object):
 	"""Stores the radial part of basis function and metadata,
 	ie. quantum numbers (n and l) and zeta index.
 
@@ -19,12 +18,12 @@ class Radial(object):
 		"""Constructs radial part of a basis function.
 
 		Args:
-		    zeta (int): Indexes functions with the same n and l, but different cutoff
-		    n (int): Principal quantum number
-		    l (int): Orbital angular momentum quantum number
-		    radii (float[]): List of radial distance values
-		    radialFuncValues (float[]): List of radial function values for each value of radii
-		    cutoff (float): Range of radial function, beyond which value of R is 0.0
+			zeta (int): Indexes functions with the same n and l, but different cutoff
+			n (int): Principal quantum number
+			l (int): Orbital angular momentum quantum number
+			radii (float[]): List of radial distance values
+			radialFuncValues (float[]): List of radial function values for each value of radii
+			cutoff (float): Range of radial function, beyond which value of R is 0.0
 		"""
 		self.zeta = zeta
 		self.n = n
@@ -38,10 +37,10 @@ class Radial(object):
 		"""Use linear interpolation to evaluate radial function at distance.
 		
 		Args:
-		    distance (float): Distance from origin
+			distance (float): Distance from origin
 
 		Returns:
-		    float: Value of radial part
+			float: Value of radial part
 		"""
 		if distance > self.cutoff:
 			value = 0.0
@@ -49,14 +48,14 @@ class Radial(object):
 			# Find the first r value larger than distance
 			i = 0
 			while self.radii[i] < distance:
-				i = i + 1
+				i += 1
 
 			i = min(range(0, len(self.radii)), key=lambda j: abs(self.radii[j] - distance))
 
 			# Get nearest stored values
-			x1 = self.radii[i-1]
+			x1 = self.radii[i - 1]
 			x2 = self.radii[i]
-			y1 = self.radialFuncValues[i-1]
+			y1 = self.radialFuncValues[i - 1]
 			y2 = self.radialFuncValues[i]
 
 			# Calculate via interpolation
@@ -67,10 +66,10 @@ class Radial(object):
 		"""Use cubic interpolation to evaluate radial function at distance.
 		
 		Args:
-		    distance (float): Distance from origin
+			distance (float): Distance from origin
 		
 		Returns:
-		    float: Value of radial part
+			float: Value of radial part
 		"""
 
 		if distance > self.cutoff:
@@ -78,6 +77,7 @@ class Radial(object):
 		else:
 			value = self.radialInterpolator(distance)
 		return value
+
 
 class Ion(object):
 	"""
@@ -90,24 +90,25 @@ class Ion(object):
 		radials (SmartDict): Radial objects accessed by radials[zeta][n][l], where all indices are int
 
 	"""
+
 	def __init__(self, ionName, radialDict=SmartDict()):
-		"""Constuct ion represented using given basis functions.
+		"""Construct ion represented using given basis functions.
 		
 		Args:
-		    ionName (string): Name of ion (usually from name of .ion file)
-		    radialDict (SmartDict, optional): Radial objects, indexed by radialDict[zeta][n][l],
-		    									where all indices are int. Default is empty, radials
-		    									may be added after instantion
+			ionName (string): Name of ion (usually from name of .ion file)
+			radialDict (SmartDict, optional): Radial objects, indexed by radialDict[zeta][n][l],
+												where all indices are int. Default is empty, radials
+												may be added after instantion
 		"""
 		self.ionName = ionName
-		self.radials = radialDict # Radial objects; accessed by self.radials[zeta][n][l]
+		self.radials = radialDict  # Radial objects; accessed by self.radials[zeta][n][l]
 
 	def sortPAOs(self):
 		"""Sort pseudo-atomic orbitals into order according to .dat files.
 		
 		Returns:
-		    list: Ordered list of PAO data;
-		    		Each element is a list containing [l, zeta, m] for the PAO
+			list: Ordered list of PAO data;
+					Each element is a list containing [l, zeta, m] for the PAO
 		"""
 		sortedPAOs = []
 
@@ -117,8 +118,8 @@ class Ion(object):
 		for l in lList:
 			zetaList = sorted(self.radials[l])
 			for zeta in zetaList:
-				for m in range(-l, l+1):
-						sortedPAOs.append([l, zeta, m])
+				for m in range(-l, l + 1):
+					sortedPAOs.append([l, zeta, m])
 		return sortedPAOs
 
 	def hasRadial(self, l, zeta):
@@ -136,8 +137,8 @@ class Ion(object):
 			boolean: True if Radial is stored, false if not
 		"""
 		output = False
-		if self.radials.has_key(l):
-			if self.radials[l].has_key(zeta):
+		if l in self.radials:
+			if zeta in self.radials[l]:
 				return True
 		return output
 
@@ -186,8 +187,8 @@ class Ion(object):
 		Args:
 			l (int): Orbital angular momentum quantum number
 			zeta (int): Indexes functions with different cutoffs
-		    r (float): Radial distance from ion
-
+			r (float): Radial distance from ion
+			interpolation (string, opt.): Method of interpolation; possible arguments are 'cubic' (default) and 'linear'
 		Returns:
 			float: Radial function evaluated at r
 		"""
@@ -212,8 +213,8 @@ class Ion(object):
 					maxcut = self.radials[l][zeta].cutoff
 		return maxcut
 
-class Atom(Ion):
 
+class Atom(Ion):
 	"""Stores information on an atom, extending Ion to include atomic position and basis coefficients
 
 	All lengths measured in Bohr radii (a0).
@@ -234,12 +235,12 @@ class Atom(Ion):
 
 		Args:
 			ionName (string): Name of ion (usually from name of .ion file)
-		    radialDict (SmartDict, optional): Radial objects, indexed by radialDict[zeta][n][l],
-		    									where all indices are int. Default is empty, radials
-		    									may be added after instantiation
-		    x (float): Atomic x coordinate in simulation cell in Bohr radii
-		    y (float): Atomic y coordinate in simulation cell in Bohr radii
-		    z (float): Atomic z coordinate in simulation cell in Bohr radii
+			radials (SmartDict, optional): Radial objects, indexed by radialDict[zeta][n][l],
+											where all indices are int. Default is empty, radials
+											may be added after instantiation
+			x (float): Atomic x coordinate in simulation cell in Bohr radii
+			y (float): Atomic y coordinate in simulation cell in Bohr radii
+			z (float): Atomic z coordinate in simulation cell in Bohr radii
 		"""
 		Ion.__init__(self, ionName, radials)
 		self.x = x
@@ -264,17 +265,17 @@ class Atom(Ion):
 			E (float): Band energy
 			l (int): Orbital angular momentum quantum number
 			zeta (int): Indexes functions with different cutoff but same n and l
-		    m (int): Azimuthal orbital angular momentum quantum number
+			m (int): Azimuthal orbital angular momentum quantum number
 
 		Returns:
 			boolean: True if coefficient is stored, false if not
 		"""
 
 		output = False
-		if self.bands.has_key(E):
-			if self.bands[E].has_key(l):
-				if self.bands[E][l].has_key(zeta):
-					if self.bands[E][l][zeta].has_key(m):
+		if E in self.bands:
+			if l in self.bands[E]:
+				if zeta in self.bands[E][l]:
+					if m in self.bands[E][l][zeta]:
 						output = True
 		return output
 
@@ -318,7 +319,7 @@ class Atom(Ion):
 			E (float): Band energy
 			l (int): Orbital angular momentum quantum number
 			zeta (int): Indexes functions with different cutoff but same n and l
-		    m (int): Azimuthal orbital angular momentum quantum number
+			m (int): Azimuthal orbital angular momentum quantum number
 
 		Returns:
 			complex: Coefficient for given orbital
@@ -346,25 +347,25 @@ class Atom(Ion):
 		rely = y - self.y
 		relz = z - self.z
 		# Get relative distance to atom
-		r = np.sqrt(relx**2 + rely**2 + relz**2)
+		r = np.sqrt(relx ** 2 + rely ** 2 + relz ** 2)
 
 		psi = complex(0.0, 0.0)
 
 		# If r is beyond atoms range, return 0.0+0.0j
-		if r <= self.getMaxCutoff(): # Loop over all radial functions
+		if r <= self.getMaxCutoff():  # Loop over all radial functions
 			for l in self.radials:
 				for zeta in self.radials[l]:
 					# Evaluate R(r) using linear interpolation
 					R = self.getRadialValue(l, zeta, r)
 
-					for m in range(-l, l+1):
+					for m in range(-l, l + 1):
 						# Calculate spherical harmonic
 						Y = sph(l, m, relx, rely, relz)
 
 						# Get coefficient of basis function
 						coeff = self.bands[E][l][zeta][m]
 						# Calculate and add contribution of basis function
-						psi += R*Y*coeff
+						psi += R * Y * coeff
 		return psi
 
 	def applyFactor(self, factor, E):
@@ -377,7 +378,5 @@ class Atom(Ion):
 
 		for l in self.bands[E]:
 			for zeta in self.bands[E][l]:
-					for m in self.bands[E][l][zeta]:
-						self.bands[E][l][zeta][m] *= factor
-
-
+				for m in self.bands[E][l][zeta]:
+					self.bands[E][l][zeta][m] *= factor
