@@ -20,6 +20,7 @@ SPH42 = 3.0/4.0 * np.sqrt(5.0 / np.pi)
 SPH41 = 3.0/4.0 * np.sqrt(5.0 / (2*np.pi))
 SPH40 = 3.0/16.0 * np.sqrt(1.0 / np.pi)
 
+
 def sph(l, m, x, y, z):
 	"""Return value of real spherical harmonic using Cartesian coordinates.
 

@@ -4,7 +4,8 @@ import atomic
 from cell import Cell
 from smartDict import SmartDict
 
-HA_TO_EV = 0.03674932 # Factor to convert Hartrees to electron volts
+HA_TO_EV = 0.03674932  # Factor to convert Hartrees to electron volts
+
 
 class Parser(object):
 
@@ -37,18 +38,18 @@ class Parser(object):
 
 		for ionName in self.ionFiles:
 			# Open .ion and initialise entry
-			f = open(self.ionFolder+ionName+'.ion', 'r')
+			Fion = open(self.ionFolder+ionName+'.ion', 'r')
 
 			# Skip preamble and first 9 lines
-			line = f.next()
-			while not '</preamble>' in line:
-				line = f.next()
+			line = Fion.next()
+			while '</preamble>' not in line:
+				line = Fion.next()
 			for i in range(0, 9):
-				line = f.next()
+				Fion.next()
 
 			# Create empty dict of radial objects
 			radialDict = SmartDict()
-			line = f.next()
+			line = Fion.next()
 			while line.split()[0] != '#':
 				# Read quantum numbers and zeta index
 				metadata = line.split()
@@ -57,7 +58,7 @@ class Parser(object):
 				zeta = int(metadata[2])
 
 				# Get number of points for radial and cutoff radius
-				line = f.next()
+				line = Fion.next()
 				metadata = line.split()
 				pts = int(metadata[0])
 				cutoff = float(metadata[2])
@@ -67,18 +68,17 @@ class Parser(object):
 				R = []
 				# Read data into Radial object and add to Ion
 				for i in range(0, pts):
-					line = f.next()
+					line = Fion.next()
 					x, y = line.split()
 					x = float(x)
-					y = float(y)
-					y = y * math.pow(x, l)
+					y = float(y) * math.pow(x, l)
 					r.append(x)
 					R.append(y)
 
 				# Create Radial object and store in dict
 				radialDict[l][zeta] = atomic.Radial(n, l, zeta, r, R, cutoff)
-				line = f.next()
-			f.close()
+				line = Fion.next()
+			Fion.close()
 
 			# Create Ion with radials and add to dict
 			self.ions[ionName] = atomic.Ion(ionName, radialDict)
@@ -116,21 +116,21 @@ class Parser(object):
 			while "The simulation box has the following dimensions" not in line:
 				line = Fconq.next()
 			line = Fconq.next()
-			rawData =line.split()
+			rawData = line.split()
 			cellLengthX = float(rawData[2])
 			cellLengthY = float(rawData[5])
 			cellLengthZ = float(rawData[8])
 			self.cellDimensions[conq] = [cellLengthX, cellLengthY, cellLengthZ]
 
 			# 
-			while line.split() != ['------------------------------------------------------------------']:
+			while '------------------------------------------------------------------' not in line:
 				line = Fconq.next()
 			Fconq.next()
 			Fconq.next()
 			line = Fconq.next()
 
 			# Get ion species
-			while line.split() != ['------------------------------------------------------------------']:
+			while '------------------------------------------------------------------' not in line:
 				rawData = line.split()
 
 				ionType = int(rawData[0])
@@ -143,7 +143,7 @@ class Parser(object):
 						x, y, z = atomDataList[:3]
 						self.atoms[conq][atomKey] = atomic.Atom(ionName, x, y, z)
 						self.atoms[conq][atomKey].setIon(self.ions[ionName])
-						if not self.electrons.has_key(conq):
+						if conq not in self.electrons:
 							self.electrons[conq] = 0
 						self.electrons[conq] += numberOfElectrons
 				Fconq.next()
@@ -189,8 +189,8 @@ class Parser(object):
 											bandE = E
 											foundExistingBand = True
 
-										j = j + 1
-									i = i + 1
+										j += 1
+									i += 1
 
 							line = Fcoeff.next()
 							while len(line.split()) > 2:
@@ -232,7 +232,7 @@ class Parser(object):
 		y = self.cellDimensions[conq][1]
 		z = self.cellDimensions[conq][2]
 		
-		C = Cell(conq, fermi, electrons, x, y, z, gridSpacing=.5)
+		C = Cell(conq, fermi, electrons, x, y, z, gridSpacing=gridSpacing)
 
 		for atomKey in self.atoms[conq]:
 			C.addAtom(self.atoms[conq][atomKey], atomKey)
