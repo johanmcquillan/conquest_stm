@@ -4,6 +4,7 @@ Thumbs.db
 *.pdf
 *.png
 *.pyc
+*.xml
 
 *.sublime-workspace
 *.tmlanguage.cache
