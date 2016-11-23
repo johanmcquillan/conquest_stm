@@ -4,6 +4,9 @@ import numpy as np
 class Cell(object):
 
 	"""Simulation cell which holds Atom objects in a 3D mesh.
+
+	All lengths measured in Bohr radii (a0).
+	All energies measured in Hartrees (Ha).
 	
 	Attributes:
 		name (string): Name of simulation; used for plot titles
@@ -201,55 +204,61 @@ class Cell(object):
 		elif debug:
 			print "Total Electron Charge Already Normalised"
 
-	def combineBands(self, Erange, normalise=True, outputBandData=False, debug=False):
+	def combineBands(self, Erange, normalise=True, debug=False):
 		"""Combine bands with energies within Erange.
 
+		Args:
+			Erange ((float)): Energy range to combine, (Emin, Emax)
+			normalise (bool, opt.): If true, normalise bands before combination
+			debug (bool, opt.): If true, print extra information during runtime
 		"""
-
 		Emin = Erange[0]
 		Emax = Erange[1]
-		Eavg = (Emax - Emin) / 2.0
+		Eavg = (Emax + Emin) / 2.0 # Energy of new band
 
 		bandsToCombine = []
+		bandsToCombineEnergies = []
 
+		# Find bands within energy range
 		for i in range(len(self.bands)):
 			if Emin < self.bands[i] and Emax > self.bands[i]:
 				bandsToCombine.append(i)
+				bandsToCombineEnergies.append(self.bands[i])
 
-		if len(bandsToCombine) > 2:
+		# If fewer than two bands, 
+		if len(bandsToCombine) > 1:
 			for band in bandsToCombine:
 				bandEnergy = self.bands[band]
 
 				if normalise:
 					self.normaliseBand(band, debug=debug)
 					if debug:
-						print 'Normalised band '+str(bandEnergy)+' Ha'
+						print 'Normalised band '+str(bandEnergy)+' eV'
 
 				for atomKey in self.atoms:
 					self.atoms[atomKey].combineCoeffs(bandEnergy, Eavg)
-				self.bands.remove(bandEnergy)
+			
+			for bandE in bandsToCombineEnergies:
+				self.bands.remove(bandE)
 
 			self.bands.append(Eavg)
 			self.bands = sorted(self.bands)
 			i = 0
 			newBandNumber = None
 			bandFound = False
-			print Eavg
 			while not bandFound and i < len(self.bands):
-				print self.bands[i]
 				if self.bands[i] == Eavg:
 					newBandNumber = i
 					bandFound = True
 				else:
 					i += 1
 			self.normaliseBand(newBandNumber)
-
-		elif debug:
-			if len(bandsToCombine) == 1:
-				debugString = 'Only single band'
-			else:
-				debugString = 'No bands'
-			print debugString+' within range '+str(Emin)+' Ha and '+str(Emax)+' Ha'
-
-		if outputBandData:
 			return newBandNumber, Eavg
+		else:
+			if debug:
+				if len(bandsToCombine) == 1:
+					debugString = 'Only single band'
+				else:
+					debugString = 'No bands'
+				print debugString+' within range '+str(Emin)+' eV and '+str(Emax)+' eV'
+			return None, None
