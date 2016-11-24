@@ -180,7 +180,7 @@
         Matrix X   has range      2.00000000
         Matrix SX  has range      2.00000000
 
-          This job was run on 2016/11/24 at 13:52
+          This job was run on 2016/11/24 at 19:10
 
 
           Code compiled on: Wed Nov 2 13:55:34 GMT 2016
@@ -298,7 +298,7 @@
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         221.88496590 ms
+          Proc:     0 Time taken for eval diag:         221.97389603 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.21086
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -400,7 +400,7 @@
                0.78812 0.000       0.80558 0.000       0.82359 0.000
 Sum of eigenvalues for spin = 1:    -25.34385983831 Ha
           Sum of eigenvalues:    -50.68771967662 Ha
-          Proc:     0 Time taken for evec diag:         392.32921600 ms
+          Proc:     0 Time taken for evec diag:         398.97012711 ms
           Fermi energy for spin = 1 is     -0.21086034088 Ha
           Energy as 2Tr[K.H]:    -50.68771967662 Ha
           2Tr[S.G]:     50.68771967662 Ha
@@ -424,7 +424,7 @@ Sum of eigenvalues for spin = 1:    -25.34385983831 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         221.26793861 ms
+          Proc:     0 Time taken for eval diag:         225.05807877 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.21086
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -526,7 +526,7 @@ Sum of eigenvalues for spin = 1:    -25.34385983831 Ha
                0.78812 0.000       0.80558 0.000       0.82359 0.000
 Sum of eigenvalues for spin = 1:    -25.34385983831 Ha
           Sum of eigenvalues:    -50.68771967662 Ha
-          Proc:     0 Time taken for evec diag:         395.36190033 ms
+          Proc:     0 Time taken for evec diag:         403.68103981 ms
           Fermi energy for spin = 1 is     -0.21086034088 Ha
           Energy as 2Tr[K.H]:    -50.68771967662 Ha
           2Tr[S.G]:     50.68771967662 Ha
@@ -561,7 +561,7 @@ Sum of eigenvalues for spin = 1:    -25.34385983831 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         221.01902962 ms
+          Proc:     0 Time taken for eval diag:         222.31698036 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.17393
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -663,7 +663,7 @@ Sum of eigenvalues for spin = 1:    -25.34385983831 Ha
                0.86143 0.000       0.89573 0.000       0.91285 0.000
 Sum of eigenvalues for spin = 1:    -22.30156404033 Ha
           Sum of eigenvalues:    -44.60312808066 Ha
-          Proc:     0 Time taken for evec diag:         395.36404610 ms
+          Proc:     0 Time taken for evec diag:         402.69398689 ms
           Fermi energy for spin = 1 is     -0.17392917943 Ha
           Energy as 2Tr[K.H]:    -44.60312808066 Ha
           2Tr[S.G]:     44.60312808066 Ha
@@ -698,7 +698,7 @@ Sum of eigenvalues for spin = 1:    -22.30156404033 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         232.21397400 ms
+          Proc:     0 Time taken for eval diag:         222.10597992 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.28850
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -800,7 +800,7 @@ Sum of eigenvalues for spin = 1:    -22.30156404033 Ha
                0.92757 0.000       0.94340 0.000       0.96817 0.000
 Sum of eigenvalues for spin = 1:    -32.48482020319 Ha
           Sum of eigenvalues:    -64.96964040638 Ha
-          Proc:     0 Time taken for evec diag:         385.01501083 ms
+          Proc:     0 Time taken for evec diag:         398.18811417 ms
           Fermi energy for spin = 1 is     -0.28849943327 Ha
           Energy as 2Tr[K.H]:    -64.96964040638 Ha
           2Tr[S.G]:     64.96964040638 Ha
@@ -835,7 +835,7 @@ Sum of eigenvalues for spin = 1:    -32.48482020319 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         232.62405396 ms
+          Proc:     0 Time taken for eval diag:         221.72117233 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.26647
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -937,7 +937,7 @@ Sum of eigenvalues for spin = 1:    -32.48482020319 Ha
                0.77348 0.000       0.80084 0.000       0.82270 0.000
 Sum of eigenvalues for spin = 1:    -30.52530942993 Ha
           Sum of eigenvalues:    -61.05061885986 Ha
-          Proc:     0 Time taken for evec diag:         385.30302048 ms
+          Proc:     0 Time taken for evec diag:         402.35495567 ms
           Fermi energy for spin = 1 is     -0.26647217913 Ha
           Energy as 2Tr[K.H]:    -61.05061885986 Ha
           2Tr[S.G]:     61.05061885986 Ha
@@ -972,7 +972,7 @@ Sum of eigenvalues for spin = 1:    -30.52530942993 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         222.31793404 ms
+          Proc:     0 Time taken for eval diag:         222.28097916 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20832
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -1074,7 +1074,7 @@ Sum of eigenvalues for spin = 1:    -30.52530942993 Ha
                0.81667 0.000       0.83657 0.000       0.85525 0.000
 Sum of eigenvalues for spin = 1:    -24.66392710313 Ha
           Sum of eigenvalues:    -49.32785420625 Ha
-          Proc:     0 Time taken for evec diag:         385.24293900 ms
+          Proc:     0 Time taken for evec diag:         400.97594261 ms
           Fermi energy for spin = 1 is     -0.20832334538 Ha
           Energy as 2Tr[K.H]:    -49.32785420625 Ha
           2Tr[S.G]:     49.32785420625 Ha
@@ -1109,7 +1109,7 @@ Sum of eigenvalues for spin = 1:    -24.66392710313 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         233.37411880 ms
+          Proc:     0 Time taken for eval diag:         222.69392014 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.21136
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -1211,7 +1211,7 @@ Sum of eigenvalues for spin = 1:    -24.66392710313 Ha
                0.78575 0.000       0.80908 0.000       0.82664 0.000
 Sum of eigenvalues for spin = 1:    -25.25346593649 Ha
           Sum of eigenvalues:    -50.50693187299 Ha
-          Proc:     0 Time taken for evec diag:         387.14718819 ms
+          Proc:     0 Time taken for evec diag:         401.21006966 ms
           Fermi energy for spin = 1 is     -0.21136373007 Ha
           Energy as 2Tr[K.H]:    -50.50693187299 Ha
           2Tr[S.G]:     50.50693187299 Ha
@@ -1246,7 +1246,7 @@ Sum of eigenvalues for spin = 1:    -25.25346593649 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         232.66887665 ms
+          Proc:     0 Time taken for eval diag:         222.14984894 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20578
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -1348,7 +1348,7 @@ Sum of eigenvalues for spin = 1:    -25.25346593649 Ha
                0.80364 0.000       0.82962 0.000       0.84723 0.000
 Sum of eigenvalues for spin = 1:    -24.50351195098 Ha
           Sum of eigenvalues:    -49.00702390195 Ha
-          Proc:     0 Time taken for evec diag:         387.00795174 ms
+          Proc:     0 Time taken for evec diag:         401.65495872 ms
           Fermi energy for spin = 1 is     -0.20578180742 Ha
           Energy as 2Tr[K.H]:    -49.00702390195 Ha
           2Tr[S.G]:     49.00702390195 Ha
@@ -1383,7 +1383,7 @@ Sum of eigenvalues for spin = 1:    -24.50351195098 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         223.78897667 ms
+          Proc:     0 Time taken for eval diag:         222.67389297 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.19738
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -1485,7 +1485,7 @@ Sum of eigenvalues for spin = 1:    -24.50351195098 Ha
                0.81380 0.000       0.85397 0.000       0.87414 0.000
 Sum of eigenvalues for spin = 1:    -23.63650891249 Ha
           Sum of eigenvalues:    -47.27301782498 Ha
-          Proc:     0 Time taken for evec diag:         397.65787125 ms
+          Proc:     0 Time taken for evec diag:         413.04588318 ms
           Fermi energy for spin = 1 is     -0.19737641760 Ha
           Energy as 2Tr[K.H]:    -47.27301782498 Ha
           2Tr[S.G]:     47.27301782498 Ha
@@ -1520,7 +1520,7 @@ Sum of eigenvalues for spin = 1:    -23.63650891249 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         224.44701195 ms
+          Proc:     0 Time taken for eval diag:         232.27596283 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20828
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -1622,7 +1622,7 @@ Sum of eigenvalues for spin = 1:    -23.63650891249 Ha
                0.81824 0.000       0.83414 0.000       0.85566 0.000
 Sum of eigenvalues for spin = 1:    -26.15836935963 Ha
           Sum of eigenvalues:    -52.31673871927 Ha
-          Proc:     0 Time taken for evec diag:         398.46301079 ms
+          Proc:     0 Time taken for evec diag:         400.15316010 ms
           Fermi energy for spin = 1 is     -0.20827618838 Ha
           Energy as 2Tr[K.H]:    -52.31673871927 Ha
           2Tr[S.G]:     52.31673871927 Ha
@@ -1658,7 +1658,7 @@ Sum of eigenvalues for spin = 1:    -26.15836935963 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         223.08206558 ms
+          Proc:     0 Time taken for eval diag:         223.93584251 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.21403
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -1760,7 +1760,7 @@ Sum of eigenvalues for spin = 1:    -26.15836935963 Ha
                0.79150 0.000       0.80530 0.000       0.81490 0.000
 Sum of eigenvalues for spin = 1:    -25.49635651184 Ha
           Sum of eigenvalues:    -50.99271302369 Ha
-          Proc:     0 Time taken for evec diag:         395.30706406 ms
+          Proc:     0 Time taken for evec diag:         414.01481628 ms
           Fermi energy for spin = 1 is     -0.21402566844 Ha
           Energy as 2Tr[K.H]:    -50.99271302369 Ha
           2Tr[S.G]:     50.99271302369 Ha
@@ -1795,7 +1795,7 @@ Sum of eigenvalues for spin = 1:    -25.49635651184 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         235.39304733 ms
+          Proc:     0 Time taken for eval diag:         232.27405548 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.12211
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -1897,7 +1897,7 @@ Sum of eigenvalues for spin = 1:    -25.49635651184 Ha
                0.97576 0.000       1.00716 0.000       1.03608 0.000
 Sum of eigenvalues for spin = 1:    -19.93893648473 Ha
           Sum of eigenvalues:    -39.87787296946 Ha
-          Proc:     0 Time taken for evec diag:         387.63117790 ms
+          Proc:     0 Time taken for evec diag:         399.01590347 ms
           Fermi energy for spin = 1 is     -0.12210680883 Ha
           Energy as 2Tr[K.H]:    -39.87787296946 Ha
           2Tr[S.G]:     39.87787296946 Ha
@@ -1932,7 +1932,7 @@ Sum of eigenvalues for spin = 1:    -19.93893648473 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         233.50811005 ms
+          Proc:     0 Time taken for eval diag:         221.85301781 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20373
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -2034,7 +2034,7 @@ Sum of eigenvalues for spin = 1:    -19.93893648473 Ha
                0.80066 0.000       0.81319 0.000       0.82916 0.000
 Sum of eigenvalues for spin = 1:    -24.83142758432 Ha
           Sum of eigenvalues:    -49.66285516863 Ha
-          Proc:     0 Time taken for evec diag:         386.84606552 ms
+          Proc:     0 Time taken for evec diag:         400.07615089 ms
           Fermi energy for spin = 1 is     -0.20372759905 Ha
           Energy as 2Tr[K.H]:    -49.66285516863 Ha
           2Tr[S.G]:     49.66285516863 Ha
@@ -2069,7 +2069,7 @@ Sum of eigenvalues for spin = 1:    -24.83142758432 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         223.57392311 ms
+          Proc:     0 Time taken for eval diag:         232.21802711 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20241
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -2171,7 +2171,7 @@ Sum of eigenvalues for spin = 1:    -24.83142758432 Ha
                0.79896 0.000       0.82233 0.000       0.84086 0.000
 Sum of eigenvalues for spin = 1:    -24.50622412565 Ha
           Sum of eigenvalues:    -49.01244825129 Ha
-          Proc:     0 Time taken for evec diag:         385.26988029 ms
+          Proc:     0 Time taken for evec diag:         401.83496475 ms
           Fermi energy for spin = 1 is     -0.20240884094 Ha
           Energy as 2Tr[K.H]:    -49.01244825129 Ha
           2Tr[S.G]:     49.01244825129 Ha
@@ -2206,7 +2206,7 @@ Sum of eigenvalues for spin = 1:    -24.50622412565 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         221.32492065 ms
+          Proc:     0 Time taken for eval diag:         223.24490547 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20350
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -2308,7 +2308,7 @@ Sum of eigenvalues for spin = 1:    -24.50622412565 Ha
                0.79994 0.000       0.82189 0.000       0.83940 0.000
 Sum of eigenvalues for spin = 1:    -24.52460098444 Ha
           Sum of eigenvalues:    -49.04920196887 Ha
-          Proc:     0 Time taken for evec diag:         383.04185867 ms
+          Proc:     0 Time taken for evec diag:         413.50102425 ms
           Fermi energy for spin = 1 is     -0.20349631233 Ha
           Energy as 2Tr[K.H]:    -49.04920196887 Ha
           2Tr[S.G]:     49.04920196887 Ha
@@ -2343,7 +2343,7 @@ Sum of eigenvalues for spin = 1:    -24.52460098444 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         222.66793251 ms
+          Proc:     0 Time taken for eval diag:         222.84317017 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.19940
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -2445,7 +2445,7 @@ Sum of eigenvalues for spin = 1:    -24.52460098444 Ha
                0.82115 0.000       0.83254 0.000       0.84731 0.000
 Sum of eigenvalues for spin = 1:    -24.63503110466 Ha
           Sum of eigenvalues:    -49.27006220931 Ha
-          Proc:     0 Time taken for evec diag:         393.18513870 ms
+          Proc:     0 Time taken for evec diag:         401.72505379 ms
           Fermi energy for spin = 1 is     -0.19939566810 Ha
           Energy as 2Tr[K.H]:    -49.27006220931 Ha
           2Tr[S.G]:     49.27006220931 Ha
@@ -2480,7 +2480,7 @@ Sum of eigenvalues for spin = 1:    -24.63503110466 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         231.21094704 ms
+          Proc:     0 Time taken for eval diag:         222.74899483 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20471
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -2582,7 +2582,7 @@ Sum of eigenvalues for spin = 1:    -24.63503110466 Ha
                0.79066 0.000       0.82142 0.000       0.83585 0.000
 Sum of eigenvalues for spin = 1:    -24.59202623073 Ha
           Sum of eigenvalues:    -49.18405246146 Ha
-          Proc:     0 Time taken for evec diag:         382.84492493 ms
+          Proc:     0 Time taken for evec diag:         401.11398697 ms
           Fermi energy for spin = 1 is     -0.20470959306 Ha
           Energy as 2Tr[K.H]:    -49.18405246146 Ha
           2Tr[S.G]:     49.18405246146 Ha
@@ -2617,7 +2617,7 @@ Sum of eigenvalues for spin = 1:    -24.59202623073 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         221.09103203 ms
+          Proc:     0 Time taken for eval diag:         242.05899239 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.19900
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -2719,7 +2719,7 @@ Sum of eigenvalues for spin = 1:    -24.59202623073 Ha
                0.81214 0.000       0.83892 0.000       0.85738 0.000
 Sum of eigenvalues for spin = 1:    -23.95256227025 Ha
           Sum of eigenvalues:    -47.90512454049 Ha
-          Proc:     0 Time taken for evec diag:         390.64121246 ms
+          Proc:     0 Time taken for evec diag:         401.18408203 ms
           Fermi energy for spin = 1 is     -0.19899888836 Ha
           Energy as 2Tr[K.H]:    -47.90512454049 Ha
           2Tr[S.G]:     47.90512454049 Ha
@@ -2754,7 +2754,7 @@ Sum of eigenvalues for spin = 1:    -23.95256227025 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         221.22216225 ms
+          Proc:     0 Time taken for eval diag:         223.04010391 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20452
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -2856,7 +2856,7 @@ Sum of eigenvalues for spin = 1:    -23.95256227025 Ha
                0.79648 0.000       0.81975 0.000       0.83718 0.000
 Sum of eigenvalues for spin = 1:    -24.60187364158 Ha
           Sum of eigenvalues:    -49.20374728317 Ha
-          Proc:     0 Time taken for evec diag:         382.97796249 ms
+          Proc:     0 Time taken for evec diag:         403.99312973 ms
           Fermi energy for spin = 1 is     -0.20452261417 Ha
           Energy as 2Tr[K.H]:    -49.20374728317 Ha
           2Tr[S.G]:     49.20374728317 Ha
@@ -2891,7 +2891,7 @@ Sum of eigenvalues for spin = 1:    -24.60187364158 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         222.01490402 ms
+          Proc:     0 Time taken for eval diag:         224.11298752 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20042
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -2993,7 +2993,7 @@ Sum of eigenvalues for spin = 1:    -24.60187364158 Ha
                0.80289 0.000       0.83000 0.000       0.84756 0.000
 Sum of eigenvalues for spin = 1:    -24.21704808444 Ha
           Sum of eigenvalues:    -48.43409616887 Ha
-          Proc:     0 Time taken for evec diag:         383.09192657 ms
+          Proc:     0 Time taken for evec diag:         414.10613060 ms
           Fermi energy for spin = 1 is     -0.20041658286 Ha
           Energy as 2Tr[K.H]:    -48.43409616887 Ha
           2Tr[S.G]:     48.43409616887 Ha
@@ -3028,7 +3028,7 @@ Sum of eigenvalues for spin = 1:    -24.21704808444 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         221.84586525 ms
+          Proc:     0 Time taken for eval diag:         224.25293922 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20089
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -3130,7 +3130,7 @@ Sum of eigenvalues for spin = 1:    -24.21704808444 Ha
                0.80336 0.000       0.83078 0.000       0.84853 0.000
 Sum of eigenvalues for spin = 1:    -24.21083118645 Ha
           Sum of eigenvalues:    -48.42166237290 Ha
-          Proc:     0 Time taken for evec diag:         383.39805603 ms
+          Proc:     0 Time taken for evec diag:         401.83711052 ms
           Fermi energy for spin = 1 is     -0.20088826355 Ha
           Energy as 2Tr[K.H]:    -48.42166237290 Ha
           2Tr[S.G]:     48.42166237290 Ha
@@ -3165,7 +3165,7 @@ Sum of eigenvalues for spin = 1:    -24.21083118645 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         221.75788879 ms
+          Proc:     0 Time taken for eval diag:         222.62883186 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.19761
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -3267,7 +3267,7 @@ Sum of eigenvalues for spin = 1:    -24.21083118645 Ha
                0.81175 0.000       0.82720 0.000       0.84724 0.000
 Sum of eigenvalues for spin = 1:    -24.31386103204 Ha
           Sum of eigenvalues:    -48.62772206408 Ha
-          Proc:     0 Time taken for evec diag:         383.06093216 ms
+          Proc:     0 Time taken for evec diag:         400.82502365 ms
           Fermi energy for spin = 1 is     -0.19761497910 Ha
           Energy as 2Tr[K.H]:    -48.62772206408 Ha
           2Tr[S.G]:     48.62772206408 Ha
@@ -3303,7 +3303,7 @@ Sum of eigenvalues for spin = 1:    -24.31386103204 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         221.33612633 ms
+          Proc:     0 Time taken for eval diag:         221.78912163 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20010
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -3405,7 +3405,7 @@ Sum of eigenvalues for spin = 1:    -24.31386103204 Ha
                0.79506 0.000       0.82676 0.000       0.84317 0.000
 Sum of eigenvalues for spin = 1:    -24.34497309158 Ha
           Sum of eigenvalues:    -48.68994618316 Ha
-          Proc:     0 Time taken for evec diag:         382.96389580 ms
+          Proc:     0 Time taken for evec diag:         401.10516548 ms
           Fermi energy for spin = 1 is     -0.20009963592 Ha
           Energy as 2Tr[K.H]:    -48.68994618316 Ha
           2Tr[S.G]:     48.68994618316 Ha
@@ -3440,7 +3440,7 @@ Sum of eigenvalues for spin = 1:    -24.34497309158 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         221.40407562 ms
+          Proc:     0 Time taken for eval diag:         223.02508354 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.19934
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -3542,7 +3542,7 @@ Sum of eigenvalues for spin = 1:    -24.34497309158 Ha
                0.80168 0.000       0.83616 0.000       0.85201 0.000
 Sum of eigenvalues for spin = 1:    -24.06547333987 Ha
           Sum of eigenvalues:    -48.13094667975 Ha
-          Proc:     0 Time taken for evec diag:         393.18585396 ms
+          Proc:     0 Time taken for evec diag:         401.51095390 ms
           Fermi energy for spin = 1 is     -0.19934103356 Ha
           Energy as 2Tr[K.H]:    -48.13094667975 Ha
           2Tr[S.G]:     48.13094667975 Ha
@@ -3577,7 +3577,7 @@ Sum of eigenvalues for spin = 1:    -24.06547333987 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         221.19593620 ms
+          Proc:     0 Time taken for eval diag:         222.09095955 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20490
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -3679,7 +3679,7 @@ Sum of eigenvalues for spin = 1:    -24.06547333987 Ha
                0.79288 0.000       0.81564 0.000       0.83267 0.000
 Sum of eigenvalues for spin = 1:    -24.72704580561 Ha
           Sum of eigenvalues:    -49.45409161122 Ha
-          Proc:     0 Time taken for evec diag:         392.18592644 ms
+          Proc:     0 Time taken for evec diag:         401.51190758 ms
           Fermi energy for spin = 1 is     -0.20490301522 Ha
           Energy as 2Tr[K.H]:    -49.45409161122 Ha
           2Tr[S.G]:     49.45409161122 Ha
@@ -3714,7 +3714,7 @@ Sum of eigenvalues for spin = 1:    -24.72704580561 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         222.79095650 ms
+          Proc:     0 Time taken for eval diag:         222.92304039 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.19888
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -3816,7 +3816,7 @@ Sum of eigenvalues for spin = 1:    -24.72704580561 Ha
                0.80506 0.000       0.83363 0.000       0.85152 0.000
 Sum of eigenvalues for spin = 1:    -24.10221290964 Ha
           Sum of eigenvalues:    -48.20442581929 Ha
-          Proc:     0 Time taken for evec diag:         392.59409904 ms
+          Proc:     0 Time taken for evec diag:         416.08619690 ms
           Fermi energy for spin = 1 is     -0.19887538102 Ha
           Energy as 2Tr[K.H]:    -48.20442581929 Ha
           2Tr[S.G]:     48.20442581929 Ha
@@ -3851,7 +3851,7 @@ Sum of eigenvalues for spin = 1:    -24.10221290964 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         220.99590302 ms
+          Proc:     0 Time taken for eval diag:         222.59306908 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20107
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -3953,7 +3953,7 @@ Sum of eigenvalues for spin = 1:    -24.10221290964 Ha
                0.80117 0.000       0.82762 0.000       0.84516 0.000
 Sum of eigenvalues for spin = 1:    -24.29861400674 Ha
           Sum of eigenvalues:    -48.59722801348 Ha
-          Proc:     0 Time taken for evec diag:         383.03995132 ms
+          Proc:     0 Time taken for evec diag:         412.13297844 ms
           Fermi energy for spin = 1 is     -0.20106637311 Ha
           Energy as 2Tr[K.H]:    -48.59722801348 Ha
           2Tr[S.G]:     48.59722801348 Ha
@@ -3988,7 +3988,7 @@ Sum of eigenvalues for spin = 1:    -24.29861400674 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         221.25005722 ms
+          Proc:     0 Time taken for eval diag:         232.02204704 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.19849
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -4090,7 +4090,7 @@ Sum of eigenvalues for spin = 1:    -24.29861400674 Ha
                0.81072 0.000       0.83092 0.000       0.85031 0.000
 Sum of eigenvalues for spin = 1:    -24.15904093359 Ha
           Sum of eigenvalues:    -48.31808186718 Ha
-          Proc:     0 Time taken for evec diag:         376.64699554 ms
+          Proc:     0 Time taken for evec diag:         400.58684349 ms
           Fermi energy for spin = 1 is     -0.19848556494 Ha
           Energy as 2Tr[K.H]:    -48.31808186718 Ha
           2Tr[S.G]:     48.31808186718 Ha
@@ -4125,7 +4125,7 @@ Sum of eigenvalues for spin = 1:    -24.15904093359 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         221.96698189 ms
+          Proc:     0 Time taken for eval diag:         222.16892242 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.19910
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -4227,7 +4227,7 @@ Sum of eigenvalues for spin = 1:    -24.15904093359 Ha
                0.79880 0.000       0.82731 0.000       0.84466 0.000
 Sum of eigenvalues for spin = 1:    -24.30730775667 Ha
           Sum of eigenvalues:    -48.61461551335 Ha
-          Proc:     0 Time taken for evec diag:         386.89088821 ms
+          Proc:     0 Time taken for evec diag:         401.13210678 ms
           Fermi energy for spin = 1 is     -0.19910114275 Ha
           Energy as 2Tr[K.H]:    -48.61461551335 Ha
           2Tr[S.G]:     48.61461551335 Ha
@@ -4262,7 +4262,7 @@ Sum of eigenvalues for spin = 1:    -24.30730775667 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         221.94695473 ms
+          Proc:     0 Time taken for eval diag:         221.75598145 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.19913
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -4364,7 +4364,7 @@ Sum of eigenvalues for spin = 1:    -24.30730775667 Ha
                0.79828 0.000       0.83128 0.000       0.84780 0.000
 Sum of eigenvalues for spin = 1:    -24.19133052658 Ha
           Sum of eigenvalues:    -48.38266105316 Ha
-          Proc:     0 Time taken for evec diag:         393.59807968 ms
+          Proc:     0 Time taken for evec diag:         400.93803406 ms
           Fermi energy for spin = 1 is     -0.19913389647 Ha
           Energy as 2Tr[K.H]:    -48.38266105316 Ha
           2Tr[S.G]:     48.38266105316 Ha
@@ -4399,7 +4399,7 @@ Sum of eigenvalues for spin = 1:    -24.19133052658 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         232.21087456 ms
+          Proc:     0 Time taken for eval diag:         221.76599503 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20055
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -4501,7 +4501,7 @@ Sum of eigenvalues for spin = 1:    -24.19133052658 Ha
                0.80298 0.000       0.82930 0.000       0.84715 0.000
 Sum of eigenvalues for spin = 1:    -24.22800043739 Ha
           Sum of eigenvalues:    -48.45600087479 Ha
-          Proc:     0 Time taken for evec diag:         384.70506668 ms
+          Proc:     0 Time taken for evec diag:         400.80094337 ms
           Fermi energy for spin = 1 is     -0.20054883555 Ha
           Energy as 2Tr[K.H]:    -48.45600087479 Ha
           2Tr[S.G]:     48.45600087479 Ha
@@ -4536,7 +4536,7 @@ Sum of eigenvalues for spin = 1:    -24.22800043739 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         222.38302231 ms
+          Proc:     0 Time taken for eval diag:         221.61579132 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20143
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -4638,7 +4638,7 @@ Sum of eigenvalues for spin = 1:    -24.22800043739 Ha
                0.80013 0.000       0.82590 0.000       0.84346 0.000
 Sum of eigenvalues for spin = 1:    -24.34489482117 Ha
           Sum of eigenvalues:    -48.68978964235 Ha
-          Proc:     0 Time taken for evec diag:         394.68502998 ms
+          Proc:     0 Time taken for evec diag:         400.59709549 ms
           Fermi energy for spin = 1 is     -0.20143415543 Ha
           Energy as 2Tr[K.H]:    -48.68978964235 Ha
           2Tr[S.G]:     48.68978964235 Ha
@@ -4673,7 +4673,7 @@ Sum of eigenvalues for spin = 1:    -24.34489482117 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         222.74994850 ms
+          Proc:     0 Time taken for eval diag:         222.39089012 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20054
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -4775,7 +4775,7 @@ Sum of eigenvalues for spin = 1:    -24.34489482117 Ha
                0.80167 0.000       0.82842 0.000       0.84608 0.000
 Sum of eigenvalues for spin = 1:    -24.25837916120 Ha
           Sum of eigenvalues:    -48.51675832240 Ha
-          Proc:     0 Time taken for evec diag:         394.93989944 ms
+          Proc:     0 Time taken for evec diag:         402.80199051 ms
           Fermi energy for spin = 1 is     -0.20054123077 Ha
           Energy as 2Tr[K.H]:    -48.51675832240 Ha
           2Tr[S.G]:     48.51675832240 Ha
@@ -4810,7 +4810,7 @@ Sum of eigenvalues for spin = 1:    -24.25837916120 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         221.42386436 ms
+          Proc:     0 Time taken for eval diag:         222.18012810 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.19969
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -4912,7 +4912,7 @@ Sum of eigenvalues for spin = 1:    -24.25837916120 Ha
                0.80847 0.000       0.82774 0.000       0.84714 0.000
 Sum of eigenvalues for spin = 1:    -24.26698636468 Ha
           Sum of eigenvalues:    -48.53397272935 Ha
-          Proc:     0 Time taken for evec diag:         382.94100761 ms
+          Proc:     0 Time taken for evec diag:         400.95305443 ms
           Fermi energy for spin = 1 is     -0.19968607982 Ha
           Energy as 2Tr[K.H]:    -48.53397272935 Ha
           2Tr[S.G]:     48.53397272935 Ha
@@ -4948,7 +4948,7 @@ Sum of eigenvalues for spin = 1:    -24.26698636468 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         212.00704575 ms
+          Proc:     0 Time taken for eval diag:         223.34504128 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20072
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -5050,7 +5050,7 @@ Sum of eigenvalues for spin = 1:    -24.26698636468 Ha
                0.80235 0.000       0.82878 0.000       0.84659 0.000
 Sum of eigenvalues for spin = 1:    -24.24020865216 Ha
           Sum of eigenvalues:    -48.48041730432 Ha
-          Proc:     0 Time taken for evec diag:         394.87886429 ms
+          Proc:     0 Time taken for evec diag:         416.43404961 ms
           Fermi energy for spin = 1 is     -0.20071710134 Ha
           Energy as 2Tr[K.H]:    -48.48041730432 Ha
           2Tr[S.G]:     48.48041730432 Ha
@@ -5085,7 +5085,7 @@ Sum of eigenvalues for spin = 1:    -24.24020865216 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         222.24402428 ms
+          Proc:     0 Time taken for eval diag:         223.63901138 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20192
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -5187,7 +5187,7 @@ Sum of eigenvalues for spin = 1:    -24.24020865216 Ha
                0.79584 0.000       0.83029 0.000       0.84610 0.000
 Sum of eigenvalues for spin = 1:    -24.24603346408 Ha
           Sum of eigenvalues:    -48.49206692816 Ha
-          Proc:     0 Time taken for evec diag:         383.98098946 ms
+          Proc:     0 Time taken for evec diag:         414.39199448 ms
           Fermi energy for spin = 1 is     -0.20191678818 Ha
           Energy as 2Tr[K.H]:    -48.49206692816 Ha
           2Tr[S.G]:     48.49206692816 Ha
@@ -5222,7 +5222,7 @@ Sum of eigenvalues for spin = 1:    -24.24603346408 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         232.83410072 ms
+          Proc:     0 Time taken for eval diag:         233.75296593 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20039
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -5324,7 +5324,7 @@ Sum of eigenvalues for spin = 1:    -24.24603346408 Ha
                0.80218 0.000       0.82911 0.000       0.84682 0.000
 Sum of eigenvalues for spin = 1:    -24.23069528222 Ha
           Sum of eigenvalues:    -48.46139056443 Ha
-          Proc:     0 Time taken for evec diag:         385.18095016 ms
+          Proc:     0 Time taken for evec diag:         404.82592583 ms
           Fermi energy for spin = 1 is     -0.20038817581 Ha
           Energy as 2Tr[K.H]:    -48.46139056443 Ha
           2Tr[S.G]:     48.46139056443 Ha
@@ -5359,7 +5359,7 @@ Sum of eigenvalues for spin = 1:    -24.23069528222 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         222.24593163 ms
+          Proc:     0 Time taken for eval diag:         221.78888321 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20064
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -5461,7 +5461,7 @@ Sum of eigenvalues for spin = 1:    -24.23069528222 Ha
                0.80191 0.000       0.82856 0.000       0.84630 0.000
 Sum of eigenvalues for spin = 1:    -24.24829608949 Ha
           Sum of eigenvalues:    -48.49659217898 Ha
-          Proc:     0 Time taken for evec diag:         384.27901268 ms
+          Proc:     0 Time taken for evec diag:         412.47892380 ms
           Fermi energy for spin = 1 is     -0.20064495183 Ha
           Energy as 2Tr[K.H]:    -48.49659217898 Ha
           2Tr[S.G]:     48.49659217898 Ha
@@ -5496,7 +5496,7 @@ Sum of eigenvalues for spin = 1:    -24.24829608949 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         231.49490356 ms
+          Proc:     0 Time taken for eval diag:         232.88297653 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20046
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -5598,7 +5598,7 @@ Sum of eigenvalues for spin = 1:    -24.24829608949 Ha
                0.80238 0.000       0.82918 0.000       0.84696 0.000
 Sum of eigenvalues for spin = 1:    -24.22690426256 Ha
           Sum of eigenvalues:    -48.45380852513 Ha
-          Proc:     0 Time taken for evec diag:         383.64601135 ms
+          Proc:     0 Time taken for evec diag:         401.62110329 ms
           Fermi energy for spin = 1 is     -0.20046198989 Ha
           Energy as 2Tr[K.H]:    -48.45380852513 Ha
           2Tr[S.G]:     48.45380852513 Ha
@@ -5633,7 +5633,7 @@ Sum of eigenvalues for spin = 1:    -24.22690426256 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         221.05312347 ms
+          Proc:     0 Time taken for eval diag:         222.22399712 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20109
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -5735,7 +5735,7 @@ Sum of eigenvalues for spin = 1:    -24.22690426256 Ha
                0.80206 0.000       0.82792 0.000       0.84577 0.000
 Sum of eigenvalues for spin = 1:    -24.26570884076 Ha
           Sum of eigenvalues:    -48.53141768152 Ha
-          Proc:     0 Time taken for evec diag:         383.24809074 ms
+          Proc:     0 Time taken for evec diag:         401.16977692 ms
           Fermi energy for spin = 1 is     -0.20108764893 Ha
           Energy as 2Tr[K.H]:    -48.53141768152 Ha
           2Tr[S.G]:     48.53141768152 Ha
@@ -5770,7 +5770,7 @@ Sum of eigenvalues for spin = 1:    -24.26570884076 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         232.45120049 ms
+          Proc:     0 Time taken for eval diag:         232.13195801 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20041
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -5872,7 +5872,7 @@ Sum of eigenvalues for spin = 1:    -24.26570884076 Ha
                0.80242 0.000       0.82942 0.000       0.84721 0.000
 Sum of eigenvalues for spin = 1:    -24.21797892087 Ha
           Sum of eigenvalues:    -48.43595784174 Ha
-          Proc:     0 Time taken for evec diag:         383.35609436 ms
+          Proc:     0 Time taken for evec diag:         401.43990517 ms
           Fermi energy for spin = 1 is     -0.20040700181 Ha
           Energy as 2Tr[K.H]:    -48.43595784174 Ha
           2Tr[S.G]:     48.43595784174 Ha
@@ -5907,7 +5907,7 @@ Sum of eigenvalues for spin = 1:    -24.21797892087 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         222.36204147 ms
+          Proc:     0 Time taken for eval diag:         223.29902649 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.19899
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -6009,7 +6009,7 @@ Sum of eigenvalues for spin = 1:    -24.21797892087 Ha
                0.79945 0.000       0.82870 0.000       0.84592 0.000
 Sum of eigenvalues for spin = 1:    -24.24992031984 Ha
           Sum of eigenvalues:    -48.49984063968 Ha
-          Proc:     0 Time taken for evec diag:         385.86711884 ms
+          Proc:     0 Time taken for evec diag:         412.83416748 ms
           Fermi energy for spin = 1 is     -0.19899221373 Ha
           Energy as 2Tr[K.H]:    -48.49984063968 Ha
           2Tr[S.G]:     48.49984063968 Ha
@@ -6044,7 +6044,7 @@ Sum of eigenvalues for spin = 1:    -24.24992031984 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         232.17701912 ms
+          Proc:     0 Time taken for eval diag:         231.88304901 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20074
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -6146,7 +6146,7 @@ Sum of eigenvalues for spin = 1:    -24.24992031984 Ha
                0.80222 0.000       0.82876 0.000       0.84662 0.000
 Sum of eigenvalues for spin = 1:    -24.23934465548 Ha
           Sum of eigenvalues:    -48.47868931096 Ha
-          Proc:     0 Time taken for evec diag:         388.14592361 ms
+          Proc:     0 Time taken for evec diag:         401.82089806 ms
           Fermi energy for spin = 1 is     -0.20073972252 Ha
           Energy as 2Tr[K.H]:    -48.47868931096 Ha
           2Tr[S.G]:     48.47868931096 Ha
@@ -6181,7 +6181,7 @@ Sum of eigenvalues for spin = 1:    -24.23934465548 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         332.31592178 ms
+          Proc:     0 Time taken for eval diag:         221.75407410 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20035
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -6283,7 +6283,7 @@ Sum of eigenvalues for spin = 1:    -24.23934465548 Ha
                0.80247 0.000       0.82942 0.000       0.84723 0.000
 Sum of eigenvalues for spin = 1:    -24.21761498052 Ha
           Sum of eigenvalues:    -48.43522996104 Ha
-          Proc:     0 Time taken for evec diag:         572.54910469 ms
+          Proc:     0 Time taken for evec diag:         402.36687660 ms
           Fermi energy for spin = 1 is     -0.20035314027 Ha
           Energy as 2Tr[K.H]:    -48.43522996104 Ha
           2Tr[S.G]:     48.43522996104 Ha
@@ -6318,7 +6318,7 @@ Sum of eigenvalues for spin = 1:    -24.21761498052 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         351.40991211 ms
+          Proc:     0 Time taken for eval diag:         222.01704979 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20055
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -6420,7 +6420,7 @@ Sum of eigenvalues for spin = 1:    -24.21761498052 Ha
                0.80209 0.000       0.82885 0.000       0.84665 0.000
 Sum of eigenvalues for spin = 1:    -24.23657363200 Ha
           Sum of eigenvalues:    -48.47314726399 Ha
-          Proc:     0 Time taken for evec diag:         573.25911522 ms
+          Proc:     0 Time taken for evec diag:         401.18980408 ms
           Fermi energy for spin = 1 is     -0.20054651664 Ha
           Energy as 2Tr[K.H]:    -48.47314726399 Ha
           2Tr[S.G]:     48.47314726399 Ha
@@ -6455,7 +6455,7 @@ Sum of eigenvalues for spin = 1:    -24.23657363200 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         332.77201653 ms
+          Proc:     0 Time taken for eval diag:         222.43404388 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20056
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -6557,7 +6557,7 @@ Sum of eigenvalues for spin = 1:    -24.23657363200 Ha
                0.80228 0.000       0.82899 0.000       0.84682 0.000
 Sum of eigenvalues for spin = 1:    -24.23132795910 Ha
           Sum of eigenvalues:    -48.46265591820 Ha
-          Proc:     0 Time taken for evec diag:         595.82805634 ms
+          Proc:     0 Time taken for evec diag:         401.44586563 ms
           Fermi energy for spin = 1 is     -0.20056485152 Ha
           Energy as 2Tr[K.H]:    -48.46265591820 Ha
           2Tr[S.G]:     48.46265591820 Ha
@@ -6592,7 +6592,7 @@ Sum of eigenvalues for spin = 1:    -24.23132795910 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         340.44098854 ms
+          Proc:     0 Time taken for eval diag:         232.20109940 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20057
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -6694,7 +6694,7 @@ Sum of eigenvalues for spin = 1:    -24.23132795910 Ha
                0.80202 0.000       0.82875 0.000       0.84654 0.000
 Sum of eigenvalues for spin = 1:    -24.24022669702 Ha
           Sum of eigenvalues:    -48.48045339404 Ha
-          Proc:     0 Time taken for evec diag:         587.87488937 ms
+          Proc:     0 Time taken for evec diag:         401.34501457 ms
           Fermi energy for spin = 1 is     -0.20056746674 Ha
           Energy as 2Tr[K.H]:    -48.48045339404 Ha
           2Tr[S.G]:     48.48045339404 Ha
@@ -6729,7 +6729,7 @@ Sum of eigenvalues for spin = 1:    -24.24022669702 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         345.61681747 ms
+          Proc:     0 Time taken for eval diag:         222.85604477 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20003
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -6831,7 +6831,7 @@ Sum of eigenvalues for spin = 1:    -24.24022669702 Ha
                0.80157 0.000       0.82906 0.000       0.84674 0.000
 Sum of eigenvalues for spin = 1:    -24.23087173850 Ha
           Sum of eigenvalues:    -48.46174347699 Ha
-          Proc:     0 Time taken for evec diag:         574.71895218 ms
+          Proc:     0 Time taken for evec diag:         402.87303925 ms
           Fermi energy for spin = 1 is     -0.20002502662 Ha
           Energy as 2Tr[K.H]:    -48.46174347699 Ha
           2Tr[S.G]:     48.46174347699 Ha
@@ -6867,7 +6867,7 @@ Sum of eigenvalues for spin = 1:    -24.23087173850 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         331.27403259 ms
+          Proc:     0 Time taken for eval diag:         221.79484367 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20047
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -6969,7 +6969,7 @@ Sum of eigenvalues for spin = 1:    -24.23087173850 Ha
                0.80204 0.000       0.82890 0.000       0.84669 0.000
 Sum of eigenvalues for spin = 1:    -24.23493758624 Ha
           Sum of eigenvalues:    -48.46987517247 Ha
-          Proc:     0 Time taken for evec diag:         593.60098839 ms
+          Proc:     0 Time taken for evec diag:         400.92086792 ms
           Fermi energy for spin = 1 is     -0.20047434310 Ha
           Energy as 2Tr[K.H]:    -48.46987517247 Ha
           2Tr[S.G]:     48.46987517247 Ha
@@ -7021,7 +7021,7 @@ Sum of eigenvalues for spin = 1:    -24.23493758624 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         333.58812332 ms
+          Proc:     0 Time taken for eval diag:         222.07188606 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20047
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
@@ -7123,7 +7123,7 @@ Sum of eigenvalues for spin = 1:    -24.23493758624 Ha
                0.80204 0.000       0.82890 0.000       0.84669 0.000
 Sum of eigenvalues for spin = 1:    -24.23493758624 Ha
           Sum of eigenvalues:    -48.46987517247 Ha
-          Proc:     0 Time taken for evec diag:         573.13203812 ms
+          Proc:     0 Time taken for evec diag:         411.80896759 ms
           Fermi energy for spin = 1 is     -0.20047434310 Ha
           Energy as 2Tr[K.H]:    -48.46987517247 Ha
           2Tr[S.G]:     48.46987517247 Ha
@@ -7195,10 +7195,9 @@ Sum of eigenvalues for spin = 1:    -24.23493758624 Ha
  N for row, col:             0            0
  Loc_max_row, col:     1.000000        1.000000    
           In FindEvals, tolerance is   0.100000000000E-29
-          Proc:     0 Time taken for eval diag:         331.56609535 ms
+          Proc:     0 Time taken for eval diag:         225.06403923 ms
           Proc:     0 findFermi_fixspin: searching for Ne:    128.00000
           Fermi level is     -0.20047
-  DOS limits set automatically:     -0.63748     0.84669
           Eigenvalues and occupancies for k-point   1 :      0.00000     0.00000     0.00000
               -0.63748 1.000      -0.61527 1.000      -0.58464 1.000
               -0.57267 1.000      -0.57012 1.000      -0.56484 1.000
@@ -7298,7 +7297,7 @@ Sum of eigenvalues for spin = 1:    -24.23493758624 Ha
                0.80204 0.000       0.82890 0.000       0.84669 0.000
 Sum of eigenvalues for spin = 1:    -24.23493758624 Ha
           Sum of eigenvalues:    -48.46987517247 Ha
-          Proc:     0 Time taken for evec diag:         993.00599098 ms
+          Proc:     0 Time taken for evec diag:         401.55696869 ms
           Fermi energy for spin = 1 is     -0.20047434310 Ha
           Energy as 2Tr[K.H]:    -48.46987517247 Ha
           2Tr[S.G]:     48.46987517247 Ha
@@ -7360,4 +7359,4 @@ Sum of eigenvalues for spin = 1:    -24.23493758624 Ha
   Max mem use for area   12 is     11.328 MB
   Max mem use for area   13 is      0.000 MB
   Max total mem use is    370.481 MB
-  Total run time was:              459.069 seconds
+  Total run time was:              411.525 seconds
