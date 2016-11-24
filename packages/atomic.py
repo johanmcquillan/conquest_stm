@@ -258,7 +258,7 @@ class Atom(Ion):
 		self.radials = I.radials
 		self.sortPAOs()
 
-	def hasCoeff(self, E, l, zeta, m):
+	def hasCoeff(self, Kx, Ky, Kz, E, l, zeta, m):
 		"""Check if atom stores coefficient for given orbital.
 
 		Args:
@@ -272,14 +272,17 @@ class Atom(Ion):
 		"""
 
 		output = False
-		if E in self.bands:
-			if l in self.bands[E]:
-				if zeta in self.bands[E][l]:
-					if m in self.bands[E][l][zeta]:
-						output = True
+		if Kx in self.bands:
+			if Ky in self.bands[Kx]:
+				if Kz in self.bands[Kx][Ky]:
+					if E in self.bands[Kx][Ky][Kz]:
+						if l in self.bands[Kx][Ky][Kz][E]:
+							if zeta in self.bands[Kx][Ky][Kz][E][l]:
+								if m in self.bands[Kx][Ky][Kz][E][l][zeta]:
+									output = True
 		return output
 
-	def addCoeff(self, E, PAO, coeff, combine=False):
+	def addCoeff(self, Kx, Ky, Kz, E, PAO, coeff, combine=False):
 		"""Add a complex coefficient to self.bands.
 
 		Args:
@@ -295,24 +298,23 @@ class Atom(Ion):
 		zeta = PAOdata[1]
 		m = PAOdata[2]
 
-		if combine and self.hasCoeff(E, l, zeta, m):
-			self.bands[E][l][zeta][m] = self.bands[E][l][zeta][m] + coeff
+		if combine and self.hasCoeff(Kx, Ky, Kz, E, l, zeta, m):
+			self.bands[Kx][Ky][Kz][E][l][zeta][m] = self.bands[Kx][Ky][Kz][E][l][zeta][m] + coeff
 		else:
-			self.bands[E][l][zeta][m] = coeff
+			self.bands[Kx][Ky][Kz][E][l][zeta][m] = coeff
 
-	def combineCoeffs(self, Esource, Edestination):
-
-		for l in self.bands[Esource]:
-			for zeta in self.bands[Esource][l]:
-				for m in self.bands[Esource][l][zeta]:
-					coeff = self.bands[Esource][l][zeta][m]
-					if self.hasCoeff(Edestination, l, zeta, m):
-						self.bands[Edestination][l][zeta][m] = self.bands[Edestination][l][zeta][m] + coeff
+	def combineCoeffs(self, Kx, Ky, Kz, Esource, Edestination):
+		for l in self.bands[Kx][Ky][Kz][Esource]:
+			for zeta in self.bands[Kx][Ky][Kz][Esource][l]:
+				for m in self.bands[Kx][Ky][Kz][Esource][l][zeta]:
+					coeff = self.bands[Kx][Ky][Kz][Esource][l][zeta][m]
+					if self.hasCoeff(Kx, Ky, Kz, Edestination, l, zeta, m):
+						self.bands[Kx][Ky][Kz][Edestination][l][zeta][m] = self.bands[Kx][Ky][Kz][Edestination][l][zeta][m] + coeff
 					else:
-						self.bands[Edestination][l][zeta][m] = coeff
-		del self.bands[Esource]
+						self.bands[Kx][Ky][Kz][Edestination][l][zeta][m] = coeff
+		del self.bands[Kx][Ky][Kz][Esource]
 
-	def getCoeff(self, E, l, zeta, m):
+	def getCoeff(self, Kx, Ky, Kz, E, l, zeta, m):
 		"""Return complex coefficient for given orbital.
 
 		Args:
@@ -325,11 +327,11 @@ class Atom(Ion):
 			complex: Coefficient for given orbital
 		"""
 		output = None
-		if self.hasCoeff(E, l, zeta, m):
-			output = self.bands[E][l][zeta][m]
+		if self.hasCoeff(Kx, Ky, Kz, E, l, zeta, m):
+			output = self.bands[Kx][Ky][Kz][E][l][zeta][m]
 		return output
 
-	def getPsi(self, E, x, y, z):
+	def getPsi(self, Kx, Ky, Kz, E, x, y, z):
 		"""Return complex wavefunction at (x,y,z) due to this atom only.
 
 		Args:
@@ -363,20 +365,19 @@ class Atom(Ion):
 						Y = sph(l, m, relx, rely, relz)
 
 						# Get coefficient of basis function
-						coeff = self.bands[E][l][zeta][m]
+						coeff = self.bands[Kx][Ky][Kz][E][l][zeta][m]
 						# Calculate and add contribution of basis function
 						psi += R * Y * coeff
 		return psi
 
-	def applyFactor(self, factor, E):
+	def applyFactor(self, factor, Kx, Ky, Kz, E):
 		"""Apply a normalisation factor to all coefficients for a given band.
 
 		Args:
 			factor (float): Normalisation factor to be applied
 			E (float): Energy of band to which to apply factor
 		"""
-
-		for l in self.bands[E]:
-			for zeta in self.bands[E][l]:
-				for m in self.bands[E][l][zeta]:
-					self.bands[E][l][zeta][m] *= factor
+		for l in self.bands[Kx][Ky][Kz][E]:
+			for zeta in self.bands[Kx][Ky][Kz][E][l]:
+				for m in self.bands[Kx][Ky][Kz][E][l][zeta]:
+					self.bands[Kx][Ky][Kz][E][l][zeta][m] *= factor
