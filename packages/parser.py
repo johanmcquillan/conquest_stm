@@ -201,7 +201,7 @@ class Parser(object):
 								coeffString = coeffString.replace(')', '')
 								complexString = coeffString.split(',')
 								complexCoeff = complex(float(complexString[0]), float(complexString[1]))
-								self.atoms[conq][a].addCoeff(Kx, Ky, Kz, PAO, complexCoeff, combine=True)
+								self.atoms[conq][a].addCoeff(Kx, Ky, Kz, bandE, PAO, complexCoeff)
 								line = Fcoeff.next()
 
 					except StopIteration:

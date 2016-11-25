@@ -349,7 +349,7 @@ class Atom(Ion):
 					totalKPoints += 1
 		return totalKPoints
 
-	def getPsiAtKPoint(self, Kx, Ky, Kz, E, x, y, z):
+	def getPsiAtKPoint(self, Kx, Ky, Kz, Emin, Emax, x, y, z):
 		"""Return complex wavefunction at (x,y,z) due to this atom at a specified k-point.
 
 		Args:
@@ -374,21 +374,28 @@ class Atom(Ion):
 
 		psi = complex(0.0, 0.0)
 
-		# If r is beyond atoms range, return 0.0+0.0j
-		if r <= self.getMaxCutoff():  # Loop over all radial functions
-			for l in self.radials:
-				for zeta in self.radials[l]:
-					# Evaluate R(r) using linear interpolation
-					R = self.getRadialValue(l, zeta, r)
+		# Find bands within energy range
+		bandsForK = []
+		for E in self.bands[Kx][Ky][Kz].keys():
+			if Emin < E < Emax:
+				bandsForK.append(E)
+		# Evaluate psi
+		for E in bandsForK:
 
-					for m in range(-l, l + 1):
-						# Calculate spherical harmonic
-						Y = sph(l, m, relx, rely, relz)
+			# If r is beyond atoms range, return 0.0+0.0j
+			if r <= self.getMaxCutoff():  # Loop over all radial functions
+				for l in self.radials:
+					for zeta in self.radials[l]:
+						# Evaluate R(r) using linear interpolation
+						R = self.getRadialValue(l, zeta, r)
 
-						# Get coefficient of basis function
-						coeff = self.bands[Kx][Ky][Kz][E][l][zeta][m]
-						# Calculate and add contribution of basis function
-						psi += R * Y * coeff
+						for m in range(-l, l + 1):
+							# Calculate spherical harmonic
+							Y = sph(l, m, relx, rely, relz)
+							# Get coefficient of basis function
+							coeff = self.bands[Kx][Ky][Kz][E][l][zeta][m]
+							# Calculate and add contribution of basis function
+							psi += R * Y * coeff
 		return psi
 
 	def getPsiGamma(self, E, x, y, z, exact=True):
@@ -431,14 +438,8 @@ class Atom(Ion):
 		for Kx in self.bands:
 			for Ky in self.bands[Kx]:
 				for Kz in self.bands[Ky]:
-					# Find bands within energy range
-					bandsForK = []
-					for E in self.bands[Kx][Ky][Kz].keys():
-						if Emin < E < Emax:
-							bandsForK.append(E)
-					# Evaluate psi
-					for E in bandsForK:
-						psi = psi + 1.0/totalKPoints * self.getPsiAtKPoint(Kx, Ky, Kz, E, x, y, z)
+					psi = psi + 1.0/totalKPoints * self.getPsiAtKPoint(Kx, Ky, Kz, Emin, Emax, x, y, z)
+		return psi
 
 	def applyFactor(self, factor, Kx, Ky, Kz, E):
 		"""Apply a normalisation factor to all coefficients for a given energy and k-point.

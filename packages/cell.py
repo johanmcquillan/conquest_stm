@@ -181,9 +181,7 @@ class Cell(object):
 					z = self.zMesh[i, j, k]
 					psi = 0.0
 					# Sum contributions to psi from all atoms
-					for atomKey in self.atoms:
-						atom = self.atoms[atomKey]
-						psi += atom.getPsi(Emin, Emax, x, y, z)
+					psi += self.getWavefunction(Emin, Emax, x, y, z)
 					# Add to charge
 					totalCharge += abs(psi)**2 * self.gridSpacing**3
 		return totalCharge

@@ -364,15 +364,14 @@ def plotChargeDensity2D(
 
 
 def plotChargeDensity3D(
-		cell, bandNumber, xrange=(0.0, 0.0), yrange=(0.0, 0.0), zrange=(0.0, 0.0), step=0.0, fraction=0.8, alpha=1.0,
-		cmap=False, normalise=False, show=True, save=False):
+		cell, Emin, Emax, xrange=(0.0, 0.0), yrange=(0.0, 0.0), zrange=(0.0, 0.0), step=0.0, fraction=0.8, alpha=1.0,
+		cmap=False, show=True, save=False):
 	"""Plots charge density isosurface.
 
 	All lengths measured in Bohr radii (a0).
 
 	Args:
 		cell (Cell): Simulation cell to plot
-		bandNumber (int): Band number to plot
 		xrange((float), opt.): Limits of x axis
 		yrange((float), opt.): Limits of y axis
 		zrange((float), opt.): Limits of z axis
@@ -380,12 +379,10 @@ def plotChargeDensity3D(
 		fraction (float, opt.): Sets value of isosurface to this fraction of max charge density
 		alpha (float, opt.): Transparency of plot surfaces
 		cmap (bool, opt.): If true, colour surface opaquely (ignoring alpha) according to z-value
-		normalise (bool, opt.): If true, normalise basis coefficients before plot
 		show (bool, opt.): If true, show plot
 		save (bool, opt.): If true, save plot
 	"""
 
-	bandEnergy = cell.bands[bandNumber]
 	# If plot limits not given, set to limits of cell
 	if xrange == (0.0, 0.0):
 		xrange = (0.0, cell.xLength)
@@ -397,9 +394,6 @@ def plotChargeDensity3D(
 	# If step not given, set to cell.gridSpacing
 	if step == 0.0:
 		step = cell.gridSpacing
-
-	if normalise:
-		cell.normaliseBand(bandNumber)
 
 	# Cartesian mesh
 	X, Y, Z = np.mgrid[xrange[0]:xrange[1]:step, yrange[0]:yrange[1]:step, zrange[0]:zrange[1]:step]
@@ -417,7 +411,7 @@ def plotChargeDensity3D(
 				z = Z[i, j, k]
 
 				# Calculate wavefunction
-				psi = cell.givePsi(x, y, z, bandNumber=bandNumber)
+				psi = cell.getWavefunction(Emin, Emax, x, y, z)
 
 				# Get charge density
 				psi2[i, j, k] = abs(psi)**2
@@ -433,9 +427,11 @@ def plotChargeDensity3D(
 
 	# Set up plot
 	fig, ax = plt.subplots(subplot_kw=dict(projection='3d'), figsize=(10, 10))
+	EminRelative = Emin - cell.fermiLevel
+	EmaxRelative = Emax - cell.fermiLevel
 	title = (
-		cell.name+' Charge Density Isosurface at '+str(fraction)+' of Maximum Density for \n Band Energy '
-		+str(bandEnergy)+' eV with Fermi Level '+str(cell.fermiLevel)+' eV')
+		cell.name+' Charge Density Isosurface at '+str(fraction)+' of Maximum Density at \n Energies from '
+		+str(EminRelative)+' eV to '+str(EmaxRelative)+' eV relative to the Fermi Level')
 	plt.title(title)
 
 	# Set axes
@@ -455,7 +451,7 @@ def plotChargeDensity3D(
 	# Save plot as png
 	if save:
 		timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
-		saveName = cell.name+"_ChargeDensity3D_"+str(fraction)+"_"+str(bandEnergy)+timeStamp
+		saveName = cell.name+"_ChargeDensity3D_"+str(fraction)+"_"+str(EminRelative)+"_"+str(EmaxRelative)+"_"+timeStamp
 		plt.savefig("figures3D/"+saveName+".png")
 	# Show plot
 	if show:
