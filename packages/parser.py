@@ -163,7 +163,6 @@ class Parser(object):
 					k1 = float(data[0])
 					k2 = float(data[1])
 					k3 = float(data[2])
-					kpoint = [k1, k2, k3]
 					try:
 						line = Fcoeff.next()
 						while '#Kpoint' not in line:

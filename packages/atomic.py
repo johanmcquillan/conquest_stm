@@ -98,7 +98,7 @@ class Ion(object):
 			ionName (string): Name of ion (usually from name of .ion file)
 			radialDict (SmartDict, optional): Radial objects, indexed by radialDict[zeta][n][l],
 												where all indices are int. Default is empty, radials
-												may be added after instantion
+												may be added after instantiation
 		"""
 		self.ionName = ionName
 		self.radials = radialDict  # Radial objects; accessed by self.radials[zeta][n][l]
@@ -262,6 +262,9 @@ class Atom(Ion):
 		"""Check if atom stores coefficient for given orbital.
 
 		Args:
+			Kx (float): K-point x coordinate
+			Ky (float): K-point y coordinate
+			Kz (float): K-point z coordinate
 			E (float): Band energy
 			l (int): Orbital angular momentum quantum number
 			zeta (int): Indexes functions with different cutoff but same n and l
@@ -286,6 +289,9 @@ class Atom(Ion):
 		"""Add a complex coefficient to self.bands.
 
 		Args:
+			Kx (float): K-point x coordinate
+			Ky (float): K-point y coordinate
+			Kz (float): K-point z coordinate
 			E (float): Band energy
 			PAO (int): index of PAO as given in .dat file
 			coeff (coomplex): Coefficient of PAO
@@ -318,6 +324,9 @@ class Atom(Ion):
 		"""Return complex coefficient for given orbital.
 
 		Args:
+			Kx (float): K-point x coordinate
+			Ky (float): K-point y coordinate
+			Kz (float): K-point z coordinate
 			E (float): Band energy
 			l (int): Orbital angular momentum quantum number
 			zeta (int): Indexes functions with different cutoff but same n and l
@@ -331,17 +340,29 @@ class Atom(Ion):
 			output = self.bands[Kx][Ky][Kz][E][l][zeta][m]
 		return output
 
-	def getPsi(self, Kx, Ky, Kz, E, x, y, z):
-		"""Return complex wavefunction at (x,y,z) due to this atom only.
+	def getTotalKPoints(self):
+		"""Count total number of k-points"""
+		totalKPoints = 0
+		for Kx in self.bands:
+			for Ky in self.bands[Kx]:
+				for Kz in self.bands[Kx][Ky]:
+					totalKPoints += 1
+		return totalKPoints
+
+	def getPsiAtKPoint(self, Kx, Ky, Kz, E, x, y, z):
+		"""Return complex wavefunction at (x,y,z) due to this atom at a specified k-point.
 
 		Args:
+			Kx (float): K-point x coordinate
+			Ky (float): K-point y coordinate
+			Kz (float): K-point z coordinate
 			E (float): Band energy
-			x (float): Cartesian x coordinate at which to evaluate wavefunction
-			y (float): Cartesian y coordinate at which to evaluate wavefunction
-			z (float): Cartesian z coordinate at which to evaluate wavefunction
+			x (float): Cartesian x coordinate
+			y (float): Cartesian y coordinate
+			z (float): Cartesian z coordinate
 
 		Returns:
-			complex: Complex wavefunction evaluated at x, y, z
+			complex: Complex wavefunction value
 		"""
 
 		# Get coords relative to atom
@@ -370,11 +391,63 @@ class Atom(Ion):
 						psi += R * Y * coeff
 		return psi
 
+	def getPsiGamma(self, E, x, y, z, exact=True):
+		"""Evaluate complex wavefunction at (x,y,z) due to this atom at gamma point.
+
+			Args:
+				E (float): Band energy
+				x (float): Cartesian x coordinate at which to evaluate wavefunction
+				y (float): Cartesian y coordinate at which to evaluate wavefunction
+				z (float): Cartesian z coordinate at which to evaluate wavefunction
+				exact (bool, opt.): If true, only evaluate if exact band energy exists, otherwise, evaluate for
+				nearest band
+
+			Returns:
+				complex: Complex wavefunction value
+		"""
+		if E in self.bands[0][0][0]:
+			bandEnergy = E
+		elif not exact:
+			bandEnergy = min(self.bands[0][0][0].keys(), key=lambda i: abs(i - E))
+		else:
+			raise ValueError
+		return self.getPsiAtKPoint(0, 0, 0, bandEnergy, x, y, z)
+
+	def getPsi(self, Emin, Emax, x, y, z):
+		"""Evaluate complex wavefunction at (x,y,z) due to this atom over all k-points within a given energy range.
+
+			Args:
+				Emin (float): Minimum energy
+				Emax (float): Maximum energy
+				x (float): Cartesian x coordinate
+				y (float): Cartesian y coordinate
+				z (float): Cartesian z coordinate
+
+			Returns:
+				complex: Complex wavefunction value
+		"""
+		totalKPoints = self.getTotalKPoints()
+		psi = complex(0.0, 0.0)
+		for Kx in self.bands:
+			for Ky in self.bands[Kx]:
+				for Kz in self.bands[Ky]:
+					# Find bands within energy range
+					bandsForK = []
+					for E in self.bands[Kx][Ky][Kz].keys():
+						if Emin < E < Emax:
+							bandsForK.append(E)
+					# Evaluate psi
+					for E in bandsForK:
+						psi = psi + 1/totalKPoints * self.getPsiAtKPoint(Kx, Ky, Kz, E, x, y, z)
+
 	def applyFactor(self, factor, Kx, Ky, Kz, E):
-		"""Apply a normalisation factor to all coefficients for a given band.
+		"""Apply a normalisation factor to all coefficients for a given energy and k-point.
 
 		Args:
 			factor (float): Normalisation factor to be applied
+			Kx (float): K-point x coordinate
+			Ky (float): K-point y coordinate
+			Kz (float): K-point z coordinate
 			E (float): Energy of band to which to apply factor
 		"""
 		for l in self.bands[Kx][Ky][Kz][E]:
