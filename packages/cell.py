@@ -1,5 +1,5 @@
 import numpy as np
-
+from smartDict import SmartDict
 
 class Cell(object):
 	"""Simulation cell which holds Atom objects in a 3D mesh.
@@ -28,7 +28,7 @@ class Cell(object):
 	def __init__(self, name, fermiLevel, electrons, xLength, yLength, zLength, gridSpacing=0.1):
 		"""Constructs 3D cell with given dimensional.
 
-		All lengths measured in bohr radii (a0);
+		All lengths measured in Bohr radii (a0);
 		All energies measured in Hartrees (Ha).
 
 		Args:
@@ -48,18 +48,32 @@ class Cell(object):
 		self.zLength = zLength
 		self.gridSpacing = gridSpacing
 
-		# Calculater number of points
+		# Calculator number of points
 		self.xPoints = int(xLength / gridSpacing)
 		self.yPoints = int(yLength / gridSpacing)
 		self.zPoints = int(zLength / gridSpacing)
 
 		# Form Cartesian meshes
-		self.xMesh, self.yMesh, self.zMesh = np.mgrid[
-												0:xLength:gridSpacing, 0:yLength:gridSpacing, 0:zLength:gridSpacing]
+		self.xMesh, self.yMesh, self.zMesh = np.mgrid[0: xLength: gridSpacing, 0: yLength: gridSpacing, 0: zLength: gridSpacing]
 
 		# Initialise atoms and bands
 		self.atoms = {}
-		self.bands = []
+		self.bands = SmartDict()
+
+	def hasKPoint(self, Kx, Ky, Kz):
+		output = False
+		if Kx in self.bands:
+			if Ky in self.bands[Kx]:
+				if Kz in self.bands[Kx][Ky]:
+					output = True
+		return output
+
+	def hasBand(self, Kx, Ky, Kz, E):
+		output = False
+		if self.hasKPoint(Kx, Ky, Kz):
+			if E in self.bands[Kx][Ky][Kz]:
+				output = True
+		return output
 
 	def addAtom(self, atom, atomKey):
 		"""Add atom to self.atoms, indexed by atomKey
@@ -77,11 +91,18 @@ class Cell(object):
 		# Add to dict
 		self.atoms[atomKey] = atom
 
-		# Add band energy if not already stored
-		for band in atom.bands:
-			if band not in self.bands:
-				self.bands.append(band)
-		self.bands = sorted(self.bands)
+		# Loop over atoms k-points
+		for Kx in atom.bands:
+			for Ky in atom.bands[Kx]:
+				for Kz in atom.bands[Kx][Ky]:
+					# If cell does not have k-point, create empty band energy list
+					if not self.hasKPoint(Kx, Ky, Kz):
+						self.bands[Kx][Ky][Kz] = []
+					# Add band energies to k-point
+					for E in atom.bands[Kx][Ky][Kz]:
+						self.bands[Kx][Ky][Kz].append(E)
+					# Sort energy list
+					self.bands[Kx][Ky][Kz] = sorted(self.bands[Kx][Ky][Kz])
 
 	def getPsiMesh(self, bandNumber=0, debug=False):
 		"""Calculate complex wavefunction at all points in 3D mesh and
@@ -116,14 +137,13 @@ class Cell(object):
 				print "Atom " + str(atomKey) + " has no band " + str(bandNumber) + ": " + str(bandEnergy)
 		return wavefunc
 
-	def givePsi(self, x, y, z, bandNumber=0, debug=False):
-		"""Evaluate complex wavefunction at specific point.
+	def getWavefunction(self, Emin, Emax, x, y, z, debug=False):
+		"""Evaluate complex wavefunction at specific point over specified energy range.
 
 		Args:
 			x (float): Cartesian x coordinate
 			y (float): Cartesian y coordinate
 			z (float): Cartesian z coordinate
-			bandNumber (int, opt.): Band number at which to evaluate
 			debug (bool., opt.): If true, print extra information during runtime
 
 		Returns:
@@ -132,19 +152,15 @@ class Cell(object):
 
 		# Initialise psi and get band energy
 		psi = complex(0.0, 0.0)
-		bandEnergy = self.bands[bandNumber]
 
 		# Get wavefunction contribution from each atom and add to psi
 		for atomKey in self.atoms:
 			atom = self.atoms[atomKey]
-			if bandEnergy in atom.bands:
-				psi = psi + atom.getPsi(bandEnergy, x, y, z)
-			elif debug:
-				print "Atom " + str(atomKey) + " has no band " + str(bandNumber) + ": " + str(bandEnergy)
-
+			psi = psi + atom.getPsi(Emin, Emax, x, y, z)
+				#print "Atom " + str(atomKey) + " has no band " + str(bandNumber) + ": " + str(bandEnergy)
 		return psi
 
-	def getTotalCharge(self, bandNumber):
+	def getTotalCharge(self, Emin, Emax):
 		"""Integrate charge density of band over cell to get total charge
 
 		Args:
@@ -154,7 +170,6 @@ class Cell(object):
 			float: Total charge
 		"""
 		totalCharge = 0.0
-		bandEnergy = self.bands[bandNumber]
 
 		# Iterate over all mesh points
 		for i in range(0, self.xPoints):
@@ -168,22 +183,19 @@ class Cell(object):
 					# Sum contributions to psi from all atoms
 					for atomKey in self.atoms:
 						atom = self.atoms[atomKey]
-						if bandEnergy in atom.bands:
-							psi += atom.getPsi(bandEnergy, x, y, z)
+						psi += atom.getPsi(Emin, Emax, x, y, z)
 					# Add to charge
-					totalCharge += abs(psi) ** 2 * self.gridSpacing ** 3
-
+					totalCharge += abs(psi)**2 * self.gridSpacing**3
 		return totalCharge
 
-	def normaliseBand(self, bandNumber, debug=False):
+	def normaliseBand(self, Emin, Emax, debug=False):
 		"""Normalise coefficients of a band to give total charge of unity.
 
 		Args:
 			bandNumber (int): Number of band to normalise
 			debug (bool, opt.): If true, print extra information during runtime
 		"""
-		totalCharge = self.getTotalCharge(bandNumber)
-		bandEnergy = self.bands[bandNumber]
+		totalCharge = self.getTotalCharge(Emin, Emax)
 
 		# Check if difference between actual and calculated charge is large than tolerance
 		if abs(1.0 - totalCharge) > 0.001:
@@ -193,8 +205,7 @@ class Cell(object):
 			# Apply normalisation factor to basis coefficients
 			factor = np.sqrt(1.0 / totalCharge)
 			for atomKey in self.atoms:
-				self.atoms[atomKey].applyFactor(factor, bandEnergy)
-
+				self.atoms[atomKey].applyFactorForRange(factor, Emin, Emax)
 		elif debug:
 			print "Total Electron Charge Already Normalised"
 

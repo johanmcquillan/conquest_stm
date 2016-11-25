@@ -438,7 +438,7 @@ class Atom(Ion):
 							bandsForK.append(E)
 					# Evaluate psi
 					for E in bandsForK:
-						psi = psi + 1/totalKPoints * self.getPsiAtKPoint(Kx, Ky, Kz, E, x, y, z)
+						psi = psi + 1.0/totalKPoints * self.getPsiAtKPoint(Kx, Ky, Kz, E, x, y, z)
 
 	def applyFactor(self, factor, Kx, Ky, Kz, E):
 		"""Apply a normalisation factor to all coefficients for a given energy and k-point.
