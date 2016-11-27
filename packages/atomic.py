@@ -6,6 +6,7 @@ from scipy.interpolate import interp1d
 from sph import sph
 from smartDict import SmartDict
 
+BOLTZMANN = 8.6173303E-5  # Boltzmann's Constant in eV/K
 
 class Radial(object):
 	"""Stores the radial part of basis function and metadata,
@@ -445,3 +446,18 @@ class Atom(Ion):
 			for zeta in self.bands[Kx][Ky][Kz][E][l]:
 				for m in self.bands[Kx][Ky][Kz][E][l][zeta]:
 					self.bands[Kx][Ky][Kz][E][l][zeta][m] *= factor
+
+	@staticmethod
+	def fermiDirac(energy, fermiLevel, temperature):
+		"""Calculate Fermi-Dirac distribution value.
+
+		Args:
+			energy (float): Energy in eV
+			fermiLevel (float): Fermi Level in eV
+			temperature (float): Absolute temperature in K
+
+		returns:
+			float: Occupation value
+		"""
+		f = 1.0 / (np.exp((energy - fermiLevel)/(BOLTZMANN*temperature)) + 1)
+		return f
