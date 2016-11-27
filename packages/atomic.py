@@ -309,17 +309,6 @@ class Atom(Ion):
 		else:
 			self.bands[Kx][Ky][Kz][E][l][zeta][m] = coefficient
 
-	def combineCoeffs(self, Kx, Ky, Kz, Esource, Edestination):
-		for l in self.bands[Kx][Ky][Kz][Esource]:
-			for zeta in self.bands[Kx][Ky][Kz][Esource][l]:
-				for m in self.bands[Kx][Ky][Kz][Esource][l][zeta]:
-					coeff = self.bands[Kx][Ky][Kz][Esource][l][zeta][m]
-					if self.hasCoeff(Kx, Ky, Kz, Edestination, l, zeta, m):
-						self.bands[Kx][Ky][Kz][Edestination][l][zeta][m] = self.bands[Kx][Ky][Kz][Edestination][l][zeta][m] + coeff
-					else:
-						self.bands[Kx][Ky][Kz][Edestination][l][zeta][m] = coeff
-		del self.bands[Kx][Ky][Kz][Esource]
-
 	def getCoefficient(self, Kx, Ky, Kz, E, l, zeta, m):
 		"""Return complex coefficient for given orbital.
 
