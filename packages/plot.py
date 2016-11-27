@@ -365,13 +365,15 @@ def plotChargeDensity2D(
 
 def plotChargeDensity3D(
 		cell, Emin, Emax, xrange=(0.0, 0.0), yrange=(0.0, 0.0), zrange=(0.0, 0.0), step=0.0, fraction=0.8, alpha=1.0,
-		cmap=False, show=True, save=False):
+		cmap=False, show=True, save=False, debug=False):
 	"""Plots charge density isosurface.
 
 	All lengths measured in Bohr radii (a0).
 
 	Args:
 		cell (Cell): Simulation cell to plot
+		Emin (float): Minimum of energy range
+		Emax (float): Maximum of energy range
 		xrange((float), opt.): Limits of x axis
 		yrange((float), opt.): Limits of y axis
 		zrange((float), opt.): Limits of z axis
@@ -419,7 +421,10 @@ def plotChargeDensity3D(
 				# Set max value
 				if psi2[i, j, k] > psi2max:
 					psi2max = psi2[i, j, k]
-
+	if psi2max == 0.0:
+		raise ValueError
+	if debug:
+		print 'Isosurface value = '+str(fraction*psi2max)
 	# Make isosurface at psi2 = fraction * psi2max
 	mes = measure.marching_cubes(psi2, fraction*psi2max)
 	verts = mes[0]

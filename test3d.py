@@ -9,11 +9,11 @@ prsr = Parser('ions/', ['Si_SZ_8bohr', 'C_SZ_6.5au', 'C_SZP_6.5au', 'C_DZDP_6.5_
 prsr.parseIons()
 prsr.parseConquestOutput()
 
-cell = prsr.getCell(molecule, gridSpacing=0.5)
+cell = prsr.getCell(molecule, gridSpacing=1)
 del prsr
 cell.name += '_161125'
 
 # for i in range(0, len(C.bands)):
 	# plot.plotChargeDensity3D(C, i, fraction=0.1, cmap=True, save=True, show=False)
 
-plot.plotChargeDensity3D(cell, cell.fermiLevel, cell.fermiLevel-0.5, fraction=0.05, cmap=True, save=False, show=True)
+plot.plotChargeDensity3D(cell, cell.fermiLevel, cell.fermiLevel-1.0, fraction=0.05, cmap=True, save=False, show=True, debug=True)

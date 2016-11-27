@@ -285,7 +285,7 @@ class Atom(Ion):
 									output = True
 		return output
 
-	def addCoeff(self, Kx, Ky, Kz, E, PAO, coeff, combine=False):
+	def addCoefficient(self, Kx, Ky, Kz, E, PAO, coefficient, combine=False):
 		"""Add a complex coefficient to self.bands.
 
 		Args:
@@ -304,10 +304,10 @@ class Atom(Ion):
 		zeta = PAOdata[1]
 		m = PAOdata[2]
 
-		if combine and self.hasCoeff(Kx, Ky, Kz, E, l, zeta, m):
-			self.bands[Kx][Ky][Kz][E][l][zeta][m] = self.bands[Kx][Ky][Kz][E][l][zeta][m] + coeff
+		if combine and self.hasCoefficient(Kx, Ky, Kz, E, l, zeta, m):
+			self.bands[Kx][Ky][Kz][E][l][zeta][m] = self.bands[Kx][Ky][Kz][E][l][zeta][m] + coefficient
 		else:
-			self.bands[Kx][Ky][Kz][E][l][zeta][m] = coeff
+			self.bands[Kx][Ky][Kz][E][l][zeta][m] = coefficient
 
 	def combineCoeffs(self, Kx, Ky, Kz, Esource, Edestination):
 		for l in self.bands[Kx][Ky][Kz][Esource]:
@@ -320,7 +320,7 @@ class Atom(Ion):
 						self.bands[Kx][Ky][Kz][Edestination][l][zeta][m] = coeff
 		del self.bands[Kx][Ky][Kz][Esource]
 
-	def getCoeff(self, Kx, Ky, Kz, E, l, zeta, m):
+	def getCoefficient(self, Kx, Ky, Kz, E, l, zeta, m):
 		"""Return complex coefficient for given orbital.
 
 		Args:
@@ -335,8 +335,8 @@ class Atom(Ion):
 		Returns:
 			complex: Coefficient for given orbital
 		"""
-		output = None
-		if self.hasCoeff(Kx, Ky, Kz, E, l, zeta, m):
+		output = 0.0
+		if self.hasCoefficient(Kx, Ky, Kz, E, l, zeta, m):
 			output = self.bands[Kx][Ky][Kz][E][l][zeta][m]
 		return output
 
@@ -356,7 +356,8 @@ class Atom(Ion):
 			Kx (float): K-point x coordinate
 			Ky (float): K-point y coordinate
 			Kz (float): K-point z coordinate
-			E (float): Band energy
+			Emin (float): Minimum of energy range
+			Emax (float): Maximum of energy range
 			x (float): Cartesian x coordinate
 			y (float): Cartesian y coordinate
 			z (float): Cartesian z coordinate
@@ -393,9 +394,9 @@ class Atom(Ion):
 							# Calculate spherical harmonic
 							Y = sph(l, m, relx, rely, relz)
 							# Get coefficient of basis function
-							coeff = self.bands[Kx][Ky][Kz][E][l][zeta][m]
+							coefficient = self.getCoefficient(Kx, Ky, Kz, E, l, zeta, m)
 							# Calculate and add contribution of basis function
-							psi += R * Y * coeff
+							psi += R * Y * coefficient
 		return psi
 
 	def getPsiGamma(self, E, x, y, z, exact=True):
@@ -424,8 +425,8 @@ class Atom(Ion):
 		"""Evaluate complex wavefunction at (x,y,z) due to this atom over all k-points within a given energy range.
 
 			Args:
-				Emin (float): Minimum energy
-				Emax (float): Maximum energy
+				Emin (float): Minimum of energy range
+				Emax (float): Maximum of energy range
 				x (float): Cartesian x coordinate
 				y (float): Cartesian y coordinate
 				z (float): Cartesian z coordinate

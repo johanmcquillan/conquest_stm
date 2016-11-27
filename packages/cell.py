@@ -61,6 +61,13 @@ class Cell(object):
 		self.bands = SmartDict()
 
 	def hasKPoint(self, Kx, Ky, Kz):
+		"""Check if cell stores specified k-point.
+
+		Args:
+			Kx (float): K-point x coordinate
+			Ky (float): K-point y coordinate
+			Kz (float): K-point z coordinate
+		"""
 		output = False
 		if Kx in self.bands:
 			if Ky in self.bands[Kx]:
@@ -69,6 +76,14 @@ class Cell(object):
 		return output
 
 	def hasBand(self, Kx, Ky, Kz, E):
+		"""Check if cell stores specified band.
+
+		Args:
+			Kx (float): K-point x coordinate
+			Ky (float): K-point y coordinate
+			Kz (float): K-point z coordinate
+			E (float): Band energy
+		"""
 		output = False
 		if self.hasKPoint(Kx, Ky, Kz):
 			if E in self.bands[Kx][Ky][Kz]:
@@ -137,14 +152,15 @@ class Cell(object):
 				print "Atom " + str(atomKey) + " has no band " + str(bandNumber) + ": " + str(bandEnergy)
 		return wavefunc
 
-	def getWavefunction(self, Emin, Emax, x, y, z, debug=False):
+	def getWavefunction(self, Emin, Emax, x, y, z):
 		"""Evaluate complex wavefunction at specific point over specified energy range.
 
 		Args:
+			Emin (float): Minimum of energy range
+			Emax (float): Maximum of energy range
 			x (float): Cartesian x coordinate
 			y (float): Cartesian y coordinate
 			z (float): Cartesian z coordinate
-			debug (bool., opt.): If true, print extra information during runtime
 
 		Returns:
 			complex: Wavefunction value
@@ -157,14 +173,14 @@ class Cell(object):
 		for atomKey in self.atoms:
 			atom = self.atoms[atomKey]
 			psi = psi + atom.getPsi(Emin, Emax, x, y, z)
-				#print "Atom " + str(atomKey) + " has no band " + str(bandNumber) + ": " + str(bandEnergy)
 		return psi
 
 	def getTotalCharge(self, Emin, Emax):
-		"""Integrate charge density of band over cell to get total charge
+		"""Perform volume integration charge density of band over cell.
 
 		Args:
-			bandNumber (int): Number of band to integrate
+			Emin (float): Minimum of energy range
+			Emax (float): Maximum of energy range
 
 		Returns:
 			float: Total charge
@@ -190,7 +206,8 @@ class Cell(object):
 		"""Normalise coefficients of a band to give total charge of unity.
 
 		Args:
-			bandNumber (int): Number of band to normalise
+			Emin (float): Minimum of energy range
+			Emax (float): Maximum of energy range
 			debug (bool, opt.): If true, print extra information during runtime
 		"""
 		totalCharge = self.getTotalCharge(Emin, Emax)
