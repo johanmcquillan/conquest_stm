@@ -238,9 +238,9 @@ class Atom(Ion):
 			radials (SmartDict, optional): Radial objects, indexed by radialDict[zeta][n][l],
 											where all indices are int. Default is empty, radials
 											may be added after instantiation
-			x (float): Atomic x coordinate in simulation cell in Bohr radii
-			y (float): Atomic y coordinate in simulation cell in Bohr radii
-			z (float): Atomic z coordinate in simulation cell in Bohr radii
+			x (float): Atomic x coordinate in simulation cell
+			y (float): Atomic y coordinate in simulation cell
+			z (float): Atomic z coordinate in simulation cell
 		"""
 		Ion.__init__(self, ionName, radials)
 		self.x = x
@@ -294,7 +294,7 @@ class Atom(Ion):
 			Kz (float): K-point z coordinate
 			E (float): Band energy
 			PAO (int): index of PAO as given in .dat file
-			coeff (coomplex): Coefficient of PAO
+			coefficient (coomplex): Coefficient of PAO
 			combine (boolean, opional): If false, overwrite existing coefficient
 										If true, add value to existing
 		"""
