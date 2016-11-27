@@ -120,39 +120,6 @@ class Cell(object):
 					# Sort energy list
 					self.bands[Kx][Ky][Kz] = sorted(self.bands[Kx][Ky][Kz])
 
-	def getPsiMesh(self, bandNumber=0, debug=False):
-		"""Calculate complex wavefunction at all points in 3D mesh and
-		assign it to self.psi
-
-		band (int, opt.): Number of band at which to evaluate psi
-		debug (bool., opt.): If true, print extra information during runtime
-		"""
-
-		bandEnergy = self.bands[bandNumber]
-
-		# Get 3D mesh with (0+0j) at all points
-		wavefunc = np.empty_like(self.xMesh, dtype=complex)
-		# Iterate over all atoms stored in this cell
-		for atomKey in self.atoms:
-			atom = self.atoms[atomKey]
-			if bandEnergy in atom.bands:
-				# Iterate over all mesh points
-				for i in range(0, self.xPoints):
-					for j in range(0, self.yPoints):
-						for k in range(0, self.zPoints):
-							# Get mesh coordinates
-							x = self.xMesh[i, j, k]
-							y = self.yMesh[i, j, k]
-							z = self.zMesh[i, j, k]
-
-							# # Add contribution from this atom to this mesh point
-							wavefunc[i, j, k] = wavefunc[i, j, k] + atom.getPsi(bandEnergy, x, y, z)
-				if debug:
-					print 'Band Energy = ' + str(bandEnergy) + '; Calculated Psi for Atom ' + str(atomKey)
-			elif debug:
-				print "Atom " + str(atomKey) + " has no band " + str(bandNumber) + ": " + str(bandEnergy)
-		return wavefunc
-
 	def getWavefunction(self, Emin, Emax, x, y, z):
 		"""Evaluate complex wavefunction at specific point over specified energy range.
 
