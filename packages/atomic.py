@@ -258,7 +258,7 @@ class Atom(Ion):
 		self.radials = I.radials
 		self.sortPAOs()
 
-	def hasCoeff(self, Kx, Ky, Kz, E, l, zeta, m):
+	def hasCoefficient(self, Kx, Ky, Kz, E, l, zeta, m):
 		"""Check if atom stores coefficient for given orbital.
 
 		Args:
