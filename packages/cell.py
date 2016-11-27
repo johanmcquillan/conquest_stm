@@ -1,6 +1,8 @@
 import numpy as np
 from smartDict import SmartDict
 
+BOLTZMANN = 8.6173303E-5  # Boltzmann's Constant in eV/K
+
 
 class Cell(object):
 	"""Simulation cell which holds Atom objects in a 3D mesh.
@@ -191,3 +193,43 @@ class Cell(object):
 				self.atoms[atomKey].applyFactorForRange(factor, Emin, Emax)
 		elif debug:
 			print "Total Electron Charge Already Normalised"
+
+	def getTotalKPoints(self):
+		"""Count total number of k-points"""
+		totalKPoints = 0
+		for Kx in self.bands:
+			for Ky in self.bands[Kx]:
+				for Kz in self.bands[Kx][Ky]:
+					totalKPoints += 1
+		return totalKPoints
+
+	def fermiDirac(self, energy, temperature):
+		"""Calculate Fermi-Dirac distribution value.
+
+		Args:
+			energy (float): Energy in eV
+			fermiLevel (float): Fermi Level in eV
+			temperature (float): Absolute temperature in K
+
+		returns:
+			float: Occupation value
+		"""
+		f = 1.0 / (np.exp((energy - self.fermiLevel) / (BOLTZMANN * temperature)) + 1)
+		return f
+
+	def getCurrent(self, Emin, Emax, T, x, y, z):
+
+		I = 0.0
+		w = 1/self.getTotalKPoints()
+
+		for Kx in self.bands:
+			for Ky in self.bands[Kx]:
+				for Kz in self.bands[Kx][Ky]:
+					for E in self.bands[Kx][Ky][Kz]:
+						if Emin < E < Emax:
+							psi = complex(0.0, 0.0)
+							for atomKey in self.atoms:
+								atom = self.atoms[atomKey]
+								psi += atom.getPsi1(Kx, Ky, Kz, E, x, y, z)
+							I += w * self.fermiDirac(E, T) * (abs(psi))**2
+		return I

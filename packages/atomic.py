@@ -6,7 +6,6 @@ from scipy.interpolate import interp1d
 from sph import sph
 from smartDict import SmartDict
 
-BOLTZMANN = 8.6173303E-5  # Boltzmann's Constant in eV/K
 
 class Radial(object):
 	"""Stores the radial part of basis function and metadata,
@@ -447,17 +446,27 @@ class Atom(Ion):
 				for m in self.bands[Kx][Ky][Kz][E][l][zeta]:
 					self.bands[Kx][Ky][Kz][E][l][zeta][m] *= factor
 
-	@staticmethod
-	def fermiDirac(energy, fermiLevel, temperature):
-		"""Calculate Fermi-Dirac distribution value.
+	def getPsi1(self, Kx, Ky, Kz, E, x, y, z):
 
-		Args:
-			energy (float): Energy in eV
-			fermiLevel (float): Fermi Level in eV
-			temperature (float): Absolute temperature in K
+		relx = x - self.x
+		rely = y - self.y
+		relz = z - self.z
+		# Get relative distance to atom
+		r = np.sqrt(relx ** 2 + rely ** 2 + relz ** 2)
 
-		returns:
-			float: Occupation value
-		"""
-		f = 1.0 / (np.exp((energy - fermiLevel)/(BOLTZMANN*temperature)) + 1)
-		return f
+		psi = complex(0.0, 0.0)
+
+		# If r is beyond atoms range, return 0.0+0.0j
+		if r <= self.getMaxCutoff():  # Loop over all radial functions
+			for l in self.radials:
+				for zeta in self.radials[l]:
+					# Evaluate R(r) using linear interpolation
+					R = self.getRadialValue(l, zeta, r)
+					for m in range(-l, l + 1):
+						# Calculate spherical harmonic
+						Y = sph(l, m, relx, rely, relz)
+						# Get coefficient of basis function
+						coefficient = self.getCoefficient(Kx, Ky, Kz, E, l, zeta, m)
+						# Calculate and add contribution of basis function
+						psi += R * Y * coefficient
+		return psi
