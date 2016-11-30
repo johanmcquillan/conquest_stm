@@ -510,19 +510,19 @@ def plotCurrent2D(
 				if axis == 'z':
 					if not planeValue:
 						planeValue = cell.zLength / 2
-					I[i, j] = cell.getCurrent(Emin, Emax, T, space1[i, j], space2[i, j], planeValue, debug=debug)
+					I[i, j] = cell.getCurrent(Emin, Emax, T, space2[i, j], space1[i, j], planeValue, debug=debug)
 					plt.xlabel('$x$ / $a_0$')
 					plt.ylabel('$y$ / $a_0$')
 				if axis == 'y':
 					if not planeValue:
 						planeValue = cell.yLength / 2
-					psi = cell.givePsi(space2[i, j], planeValue, space1[i, j], bandNumber=bandNumber)
+					I[i, j] = cell.getCurrent(Emin, Emax, T, space2[i, j], planeValue, space1[i, j], debug=debug)
 					plt.xlabel('$x$ / $a_0$')
 					plt.ylabel('$z$ / $a_0$')
 				if axis == 'x':
 					if not planeValue:
 						planeValue = cell.xLength / 2
-					psi = cell.givePsi(planeValue, space2[i, j], space1[i, j], bandNumber=bandNumber)
+					I[i, j] = cell.getCurrent(Emin, Emax, T, planeValue, space2[i, j], space1[i, j], debug=debug)
 					plt.xlabel('$y$ / $a_0$')
 					plt.ylabel('$z$ / $a_0$')
 
