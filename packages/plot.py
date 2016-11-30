@@ -347,7 +347,7 @@ def plotChargeDensity2D(
 
 		# Setup plot
 		plt.imshow(
-			psi2, interpolation='bilinear', origin='center', cmap=cm.Blues,
+			psi2, interpolation='bilinear', origin='center', cmap=cm.copper,
 			extent=(minimum, maximum, minimum, maximum), vmin=0.0, vmax=maxPsi2)
 		plt.colorbar()
 		plt.grid()
@@ -534,7 +534,7 @@ def plotCurrent2D(
 			raise ValueError
 		# Setup plot
 		plt.imshow(
-				I, interpolation='bilinear', origin='center', cmap=cm.Blues,
+				I, interpolation='bilinear', origin='center', cmap=cm.copper,
 				extent=(minimum, maximum, minimum, maximum))
 		plt.colorbar()
 		plt.grid()
