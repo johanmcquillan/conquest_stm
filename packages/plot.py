@@ -88,6 +88,10 @@ def plotSPH2D(l, m, axis, minimum=-8.0, maximum=8.0, planeValue=0.0, step=0.1, p
 		step (float, opt.): Interval between Cartesian mgrid points, measured in a0; Default is 0.1
 		printStatus (bool, opt.): If true, print update when plot is finished
 	"""
+
+	if axis not in ['x', 'y', 'z']:
+		raise ValueError("Axis must be x, y, or z")
+
 	# Initialise meshes
 	# 2D cartesian mesh (x, y, or z axis determined later)
 	space1, space2 = np.mgrid[minimum:maximum:step, minimum:maximum:step]
@@ -198,6 +202,10 @@ def plotBasis2D(
 		printStatus (boolean, opt.): If true, print notification when finishing a plot
 		spectro (boolean, opt.): If true, use spectroscopic notation
 	"""
+
+	if axis not in ['x', 'y', 'z']:
+		raise ValueError("Axis must be x, y, or z")
+
 	# Initialise meshes
 	# 2D cartesian mesh (x, y, or z axis determined later)
 	space1, space2 = np.mgrid[minimum:maximum:step, minimum:maximum:step]
@@ -206,7 +214,7 @@ def plotBasis2D(
 	R = np.empty_like(space1)  # Radial Function mesh
 	psi = np.empty_like(space1)  # Basis Function mesh (psi = R*Y)
 
-	maxpsi = 0.1  # Colour plot sets limits to -maxpsi to +maxpsi
+	maxPsi = 0.1  # Colour plot sets limits to -maxPsi to +maxPsi
 
 	# Loop over all mesh points
 	for i in range(0, int((maximum - minimum) / step)):
@@ -232,8 +240,11 @@ def plotBasis2D(
 			psi[i, j] = Y[i, j] * R[i, j]
 
 			# Update maxpsi
-			if abs(psi[i, j]) > maxpsi:
-				maxpsi = abs(psi[i, j])
+			if abs(psi[i, j]) > maxPsi:
+				maxPsi = abs(psi[i, j])
+
+	if maxPsi == 0:
+		raise ValueError("Wavefunction is zero at all points")
 
 	# Setup plot
 	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
@@ -242,7 +253,7 @@ def plotBasis2D(
 	with PdfPages('pdfs/' + plotName + '.pdf') as pdf:
 		plt.imshow(
 			psi, interpolation='bilinear', origin='center', cmap=cm.bwr, extent=(minimum, maximum, minimum, maximum),
-			vmin=-maxpsi, vmax=maxpsi)
+			vmin=-maxPsi, vmax=maxPsi)
 		plt.colorbar()
 		plt.grid()
 		axes = ['x', 'y', 'z']
@@ -286,7 +297,7 @@ def plotChargeDensityGamma2D(
 	"""
 
 	if axis not in ['x', 'y', 'z']:
-		raise ValueError
+		raise ValueError("Axis must be x, y, or z")
 
 	# If no step given, set to gridSpacing
 	if not step:
@@ -331,6 +342,9 @@ def plotChargeDensityGamma2D(
 			# Update maxpsi
 			if abs(psi2[i, j]) > maxPsi2:
 				maxPsi2 = psi2[i, j]
+
+	if maxPsi2 == 0:
+		raise ValueError("Wavefunction is zero at all points")
 
 	# Setup plot
 	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
@@ -415,8 +429,9 @@ def plotChargeDensityGamma3D(
 				# Set max value
 				if psi2[i, j, k] > psi2max:
 					psi2max = psi2[i, j, k]
+
 	if psi2max == 0.0:
-		raise ValueError
+		raise ValueError("Wavefunction is zero at all points")
 	if debug:
 		print 'Isosurface value = '+str(fraction*psi2max)
 	# Make isosurface at psi2 = fraction * psi2max
@@ -448,7 +463,7 @@ def plotChargeDensityGamma3D(
 	# Save plot as png
 	if save:
 		timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
-		saveName = cell.name+"_ChargeDensity3D_"+str(fraction)+"_"+str(EminRelative)+"_"+str(EmaxRelative)+"_"+timeStamp
+		saveName = cell.name+"_ChargeDensity3D_"+str(fraction)+"_"+str(bandEnergy)+"_"+timeStamp
 		plt.savefig("figures3D/"+saveName+".png")
 	# Show plot
 	if show:
@@ -475,6 +490,9 @@ def plotLDoS2D(cell, Emin, Emax, T, axis, minimum, maximum, planeValue=None, ste
 		printStatus (bool, opt.): If true, print update when file is saved
 		debug (bool, opt.): If true, print extra information during runtime
 	"""
+
+	if axis not in ['x', 'y', 'z']:
+		raise ValueError("Axis must be x, y, or z")
 
 	# If no step given, set to gridSpacing
 	if not step:
@@ -516,11 +534,12 @@ def plotLDoS2D(cell, Emin, Emax, T, axis, minimum, maximum, planeValue=None, ste
 			if abs(I[i, j]) > maxI:
 				maxI = I[i, j]
 
-		if maxI == 0.0:
-			raise ValueError
+	if maxI == 0.0:
+		raise ValueError("LDoS is zero at all points")
+
 	# Setup plot
 	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
-	plotName = cell.name + '_LDoS_' + axis + '_' + timeStamp
+	plotName = cell.name + '_LDoS2D_' + axis + '_' + timeStamp
 	with PdfPages('pdfs/' + plotName + '.pdf') as pdf:
 		plt.imshow(
 				I, interpolation='bilinear', origin='center', cmap=cm.copper,
@@ -575,9 +594,6 @@ def plotLDoS3D(
 	if step == 0.0:
 		step = cell.gridSpacing
 
-	# Get nearest stored energy at gamma-point to requested energy
-	bandEnergy = sorted(cell.getGammaEnergies(), key=lambda t: abs(E - t))[0]
-
 	# Cartesian mesh
 	X, Y, Z = np.mgrid[xrange[0]:xrange[1]:step, yrange[0]:yrange[1]:step, zrange[0]:zrange[1]:step]
 
@@ -594,7 +610,7 @@ def plotLDoS3D(
 				z = Z[i, j, k]
 
 				# Calculate wavefunction
-				psi = cell.getPsiGamma(bandEnergy, x, y, z, debug=debug)
+				psi = cell.getPsi(Emin, Emax, x, y, z, debug=debug)
 
 				# Get charge density
 				psi2[i, j, k] = abs(psi)**2
@@ -602,8 +618,10 @@ def plotLDoS3D(
 				# Set max value
 				if psi2[i, j, k] > psi2max:
 					psi2max = psi2[i, j, k]
+
 	if psi2max == 0.0:
-		raise ValueError
+		raise ValueError("Wavefunction is zero at all points")
+
 	if debug:
 		print 'Isosurface value = '+str(fraction*psi2max)
 	# Make isosurface at psi2 = fraction * psi2max
@@ -618,7 +636,7 @@ def plotLDoS3D(
 	EminRelative = Emin - cell.fermiLevel
 	EmaxRelative = Emax - cell.fermiLevel
 	title = (
-		cell.name+' Charge Density Isosurface at '+str(fraction)+' of Maximum Density at \n Energies from '
+		cell.name+' LDoS Isosurface at '+str(fraction)+' of Maximum Density for \n Energies from '
 		+str(EminRelative)+' eV to '+str(EmaxRelative)+' eV relative to the Fermi Level')
 	plt.title(title)
 
@@ -634,12 +652,12 @@ def plotLDoS3D(
 	if cmap:
 		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Spectral, lw=0.1)
 	else:
-		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], color=(1,0,0,alpha), lw=0.1)
+		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], color=(1, 0, 0, alpha), lw=0.1)
 
 	# Save plot as png
 	if save:
 		timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
-		saveName = cell.name+"_ChargeDensity3D_"+str(fraction)+"_"+str(EminRelative)+"_"+str(EmaxRelative)+"_"+timeStamp
+		saveName = cell.name+"_LDoS3D_"+str(fraction)+"_"+str(EminRelative)+"_"+str(EmaxRelative)+"_"+timeStamp
 		plt.savefig("figures3D/"+saveName+".png")
 	# Show plot
 	if show:
