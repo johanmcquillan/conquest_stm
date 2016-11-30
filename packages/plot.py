@@ -490,7 +490,7 @@ def plotCurrent2D(
 		step = cell.gridSpacing
 
 	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
-	plotname = cell.name + '_Current_' + axis + '_' + label + timeStamp
+	plotname = cell.name + '_LDoS_' + axis + '_' + label + timeStamp
 
 	# Initialise meshes
 	# 2D cartesian mesh (x, y, or z axis determined later)
@@ -540,7 +540,7 @@ def plotCurrent2D(
 		plt.grid()
 		axes = ['x', 'y', 'z']
 		axes.remove(axis)
-		ttl = (cell.name + ' Current in $' + axes[0] + '-' + axes[1] + '$ plane')
+		ttl = (cell.name+' LDoS in $'+axes[0]+'-'+axes[1]+'$ plane at $'+axis+'='+str(planeValue)+'a_0$')
 		plt.title(ttl)
 
 		# Save to pdf
