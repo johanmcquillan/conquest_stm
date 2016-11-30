@@ -311,19 +311,19 @@ def plotChargeDensityGamma2D(
 			if axis == 'z':
 				if not planeValue:
 					planeValue = cell.zLength / 2
-				psi = cell.getPsiGamma(bandEnergy, space2[i, j], space1[i, j], planeValue, debug=debug)
+				psi = cell.getPsiGamma(bandEnergy, space2[i, j], space1[i, j], planeValue)
 				label1 = '$x$ / $a_0$'
 				label2 = '$y$ / $a_0$'
 			if axis == 'y':
 				if not planeValue:
 					planeValue = cell.yLength / 2
-				psi = cell.getPsiGamma(bandEnergy, space2[i, j], planeValue, space1[i, j], debug=debug)
+				psi = cell.getPsiGamma(bandEnergy, space2[i, j], planeValue, space1[i, j])
 				label1 = '$x$ / $a_0$'
 				label2 = '$z$ / $a_0$'
 			if axis == 'x':
 				if not planeValue:
 					planeValue = cell.xLength / 2
-				psi = cell.getPsiGamma(bandEnergy, planeValue, space2[i, j], space1[i, j], debug=debug)
+				psi = cell.getPsiGamma(bandEnergy, planeValue, space2[i, j], space1[i, j])
 				label1 = '$y$ / $a_0$'
 				label2 = '$z$ / $a_0$'
 
@@ -408,7 +408,7 @@ def plotChargeDensityGamma3D(
 				z = Z[i, j, k]
 
 				# Calculate wavefunction
-				psi = cell.getPsiGamma(bandEnergy, x, y, z, debug=debug)
+				psi = cell.getPsiGamma(bandEnergy, x, y, z)
 
 				# Get charge density
 				psi2[i, j, k] = abs(psi)**2

@@ -153,7 +153,7 @@ class Cell(object):
 		f = 1.0 / (np.exp((energy - self.fermiLevel) / (BOLTZMANN * temperature)) + 1)
 		return f
 
-	def getPsi(self, Kx, Ky, Kz, E, x, y, z, debug=False):
+	def getPsi(self, Kx, Ky, Kz, E, x, y, z):
 		"""Evaluate wavefunction at specific position, k-point, and energy.
 
 		Args:
@@ -174,7 +174,7 @@ class Cell(object):
 			psi += self.atoms[atomKey].getPsi(Kx, Ky, Kz, E, x, y, z)
 		return psi
 
-	def getPsiGamma(self, E, x, y, z, debug=False):
+	def getPsiGamma(self, E, x, y, z):
 		"""Evaluate wavefunction at specific position and energy using only gamma-point.
 
 		Args:
@@ -187,7 +187,7 @@ class Cell(object):
 		Returns:
 			complex: Wavefunction value
 			"""
-		return self.getPsi(0.0, 0.0, 0.0, E, x, y, z, debug=debug)
+		return self.getPsi(0.0, 0.0, 0.0, E, x, y, z)
 
 	def getLDoS(self, Emin, Emax, T, x, y, z, debug=False):
 		"""Evaluate local density of states (LDoS) within energy range at specific point.
