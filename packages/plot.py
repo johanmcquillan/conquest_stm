@@ -19,7 +19,7 @@ SPECTRAL = {0: 's', 1: 'p', 2: 'd', 3: 'f', 4: 'g',
 
 
 def plotRadials(ions, points=500, printStatus=False, spectro=True):
-	"""Plot all radial functions from self.ions to 'self.filename'_radials.pdf
+	"""Plot all radial functions from self.ions to pdf
 
 	Args:
 		ions ({string : Ion}): Dict of Ion objects, indexed by ion name
@@ -138,7 +138,7 @@ def plotSPH2D(l, m, axis, minimum=-8.0, maximum=8.0, planeValue=0.0, step=0.1, p
 def plotSPH3D(l, m):
 	"""Plots 3D spherical harmonic isosurface.
 
-	Input:
+	Args:
 		l (int): Degree of spherical harmonic
 		m (int): Order of spherical harmonic
 	"""
@@ -267,7 +267,7 @@ def plotBasis2D(
 
 def plotChargeDensityGamma2D(
 		cell, E, axis, minimum, maximum, step=None, planeValue=None, label='',
-		printStatus=False, debug=False):
+		printStatus=False):
 	"""Plots cross-section of charge density evaluated at gamma-point to pdf.
 
 	All lengths measured in bohr radii (a0).
@@ -283,7 +283,6 @@ def plotChargeDensityGamma2D(
 							Default is cell.gridSpacing
 		label (string, opt.): Optional string to append to end of filename
 		printStatus (bool, opt.): If true, print update when file is saved
-		debug (bool, opt.): If true, print extra information during runtime
 	"""
 
 	if axis not in ['x', 'y', 'z']:
@@ -457,16 +456,15 @@ def plotChargeDensityGamma3D(
 	plt.close()
 
 
-def plotLDoS2D(
-		cell, Emin, Emax, T, axis, minimum, maximum, planeValue=None, step=None, label='',
-		printStatus=False, debug=False):
+def plotLDoS2D(cell, Emin, Emax, T, axis, minimum, maximum, planeValue=None, step=None, printStatus=False, debug=False):
 	"""Plots cross-section of charge density to pdf.
 
 	All lengths measured in bohr radii (a0).
 
 	Args:
 		cell (Cell): Simulation cell to plot
-		bandNumber (int): Band number to plot
+		Emin (float): Minimum energy
+		Emax (float): Maximum energy
 		axis (string): Cartesian axis ('x', 'y', or 'z') to set to constant value given by planeValue
 		minimum (int): Minimum value of coordinates
 		maximum (int): Maximum value of coordinates
@@ -522,7 +520,7 @@ def plotLDoS2D(
 			raise ValueError
 	# Setup plot
 	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
-	plotName = cell.name + '_LDoS_' + axis + '_' + label + timeStamp
+	plotName = cell.name + '_LDoS_' + axis + '_' + timeStamp
 	with PdfPages('pdfs/' + plotName + '.pdf') as pdf:
 		plt.imshow(
 				I, interpolation='bilinear', origin='center', cmap=cm.copper,
