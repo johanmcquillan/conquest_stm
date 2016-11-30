@@ -480,6 +480,7 @@ def plotLDoS2D(cell, Emin, Emax, T, axis, minimum, maximum, planeValue=None, ste
 		cell (Cell): Simulation cell to plot
 		Emin (float): Minimum energy
 		Emax (float): Maximum energy
+		T (float): Absolute temperature in K
 		axis (string): Cartesian axis ('x', 'y', or 'z') to set to constant value given by planeValue
 		minimum (int): Minimum value of coordinates
 		maximum (int): Maximum value of coordinates
