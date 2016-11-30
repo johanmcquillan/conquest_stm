@@ -1,6 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 from scipy.interpolate import interp1d
 
 from sph import sph
@@ -49,8 +47,6 @@ class Radial(object):
 			i = 0
 			while self.radii[i] < distance:
 				i += 1
-
-			i = min(range(0, len(self.radii)), key=lambda j: abs(self.radii[j] - distance))
 
 			# Get nearest stored values
 			x1 = self.radii[i - 1]
@@ -187,6 +183,7 @@ class Ion(object):
 			zeta (int): Indexes functions with different cutoffs
 			r (float): Radial distance from ion
 			interpolation (string, opt.): Method of interpolation; possible arguments are 'cubic' (default) and 'linear'
+
 		Returns:
 			float: Radial function evaluated at r
 		"""
@@ -333,7 +330,7 @@ class Atom(Ion):
 					totalKPoints += 1
 		return totalKPoints
 
-	def getPsi(self, Kx, Ky, Kz, E, x, y, z):
+	def getPsi(self, Kx, Ky, Kz, E, x, y, z, interpolation='cubic'):
 		"""Evaluate wavefunction contribution from this atom.
 
 		Args:
@@ -344,6 +341,7 @@ class Atom(Ion):
 			x (float): Cartesian x coordinate
 			y (float): Cartesian y coordinate
 			z (float): Cartesian z coordinate
+			interpolation (string, opt.): Method of interpolation; possible arguments are 'cubic' (default) and 'linear'
 
 		Returns:
 			complex: Wavefunction value
@@ -361,7 +359,7 @@ class Atom(Ion):
 			for l in self.radials:
 				for zeta in self.radials[l]:
 					# Evaluate radial part
-					R = self.getRadialValue(l, zeta, r)
+					R = self.getRadialValue(l, zeta, r, interpolation=interpolation)
 					for m in range(-l, l + 1):
 						# Evaluate spherical harmonic
 						Y = sph(l, m, relx, rely, relz)
