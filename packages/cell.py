@@ -205,7 +205,8 @@ class Cell(object):
 			float: LDoS value
 		"""
 		I = 0.0
-		w = 1.0/self.getTotalKPoints()  # K-point weighting
+		totalK = self.getTotalKPoints()
+		w = 1.0/totalK  # K-point weighting
 
 		# Loop over all k-points
 		for Kx in self.bands:
@@ -215,9 +216,9 @@ class Cell(object):
 					for E in self.bands[Kx][Ky][Kz]:
 						if Emin < E < Emax:
 							# Calculate LDoS
-							psi = self.getPsi(Kx, Ky, Kz, E, x, y, z, debug=debug)
+							psi = self.getPsi(Kx, Ky, Kz, E, x, y, z)
 							I += w * self.fermiDirac(E, T) * (abs(psi))**2
-					if debug:
+					if debug and totalK != 1:
 						print "Finished K-Point = "+str(Kx)+", "+str(Ky)+", "+str(Kz)
 		if debug:
 			print "Finished current I = "+str(I)+", at r = ("+str(x)+", "+str(y)+", "+str(z)+")"
