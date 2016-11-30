@@ -88,38 +88,36 @@ def plotSPH2D(l, m, axis, minimum=-8.0, maximum=8.0, planeValue=0.0, step=0.1, p
 		step (float, opt.): Interval between Cartesian mgrid points, measured in a0; Default is 0.1
 		printStatus (bool, opt.): If true, print update when plot is finished
 	"""
-
-	plotName = 'SPH_'+str(l)+'_'+str(m)+'_'+axis
-
 	# Initialise meshes
 	# 2D cartesian mesh (x, y, or z axis determined later)
 	space1, space2 = np.mgrid[minimum:maximum:step, minimum:maximum:step]
 	Y = np.empty_like(space1)  # Spherical Harmonic mesh
 
 	maxY = 0.1  # Colour plot sets limits to -maxY and +maxY
+	for i in range(0, int((maximum - minimum) / step)):
+		for j in range(0, int((maximum - minimum) / step)):
+			# Use axis variable to determine which axes space1 and space2 refer to
+			# Evaluate spherical harmonic at mesh point
+			if axis == 'z':
+				Y[i, j] = sph(l, m, space2[i, j], space1[i, j], planeValue)
+				plt.xlabel('$x$ / $a_0$')
+				plt.ylabel('$y$ / $a_0$')
+			if axis == 'y':
+				Y[i, j] = sph(l, m, space2[i, j], planeValue, space1[i, j])
+				plt.xlabel('$x$ / $a_0$')
+				plt.ylabel('$z$ / $a_0$')
+			if axis == 'x':
+				Y[i, j] = sph(l, m, planeValue, space2[i, j], space1[i, j])
+				plt.xlabel('$y$ / $a_0$')
+				plt.ylabel('$z$ / $a_0$')
+
+			# Update maxY
+			if abs(Y[i, j]) > maxY:
+				maxY = abs(Y[i, j])
+
+	# Setup plot
+	plotName = 'SPH_'+str(l)+'_'+str(m)+'_'+axis
 	with PdfPages('pdfs/'+plotName+'.pdf') as pdf:
-		for i in range(0, int((maximum - minimum) / step)):
-			for j in range(0, int((maximum - minimum) / step)):
-				# Use axis variable to determine which axes space1 and space2 refer to
-				# Evaluate spherical harmonic at mesh point
-				if axis == 'z':
-					Y[i, j] = sph(l, m, space2[i, j], space1[i, j], planeValue)
-					plt.xlabel('$x$ / $a_0$')
-					plt.ylabel('$y$ / $a_0$')
-				if axis == 'y':
-					Y[i, j] = sph(l, m, space2[i, j], planeValue, space1[i, j])
-					plt.xlabel('$x$ / $a_0$')
-					plt.ylabel('$z$ / $a_0$')
-				if axis == 'x':
-					Y[i, j] = sph(l, m, planeValue, space2[i, j], space1[i, j])
-					plt.xlabel('$y$ / $a_0$')
-					plt.ylabel('$z$ / $a_0$')
-
-				# Update maxY
-				if abs(Y[i, j]) > maxY:
-					maxY = abs(Y[i, j])
-
-		# Setup plot
 		plt.imshow(
 			Y, interpolation='bilinear', origin='center', cmap=cm.bwr, extent=(minimum, maximum, minimum, maximum),
 			vmin=-maxY, vmax=maxY)
@@ -200,9 +198,6 @@ def plotBasis2D(
 		printStatus (boolean, opt.): If true, print notification when finishing a plot
 		spectro (boolean, opt.): If true, use spectroscopic notation
 	"""
-	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
-	plotName = 'Basis_'+ionName+'_'+str(zeta)+'_'+str(n)+'_'+str(l)+'_'+str(m)+'_'+axis+timeStamp
-
 	# Initialise meshes
 	# 2D cartesian mesh (x, y, or z axis determined later)
 	space1, space2 = np.mgrid[minimum:maximum:step, minimum:maximum:step]
@@ -213,36 +208,38 @@ def plotBasis2D(
 
 	maxpsi = 0.1  # Colour plot sets limits to -maxpsi to +maxpsi
 
-	# Plot functions to pdf
-	with PdfPages('pdfs/'+plotName+'.pdf') as pdf:
-		# Loop over all mesh points
-		for i in range(0, int((maximum - minimum) / step)):
-			for j in range(0, int((maximum - minimum) / step)):
-				# Use axis variable to determine which axes space1 and space2 refer to
-				# Evaluate spherical harmonic at mesh point
-				if axis == 'z':
-					Y[i, j] = sph(l, m, space2[i, j], space1[i, j], planeValue)
-					plt.xlabel('$x$ / $a_0$')
-					plt.ylabel('$y$ / $a_0$')
-				if axis == 'y':
-					Y[i, j] = sph(l, m, space2[i, j], planeValue, space1[i, j])
-					plt.xlabel('$x$ / $a_0$')
-					plt.ylabel('$z$ / $a_0$')
-				if axis == 'x':
-					Y[i, j] = sph(l, m, planeValue, space2[i, j], space1[i, j])
-					plt.xlabel('$y$ / $a_0$')
-					plt.ylabel('$z$ / $a_0$')
+	# Loop over all mesh points
+	for i in range(0, int((maximum - minimum) / step)):
+		for j in range(0, int((maximum - minimum) / step)):
+			# Use axis variable to determine which axes space1 and space2 refer to
+			# Evaluate spherical harmonic at mesh point
+			if axis == 'z':
+				Y[i, j] = sph(l, m, space2[i, j], space1[i, j], planeValue)
+				plt.xlabel('$x$ / $a_0$')
+				plt.ylabel('$y$ / $a_0$')
+			if axis == 'y':
+				Y[i, j] = sph(l, m, space2[i, j], planeValue, space1[i, j])
+				plt.xlabel('$x$ / $a_0$')
+				plt.ylabel('$z$ / $a_0$')
+			if axis == 'x':
+				Y[i, j] = sph(l, m, planeValue, space2[i, j], space1[i, j])
+				plt.xlabel('$y$ / $a_0$')
+				plt.ylabel('$z$ / $a_0$')
 
-				# Evaluate value of Radial at mesh point and get psi
-				distance = np.sqrt(space1[i, j]**2 + space2[i, j]**2 + planeValue**2)
-				R[i, j] = ion.getRadialValue(l, zeta, distance)
-				psi[i, j] = Y[i, j] * R[i, j]
+			# Evaluate value of Radial at mesh point and get psi
+			distance = np.sqrt(space1[i, j]**2 + space2[i, j]**2 + planeValue**2)
+			R[i, j] = ion.getRadialValue(l, zeta, distance)
+			psi[i, j] = Y[i, j] * R[i, j]
 
-				# Update maxpsi
-				if abs(psi[i, j]) > maxpsi:
-					maxpsi = abs(psi[i, j])
+			# Update maxpsi
+			if abs(psi[i, j]) > maxpsi:
+				maxpsi = abs(psi[i, j])
 
-		# Setup plot
+	# Setup plot
+	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
+	plotName = (
+		'Basis_' + ionName + '_' + str(zeta) + '_' + str(n) + '_' + str(l) + '_' + str(m) + '_' + axis + timeStamp)
+	with PdfPages('pdfs/' + plotName + '.pdf') as pdf:
 		plt.imshow(
 			psi, interpolation='bilinear', origin='center', cmap=cm.bwr, extent=(minimum, maximum, minimum, maximum),
 			vmin=-maxpsi, vmax=maxpsi)
@@ -296,9 +293,6 @@ def plotChargeDensityGamma2D(
 	if not step:
 		step = cell.gridSpacing
 
-	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
-	plotName = cell.name+'_ChargeDensityGamma_'+axis+'_'+label+timeStamp
-
 	# Initialise meshes
 	# 2D cartesian mesh (x, y, or z axis determined later)
 	space1, space2 = np.mgrid[minimum:maximum:step, minimum:maximum:step]
@@ -309,43 +303,46 @@ def plotChargeDensityGamma2D(
 	# Get nearest stored energy at gamma-point to requested energy
 	bandEnergy = sorted(cell.getGammaEnergies(), key=lambda t: abs(E - t))[0]
 
-	# Plot functions to pdf
-	with PdfPages('pdfs/' + plotName + '.pdf') as pdf:
-		# Loop over all mesh points
-		for i in range(0, int((maximum - minimum) / step)):
-			for j in range(0, int((maximum - minimum) / step)):
-				# Use axis variable to determine which axes space1 and space2 refer to
-				# Evaluate spherical harmonic at mesh point
-				if axis == 'z':
-					if not planeValue:
-						planeValue = cell.zLength / 2
-					psi = cell.getPsiGamma(bandEnergy, space2[i, j], space1[i, j], planeValue, debug=debug)
-					plt.xlabel('$x$ / $a_0$')
-					plt.ylabel('$y$ / $a_0$')
-				if axis == 'y':
-					if not planeValue:
-						planeValue = cell.yLength / 2
-					psi = cell.getPsiGamma(bandEnergy, space2[i, j], planeValue, space1[i, j], debug=debug)
-					plt.xlabel('$x$ / $a_0$')
-					plt.ylabel('$z$ / $a_0$')
-				if axis == 'x':
-					if not planeValue:
-						planeValue = cell.xLength / 2
-					psi = cell.getPsiGamma(bandEnergy, planeValue, space2[i, j], space1[i, j], debug=debug)
-					plt.xlabel('$y$ / $a_0$')
-					plt.ylabel('$z$ / $a_0$')
-			
-				psi2[i, j] += abs(psi)**2
+	# Loop over all mesh points
+	for i in range(0, int((maximum - minimum) / step)):
+		for j in range(0, int((maximum - minimum) / step)):
+			# Use axis variable to determine which axes space1 and space2 refer to
+			# Evaluate spherical harmonic at mesh point
+			if axis == 'z':
+				if not planeValue:
+					planeValue = cell.zLength / 2
+				psi = cell.getPsiGamma(bandEnergy, space2[i, j], space1[i, j], planeValue, debug=debug)
+				label1 = '$x$ / $a_0$'
+				label2 = '$y$ / $a_0$'
+			if axis == 'y':
+				if not planeValue:
+					planeValue = cell.yLength / 2
+				psi = cell.getPsiGamma(bandEnergy, space2[i, j], planeValue, space1[i, j], debug=debug)
+				label1 = '$x$ / $a_0$'
+				label2 = '$z$ / $a_0$'
+			if axis == 'x':
+				if not planeValue:
+					planeValue = cell.xLength / 2
+				psi = cell.getPsiGamma(bandEnergy, planeValue, space2[i, j], space1[i, j], debug=debug)
+				label1 = '$y$ / $a_0$'
+				label2 = '$z$ / $a_0$'
 
-				# Update maxpsi
-				if abs(psi2[i, j]) > maxPsi2:
-					maxPsi2 = psi2[i, j]
-		# Setup plot
+			psi2[i, j] += abs(psi)**2
+
+			# Update maxpsi
+			if abs(psi2[i, j]) > maxPsi2:
+				maxPsi2 = psi2[i, j]
+
+	# Setup plot
+	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
+	plotName = cell.name+'_ChargeDensityGamma_'+axis+'_'+label+timeStamp
+	with PdfPages('pdfs/' + plotName + '.pdf') as pdf:
 		plt.imshow(
 			psi2, interpolation='bilinear', origin='center', cmap=cm.copper,
 			extent=(minimum, maximum, minimum, maximum), vmin=0.0, vmax=maxPsi2)
 		plt.colorbar()
-		plt.grid()
+		plt.xlabel(label1)
+		plt.ylabel(label2)
 		axes = ['x', 'y', 'z']
 		axes.remove(axis)
 		ttl = (cell.name+' Charge Density in $'+axes[0]+'-'+axes[1]+'$ plane at $'+axis+'='+str(planeValue)+'$')
@@ -464,7 +461,7 @@ def plotLDoS2D(
 		cell, Emin, Emax, T, axis, minimum, maximum, planeValue=None, step=None, label='',
 		printStatus=False, debug=False):
 	"""Plots cross-section of charge density to pdf.
-	
+
 	All lengths measured in bohr radii (a0).
 
 	Args:
@@ -485,9 +482,6 @@ def plotLDoS2D(
 	if not step:
 		step = cell.gridSpacing
 
-	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
-	plotName = cell.name + '_LDoS_' + axis + '_' + label + timeStamp
-
 	# Initialise meshes
 	# 2D cartesian mesh (x, y, or z axis determined later)
 	space1, space2 = np.mgrid[minimum:maximum:step, minimum:maximum:step]
@@ -496,44 +490,46 @@ def plotLDoS2D(
 
 	maxI = 0.0  # Colour plot sets limits to -maxpsi to +maxpsi
 
-	# Plot functions to pdf
-	with PdfPages('pdfs/' + plotName + '.pdf') as pdf:
-		# Loop over all mesh points
-		for i in range(0, int((maximum - minimum) / step)):
-			for j in range(0, int((maximum - minimum) / step)):
-				# Use axis variable to determine which axes space1 and space2 refer to
-				# Evaluate spherical harmonic at mesh point
-				if axis == 'z':
-					if not planeValue:
-						planeValue = cell.zLength / 2
-					I[i, j] = cell.getLDoS(Emin, Emax, T, space2[i, j], space1[i, j], planeValue, debug=debug)
-					plt.xlabel('$x$ / $a_0$')
-					plt.ylabel('$y$ / $a_0$')
-				if axis == 'y':
-					if not planeValue:
-						planeValue = cell.yLength / 2
-					I[i, j] = cell.getLDoS(Emin, Emax, T, space2[i, j], planeValue, space1[i, j], debug=debug)
-					plt.xlabel('$x$ / $a_0$')
-					plt.ylabel('$z$ / $a_0$')
-				if axis == 'x':
-					if not planeValue:
-						planeValue = cell.xLength / 2
-					I[i, j] = cell.getLDoS(Emin, Emax, T, planeValue, space2[i, j], space1[i, j], debug=debug)
-					plt.xlabel('$y$ / $a_0$')
-					plt.ylabel('$z$ / $a_0$')
+	# Loop over all mesh points
+	for i in range(0, int((maximum - minimum) / step)):
+		for j in range(0, int((maximum - minimum) / step)):
+			# Use axis variable to determine which axes space1 and space2 refer to
+			# Evaluate spherical harmonic at mesh point
+			if axis == 'z':
+				if not planeValue:
+					planeValue = cell.zLength / 2
+				I[i, j] = cell.getLDoS(Emin, Emax, T, space2[i, j], space1[i, j], planeValue, debug=debug)
+				label1 = '$x$ / $a_0$'
+				label2 = '$y$ / $a_0$'
+			if axis == 'y':
+				if not planeValue:
+					planeValue = cell.yLength / 2
+				I[i, j] = cell.getLDoS(Emin, Emax, T, space2[i, j], planeValue, space1[i, j], debug=debug)
+				label1 = '$x$ / $a_0$'
+				label2 = '$z$ / $a_0$'
+			if axis == 'x':
+				if not planeValue:
+					planeValue = cell.xLength / 2
+				I[i, j] = cell.getLDoS(Emin, Emax, T, planeValue, space2[i, j], space1[i, j], debug=debug)
+				label1 = '$y$ / $a_0$'
+				label2 = '$z$ / $a_0$'
 
-				# Update maxpsi
-				if abs(I[i, j]) > maxI:
-					maxI = I[i, j]
-		print maxI
+			# Update maxpsi
+			if abs(I[i, j]) > maxI:
+				maxI = I[i, j]
+
 		if maxI == 0.0:
 			raise ValueError
-		# Setup plot
+	# Setup plot
+	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
+	plotName = cell.name + '_LDoS_' + axis + '_' + label + timeStamp
+	with PdfPages('pdfs/' + plotName + '.pdf') as pdf:
 		plt.imshow(
 				I, interpolation='bilinear', origin='center', cmap=cm.copper,
 				extent=(minimum, maximum, minimum, maximum))
 		plt.colorbar()
-		plt.grid()
+		plt.xlabel(label1)
+		plt.ylabel(label2)
 		axes = ['x', 'y', 'z']
 		axes.remove(axis)
 		ttl = (cell.name+' LDoS in $'+axes[0]+'-'+axes[1]+'$ plane at $'+axis+'='+str(planeValue)+'a_0$')
