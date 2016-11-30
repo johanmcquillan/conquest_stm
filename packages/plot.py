@@ -471,7 +471,7 @@ def plotChargeDensityGamma3D(
 	plt.close()
 
 
-def plotLDoS2D(cell, Emin, Emax, T, axis, minimum, maximum, planeValue=None, step=None, printStatus=False, debug=False):
+def plotLDoS2D(cell, Emin, Emax, T, axis, minimum, maximum, planeValue=None, step=None, interpolation='cubic', printStatus=False, debug=False):
 	"""Plots cross-section of charge density to pdf.
 
 	All lengths measured in bohr radii (a0).
@@ -487,6 +487,7 @@ def plotLDoS2D(cell, Emin, Emax, T, axis, minimum, maximum, planeValue=None, ste
 		planeValue (float, opt.): Constant value assigned to Cartesian coordinate given by axis; Default is 0.0
 		step (float, opt.): Interval between Cartesian mgrid points, measured in a0;
 							Default is cell.gridSpacing
+		interpolation (string, opt.): Method of interpolation; possible arguments are 'cubic' (default) and 'linear'
 		label (string, opt.): Optional string to append to end of filename
 		printStatus (bool, opt.): If true, print update when file is saved
 		debug (bool, opt.): If true, print extra information during runtime
@@ -515,19 +516,22 @@ def plotLDoS2D(cell, Emin, Emax, T, axis, minimum, maximum, planeValue=None, ste
 			if axis == 'z':
 				if not planeValue:
 					planeValue = cell.zLength / 2
-				I[i, j] = cell.getLDoS(Emin, Emax, T, space2[i, j], space1[i, j], planeValue, debug=debug)
+				I[i, j] = cell.getLDoS(
+						Emin, Emax, T, space2[i, j], space1[i, j], planeValue, interpolation=interpolation, debug=debug)
 				label1 = '$x$ / $a_0$'
 				label2 = '$y$ / $a_0$'
 			if axis == 'y':
 				if not planeValue:
 					planeValue = cell.yLength / 2
-				I[i, j] = cell.getLDoS(Emin, Emax, T, space2[i, j], planeValue, space1[i, j], debug=debug)
+				I[i, j] = cell.getLDoS(
+						Emin, Emax, T, space2[i, j], planeValue, space1[i, j], interpolation=interpolation, debug=debug)
 				label1 = '$x$ / $a_0$'
 				label2 = '$z$ / $a_0$'
 			if axis == 'x':
 				if not planeValue:
 					planeValue = cell.xLength / 2
-				I[i, j] = cell.getLDoS(Emin, Emax, T, planeValue, space2[i, j], space1[i, j], debug=debug)
+				I[i, j] = cell.getLDoS(
+						Emin, Emax, T, planeValue, space2[i, j], space1[i, j], interpolation=interpolation, debug=debug)
 				label1 = '$y$ / $a_0$'
 				label2 = '$z$ / $a_0$'
 

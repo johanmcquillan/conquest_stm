@@ -153,7 +153,7 @@ class Cell(object):
 		f = 1.0 / (np.exp((energy - self.fermiLevel) / (BOLTZMANN * temperature)) + 1)
 		return f
 
-	def getPsi(self, Kx, Ky, Kz, E, x, y, z):
+	def getPsi(self, Kx, Ky, Kz, E, x, y, z, interpolation='cubic'):
 		"""Evaluate wavefunction at specific position, k-point, and energy.
 
 		Args:
@@ -164,14 +164,14 @@ class Cell(object):
 			x (float): Cartesian x-coordinate
 			y (float): Cartesian y-coordinate
 			z (float): Cartesian z-coordinate
-			debug (bool, opt.): If true, print extra information during runtime
+			interpolation (string, opt.): Method of interpolation; possible arguments are 'cubic' (default) and 'linear'
 
 		Returns:
 			complex: Wavefunction value
 		"""
 		psi = complex(0.0, 0.0)
 		for atomKey in self.atoms:
-			psi += self.atoms[atomKey].getPsi(Kx, Ky, Kz, E, x, y, z)
+			psi += self.atoms[atomKey].getPsi(Kx, Ky, Kz, E, x, y, z, interpolation=interpolation)
 		return psi
 
 	def getPsiGamma(self, E, x, y, z):
@@ -189,7 +189,7 @@ class Cell(object):
 			"""
 		return self.getPsi(0.0, 0.0, 0.0, E, x, y, z)
 
-	def getLDoS(self, Emin, Emax, T, x, y, z, debug=False):
+	def getLDoS(self, Emin, Emax, T, x, y, z, interpolation='cubic', debug=False):
 		"""Evaluate local density of states (LDoS) within energy range at specific point.
 
 		Args:
@@ -199,6 +199,7 @@ class Cell(object):
 			x (float): Cartesian x-coordinate
 			y (float): Cartesian y-coordinate
 			z (float): Cartesian z-coordinate
+			interpolation (string, opt.): Method of interpolation; possible arguments are 'cubic' (default) and 'linear'
 			debug (bool, opt.): If true, print extra information during runtime
 
 		Returns:
@@ -216,7 +217,7 @@ class Cell(object):
 					for E in self.bands[Kx][Ky][Kz]:
 						if Emin < E < Emax:
 							# Calculate LDoS
-							psi = self.getPsi(Kx, Ky, Kz, E, x, y, z)
+							psi = self.getPsi(Kx, Ky, Kz, E, x, y, z, interpolation=interpolation)
 							I += w * self.fermiDirac(E, T) * (abs(psi))**2
 					if debug and totalK != 1:
 						print "Finished K-Point = "+str(Kx)+", "+str(Ky)+", "+str(Kz)
