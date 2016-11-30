@@ -89,7 +89,7 @@ def plotSPH2D(l, m, axis, minimum=-8.0, maximum=8.0, planeValue=0.0, step=0.1, p
 		printStatus (bool, opt.): If true, print update when plot is finished
 	"""
 
-	plotname = 'SPH_'+str(l)+'_'+str(m)+'_'+axis
+	plotName = 'SPH_'+str(l)+'_'+str(m)+'_'+axis
 
 	# Initialise meshes
 	# 2D cartesian mesh (x, y, or z axis determined later)
@@ -97,7 +97,7 @@ def plotSPH2D(l, m, axis, minimum=-8.0, maximum=8.0, planeValue=0.0, step=0.1, p
 	Y = np.empty_like(space1)  # Spherical Harmonic mesh
 
 	maxY = 0.1  # Colour plot sets limits to -maxY and +maxY
-	with PdfPages('pdfs/'+plotname+'.pdf') as pdf:
+	with PdfPages('pdfs/'+plotName+'.pdf') as pdf:
 		for i in range(0, int((maximum - minimum) / step)):
 			for j in range(0, int((maximum - minimum) / step)):
 				# Use axis variable to determine which axes space1 and space2 refer to
@@ -134,7 +134,7 @@ def plotSPH2D(l, m, axis, minimum=-8.0, maximum=8.0, planeValue=0.0, step=0.1, p
 		pdf.savefig()
 		plt.close()
 		if printStatus:
-			print 'Finished '+plotname+'.pdf'
+			print 'Finished '+plotName+'.pdf'
 
 
 def plotSPH3D(l, m):
@@ -282,7 +282,6 @@ def plotChargeDensityGamma2D(
 		minimum (int): Minimum value of coordinates
 		maximum (int): Maximum value of coordinates
 		planeValue (float, opt.): Constant value assigned to Cartesian coordinate given by axis; Default is 0.0
-		normalise (bool, opt.): If true, normalise basis coefficients before plot
 		step (float, opt.): Interval between Cartesian mgrid points, measured in a0;
 							Default is cell.gridSpacing
 		label (string, opt.): Optional string to append to end of filename
@@ -298,7 +297,7 @@ def plotChargeDensityGamma2D(
 		step = cell.gridSpacing
 
 	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
-	plotname = cell.name+'_ChargeDensityGamma_'+axis+'_'+label+timeStamp
+	plotName = cell.name+'_ChargeDensityGamma_'+axis+'_'+label+timeStamp
 
 	# Initialise meshes
 	# 2D cartesian mesh (x, y, or z axis determined later)
@@ -311,7 +310,7 @@ def plotChargeDensityGamma2D(
 	bandEnergy = sorted(cell.getGammaEnergies(), key=lambda t: abs(E - t))[0]
 
 	# Plot functions to pdf
-	with PdfPages('pdfs/' + plotname + '.pdf') as pdf:
+	with PdfPages('pdfs/' + plotName + '.pdf') as pdf:
 		# Loop over all mesh points
 		for i in range(0, int((maximum - minimum) / step)):
 			for j in range(0, int((maximum - minimum) / step)):
@@ -356,7 +355,7 @@ def plotChargeDensityGamma2D(
 		pdf.savefig()
 		plt.close()
 		if printStatus:
-			print 'Finished '+plotname+'.pdf'
+			print 'Finished '+plotName+'.pdf'
 
 
 def plotChargeDensityGamma3D(
@@ -368,8 +367,7 @@ def plotChargeDensityGamma3D(
 
 	Args:
 		cell (Cell): Simulation cell to plot
-		Emin (float): Minimum of energy range
-		Emax (float): Maximum of energy range
+		E (float): Band energy
 		xrange((float), opt.): Limits of x axis
 		yrange((float), opt.): Limits of y axis
 		zrange((float), opt.): Limits of z axis
@@ -379,6 +377,7 @@ def plotChargeDensityGamma3D(
 		cmap (bool, opt.): If true, colour surface opaquely (ignoring alpha) according to z-value
 		show (bool, opt.): If true, show plot
 		save (bool, opt.): If true, save plot
+		debug (bool, opt.): If true, print extra information during runtime
 	"""
 
 	# If plot limits not given, set to limits of cell
@@ -431,11 +430,9 @@ def plotChargeDensityGamma3D(
 
 	# Set up plot
 	fig, ax = plt.subplots(subplot_kw=dict(projection='3d'), figsize=(10, 10))
-	EminRelative = Emin - cell.fermiLevel
-	EmaxRelative = Emax - cell.fermiLevel
 	title = (
-		cell.name+' Charge Density Isosurface at '+str(fraction)+' of Maximum Density at \n Energies from '
-		+str(EminRelative)+' eV to '+str(EmaxRelative)+' eV relative to the Fermi Level')
+		cell.name+' Charge Density Isosurface at '+str(fraction)+' of Maximum Density at \n Gamma Point and Energy '
+		+str(bandEnergy)+' eV relative to the Fermi Level')
 	plt.title(title)
 
 	# Set axes
@@ -467,6 +464,7 @@ def plotLDoS2D(
 		cell, Emin, Emax, T, axis, minimum, maximum, planeValue=None, step=None, label='',
 		printStatus=False, debug=False):
 	"""Plots cross-section of charge density to pdf.
+	
 	All lengths measured in bohr radii (a0).
 
 	Args:
@@ -549,7 +547,7 @@ def plotLDoS2D(
 
 
 def plotLDoS3D(
-		cell, E, xrange=(0.0, 0.0), yrange=(0.0, 0.0), zrange=(0.0, 0.0), step=0.0, fraction=0.8, alpha=1.0,
+		cell, Emin, Emax, xrange=(0.0, 0.0), yrange=(0.0, 0.0), zrange=(0.0, 0.0), step=0.0, fraction=0.8, alpha=1.0,
 		cmap=False, show=True, save=False, debug=False):
 	"""Plots charge density isosurface.
 
@@ -568,6 +566,7 @@ def plotLDoS3D(
 		cmap (bool, opt.): If true, colour surface opaquely (ignoring alpha) according to z-value
 		show (bool, opt.): If true, show plot
 		save (bool, opt.): If true, save plot
+		debug (bool, opt.): If true, print extra information during runtime
 	"""
 
 	# If plot limits not given, set to limits of cell
@@ -620,6 +619,8 @@ def plotLDoS3D(
 
 	# Set up plot
 	fig, ax = plt.subplots(subplot_kw=dict(projection='3d'), figsize=(10, 10))
+
+	# Get energy relative to Fermi level
 	EminRelative = Emin - cell.fermiLevel
 	EmaxRelative = Emax - cell.fermiLevel
 	title = (
