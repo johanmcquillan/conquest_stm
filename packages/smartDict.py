@@ -1,6 +1,8 @@
 
 class SmartDict(dict):
-	"""Extends dict to create nested dicts if invalid key is used rather than throw
+	"""Implements Perl's autovivification for dicts.
+
+	Extends dict to create nested dicts if invalid key is used rather than throw
 	an exception.
 
 	eg. D = SmartDict()

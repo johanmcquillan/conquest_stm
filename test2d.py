@@ -2,11 +2,9 @@
 import packages.plot as plot
 from packages.parser import Parser
 
-prsr = Parser('ions/', ['Si_SZ_8bohr'], 'conquest/', ['Si_SZ'])
+prsr = Parser('ions/', ['C_SZ_6.5au', 'H_SZ_6.5au'], 'conquest/', ['C6H6_SZ'])
 prsr.parseIons()
 prsr.parseConquestOutput()
-C = prsr.getCell('Si_SZ')
+C = prsr.getCell('C6H6_SZ', gridSpacing=0.1)
 
-C.name+= '_161119A'
-
-plot.plotChargeDensity2D(C, 5, 'z', minimum=-10.0, maximum=10.0)
+plot.plotChargeDensityGamma2D(C, 5, 'z', minimum=0.0, maximum=20.0, debug=True)

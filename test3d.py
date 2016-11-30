@@ -18,4 +18,5 @@ cell.name += '_161125'
 
 #plot.plotChargeDensity3D(cell, cell.fermiLevel, cell.fermiLevel-1.0, fraction=0.05, cmap=True, save=False, show=True, debug=True)
 
-plot.plotCurrent2D(cell, -2, 0, 0.01, 'z', 0, 14, 32, debug=True)
+plot.plotLDoS2D(cell, -2, 0, 0.01, 'z', 0, 14, 32, debug=True)
+

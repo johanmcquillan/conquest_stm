@@ -126,8 +126,7 @@ class Ion(object):
 		"""Check if Ion has radial object for specified object without creating
 		a dict.
 
-		This is needed as SmartDict will automatically create an empty
-		dict if given an invalid key.
+		Encapsulation required due to autovivification of SmartDict.
 
 		Args:
 			l (int): Orbital angular momentum quantum number
@@ -181,8 +180,7 @@ class Ion(object):
 	def getRadialValue(self, l, zeta, r, interpolation='cubic'):
 		"""Use linear interpolation to evaluate radial function at distance r.
 
-		Encapsulation needed such that self.radials (SmartDict) does not create
-		entry for invalid keys.
+		Encapsulation required due to autovivification of SmartDict.
 
 		Args:
 			l (int): Orbital angular momentum quantum number
@@ -206,12 +204,12 @@ class Ion(object):
 
 		Beyond the cutoff the radial part of the wavefunction is defined to be 0.		
 		"""
-		maxcut = 0.0
+		maxCut = 0.0
 		for l in self.radials:
 			for zeta in self.radials[l]:
-				if maxcut < self.radials[l][zeta].cutoff:
-					maxcut = self.radials[l][zeta].cutoff
-		return maxcut
+				if maxCut < self.radials[l][zeta].cutoff:
+					maxCut = self.radials[l][zeta].cutoff
+		return maxCut
 
 
 class Atom(Ion):
@@ -261,6 +259,8 @@ class Atom(Ion):
 	def hasCoefficient(self, Kx, Ky, Kz, E, l, zeta, m):
 		"""Check if atom stores coefficient for given orbital.
 
+		Encapsulation required due to autovivification of SmartDict.
+
 		Args:
 			Kx (float): K-point x coordinate
 			Ky (float): K-point y coordinate
@@ -294,9 +294,7 @@ class Atom(Ion):
 			Kz (float): K-point z coordinate
 			E (float): Band energy
 			PAO (int): index of PAO as given in .dat file
-			coefficient (coomplex): Coefficient of PAO
-			combine (boolean, opional): If false, overwrite existing coefficient
-										If true, add value to existing
+			coefficient (complex): Coefficient of PAO
 		"""
 
 		PAOdata = self.sortPAOs()[PAO - 1]
@@ -335,97 +333,42 @@ class Atom(Ion):
 					totalKPoints += 1
 		return totalKPoints
 
-	def getPsiAtKPoint(self, Kx, Ky, Kz, Emin, Emax, x, y, z):
-		"""Return complex wavefunction at (x,y,z) due to this atom at a specified k-point.
+	def getPsi(self, Kx, Ky, Kz, E, x, y, z):
+		"""Evaluate wavefunction contribution from this atom.
 
 		Args:
 			Kx (float): K-point x coordinate
 			Ky (float): K-point y coordinate
 			Kz (float): K-point z coordinate
-			Emin (float): Minimum of energy range
-			Emax (float): Maximum of energy range
+			E (float): Band energy
 			x (float): Cartesian x coordinate
 			y (float): Cartesian y coordinate
 			z (float): Cartesian z coordinate
 
 		Returns:
-			complex: Complex wavefunction value
-		"""
+			complex: Wavefunction value
+			"""
+		psi = complex(0.0, 0.0)
 
-		# Get coords relative to atom
+		# Get relative displacement to atom
 		relx = x - self.x
 		rely = y - self.y
 		relz = z - self.z
 		# Get relative distance to atom
-		r = np.sqrt(relx ** 2 + rely ** 2 + relz ** 2)
-
-		psi = complex(0.0, 0.0)
-
-		# Find bands within energy range
-		bandsForK = []
-		for E in self.bands[Kx][Ky][Kz].keys():
-			if Emin < E < Emax:
-				bandsForK.append(E)
-		# Evaluate psi
-		for E in bandsForK:
-
-			# If r is beyond atoms range, return 0.0+0.0j
-			if r <= self.getMaxCutoff():  # Loop over all radial functions
-				for l in self.radials:
-					for zeta in self.radials[l]:
-						# Evaluate R(r) using linear interpolation
-						R = self.getRadialValue(l, zeta, r)
-
-						for m in range(-l, l + 1):
-							# Calculate spherical harmonic
-							Y = sph(l, m, relx, rely, relz)
-							# Get coefficient of basis function
-							coefficient = self.getCoefficient(Kx, Ky, Kz, E, l, zeta, m)
-							# Calculate and add contribution of basis function
-							psi += R * Y * coefficient
-		return psi
-
-	def getPsiGamma(self, E, x, y, z, exact=True):
-		"""Evaluate complex wavefunction at (x,y,z) due to this atom at gamma point.
-
-			Args:
-				E (float): Band energy
-				x (float): Cartesian x coordinate at which to evaluate wavefunction
-				y (float): Cartesian y coordinate at which to evaluate wavefunction
-				z (float): Cartesian z coordinate at which to evaluate wavefunction
-				exact (bool, opt.): If true, only evaluate if exact band energy exists, otherwise, evaluate for
-				nearest band
-
-			Returns:
-				complex: Complex wavefunction value
-		"""
-		if E in self.bands[0][0][0]:
-			bandEnergy = E
-		elif not exact:
-			bandEnergy = min(self.bands[0][0][0].keys(), key=lambda i: abs(i - E))
-		else:
-			raise ValueError
-		return self.getPsiAtKPoint(0, 0, 0, bandEnergy, x, y, z)
-
-	def getPsi(self, Emin, Emax, x, y, z):
-		"""Evaluate complex wavefunction at (x,y,z) due to this atom over all k-points within a given energy range.
-
-			Args:
-				Emin (float): Minimum of energy range
-				Emax (float): Maximum of energy range
-				x (float): Cartesian x coordinate
-				y (float): Cartesian y coordinate
-				z (float): Cartesian z coordinate
-
-			Returns:
-				complex: Complex wavefunction value
-		"""
-		totalKPoints = self.getTotalKPoints()
-		psi = complex(0.0, 0.0)
-		for Kx in self.bands:
-			for Ky in self.bands[Kx]:
-				for Kz in self.bands[Kx][Ky]:
-					psi = psi + 1.0/totalKPoints * self.getPsiAtKPoint(Kx, Ky, Kz, Emin, Emax, x, y, z)
+		r = np.sqrt(relx**2 + rely**2 + relz**2)
+		# If r is beyond atoms range, return 0j
+		if r <= self.getMaxCutoff():  # Loop over all radial functions
+			for l in self.radials:
+				for zeta in self.radials[l]:
+					# Evaluate radial part
+					R = self.getRadialValue(l, zeta, r)
+					for m in range(-l, l + 1):
+						# Evaluate spherical harmonic
+						Y = sph(l, m, relx, rely, relz)
+						# Get coefficient of basis function
+						coefficient = self.getCoefficient(Kx, Ky, Kz, E, l, zeta, m)
+						# Calculate and add contribution of basis function
+						psi += R * Y * coefficient
 		return psi
 
 	def applyFactor(self, factor, Kx, Ky, Kz, E):
@@ -438,32 +381,9 @@ class Atom(Ion):
 			Kz (float): K-point z coordinate
 			E (float): Energy of band to which to apply factor
 		"""
+		# Loop over all coefficients
 		for l in self.bands[Kx][Ky][Kz][E]:
 			for zeta in self.bands[Kx][Ky][Kz][E][l]:
 				for m in self.bands[Kx][Ky][Kz][E][l][zeta]:
+					# Apply factor
 					self.bands[Kx][Ky][Kz][E][l][zeta][m] *= factor
-
-	def getPsi1(self, Kx, Ky, Kz, E, x, y, z):
-
-		relx = x - self.x
-		rely = y - self.y
-		relz = z - self.z
-		# Get relative distance to atom
-		r = np.sqrt(relx ** 2 + rely ** 2 + relz ** 2)
-
-		psi = complex(0.0, 0.0)
-
-		# If r is beyond atoms range, return 0.0+0.0j
-		if r <= self.getMaxCutoff():  # Loop over all radial functions
-			for l in self.radials:
-				for zeta in self.radials[l]:
-					# Evaluate R(r) using linear interpolation
-					R = self.getRadialValue(l, zeta, r)
-					for m in range(-l, l + 1):
-						# Calculate spherical harmonic
-						Y = sph(l, m, relx, rely, relz)
-						# Get coefficient of basis function
-						coefficient = self.getCoefficient(Kx, Ky, Kz, E, l, zeta, m)
-						# Calculate and add contribution of basis function
-						psi += R * Y * coefficient
-		return psi

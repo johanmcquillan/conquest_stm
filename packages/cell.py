@@ -66,6 +66,8 @@ class Cell(object):
 	def hasKPoint(self, Kx, Ky, Kz):
 		"""Check if cell stores specified k-point.
 
+		Encapsulation required due to autovivification of SmartDict.
+
 		Args:
 			Kx (float): K-point x coordinate
 			Ky (float): K-point y coordinate
@@ -80,6 +82,8 @@ class Cell(object):
 
 	def hasBand(self, Kx, Ky, Kz, E):
 		"""Check if cell stores specified band.
+
+		Encapsulation required due to autovivification of SmartDict.
 
 		Args:
 			Kx (float): K-point x coordinate
@@ -122,77 +126,9 @@ class Cell(object):
 					# Sort energy list
 					self.bands[Kx][Ky][Kz] = sorted(self.bands[Kx][Ky][Kz])
 
-	def getWavefunction(self, Emin, Emax, x, y, z):
-		"""Evaluate complex wavefunction at specific point over specified energy range.
-
-		Args:
-			Emin (float): Minimum of energy range
-			Emax (float): Maximum of energy range
-			x (float): Cartesian x coordinate
-			y (float): Cartesian y coordinate
-			z (float): Cartesian z coordinate
-
-		Returns:
-			complex: Wavefunction value
-		"""
-
-		# Initialise psi and get band energy
-		psi = complex(0.0, 0.0)
-
-		# Get wavefunction contribution from each atom and add to psi
-		for atomKey in self.atoms:
-			atom = self.atoms[atomKey]
-			psi = psi + atom.getPsi(Emin, Emax, x, y, z)
-		return psi
-
-	def getTotalCharge(self, Emin, Emax):
-		"""Perform volume integration charge density of band over cell.
-
-		Args:
-			Emin (float): Minimum of energy range
-			Emax (float): Maximum of energy range
-
-		Returns:
-			float: Total charge
-		"""
-		totalCharge = 0.0
-
-		# Iterate over all mesh points
-		for i in range(0, self.xPoints):
-			for j in range(0, self.yPoints):
-				for k in range(0, self.zPoints):
-					# Get mesh coordinates
-					x = self.xMesh[i, j, k]
-					y = self.yMesh[i, j, k]
-					z = self.zMesh[i, j, k]
-					psi = 0.0
-					# Sum contributions to psi from all atoms
-					psi += self.getWavefunction(Emin, Emax, x, y, z)
-					# Add to charge
-					totalCharge += abs(psi)**2 * self.gridSpacing**3
-		return totalCharge
-
-	def normaliseBand(self, Emin, Emax, debug=False):
-		"""Normalise coefficients of a band to give total charge of unity.
-
-		Args:
-			Emin (float): Minimum of energy range
-			Emax (float): Maximum of energy range
-			debug (bool, opt.): If true, print extra information during runtime
-		"""
-		totalCharge = self.getTotalCharge(Emin, Emax)
-
-		# Check if difference between actual and calculated charge is large than tolerance
-		if abs(1.0 - totalCharge) > 0.001:
-			if debug:
-				print "Total Electron Charge Unnormalised = " + str(totalCharge)
-
-			# Apply normalisation factor to basis coefficients
-			factor = np.sqrt(1.0 / totalCharge)
-			for atomKey in self.atoms:
-				self.atoms[atomKey].applyFactorForRange(factor, Emin, Emax)
-		elif debug:
-			print "Total Electron Charge Already Normalised"
+	def getGammaEnergies(self):
+		"""Return list of energies at gamma-point"""
+		return sorted(self.bands[0.0][0.0][0.0])
 
 	def getTotalKPoints(self):
 		"""Count total number of k-points"""
@@ -211,28 +147,78 @@ class Cell(object):
 			fermiLevel (float): Fermi Level in eV
 			temperature (float): Absolute temperature in K
 
-		returns:
+		Returns:
 			float: Occupation value
 		"""
 		f = 1.0 / (np.exp((energy - self.fermiLevel) / (BOLTZMANN * temperature)) + 1)
 		return f
 
-	def getCurrent(self, Emin, Emax, T, x, y, z, debug=False):
+	def getPsi(self, Kx, Ky, Kz, E, x, y, z, debug=False):
+		"""Evaluate wavefunction at specific position, k-point, and energy.
 
+		Args:
+			Kx (float): K-point x coordinate
+			Ky (float): K-point y coordinate
+			Kz (float): K-point z coordinate
+			E (float): Band energy
+			x (float): Cartesian x-coordinate
+			y (float): Cartesian y-coordinate
+			z (float): Cartesian z-coordinate
+			debug (bool, opt.): If true, print extra information during runtime
+
+		Returns:
+			complex: Wavefunction value
+		"""
+		psi = complex(0.0, 0.0)
+		for atomKey in self.atoms:
+			psi += self.atoms[atomKey].getPsi(Kx, Ky, Kz, E, x, y, z)
+		return psi
+
+	def getPsiGamma(self, E, x, y, z, debug=False):
+		"""Evaluate wavefunction at specific position and energy using only gamma-point.
+
+		Args:
+			E (float): Band energy
+			x (float): Cartesian x-coordinate
+			y (float): Cartesian y-coordinate
+			z (float): Cartesian z-coordinate
+			debug (bool, opt.): If true, print extra information during runtime
+
+		Returns:
+			complex: Wavefunction value
+			"""
+		return self.getPsi(0.0, 0.0, 0.0, E, x, y, z, debug=debug)
+
+	def getLDoS(self, Emin, Emax, T, x, y, z, debug=False):
+		"""Evaluate local density of states (LDoS) within energy range at specific point.
+
+		Args:
+			Emin (float): Minimum energy
+			Emax (float): Maximum energy
+			T (float): Absolute temperature in K
+			x (float): Cartesian x-coordinate
+			y (float): Cartesian y-coordinate
+			z (float): Cartesian z-coordinate
+			debug (bool, opt.): If true, print extra information during runtime
+
+		Returns:
+			float: LDoS value
+		"""
 		I = 0.0
-		w = 1.0/self.getTotalKPoints()
+		w = 1.0/self.getTotalKPoints()  # K-point weighting
 
+		# Loop over all k-points
 		for Kx in self.bands:
 			for Ky in self.bands[Kx]:
 				for Kz in self.bands[Kx][Ky]:
+					# Loop over bands in energy range
 					for E in self.bands[Kx][Ky][Kz]:
 						if Emin < E < Emax:
-							psi = complex(0.0, 0.0)
-							for atomKey in self.atoms:
-								atom = self.atoms[atomKey]
-								psi += atom.getPsi1(Kx, Ky, Kz, E, x, y, z)
+							# Calculate LDoS
+							psi = self.getPsi(Kx, Ky, Kz, E, x, y, z, debug=debug)
 							I += w * self.fermiDirac(E, T) * (abs(psi))**2
 					if debug:
 						print "Finished K-Point = "+str(Kx)+", "+str(Ky)+", "+str(Kz)
-		print "Finished current I = "+str(I)+", at r = ("+str(x)+", "+str(y)+", "+str(z)+")"
+		if debug:
+			print "Finished current I = "+str(I)+", at r = ("+str(x)+", "+str(y)+", "+str(z)+")"
 		return I

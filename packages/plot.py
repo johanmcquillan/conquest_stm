@@ -268,15 +268,16 @@ def plotBasis2D(
 			print 'Finished '+plotName+'.pdf'
 
 
-def plotChargeDensity2D(
-		cell, bandNumber, axis, minimum, maximum, step=None, planeValue=None, normalise=False, label='',
+def plotChargeDensityGamma2D(
+		cell, E, axis, minimum, maximum, step=None, planeValue=None, label='',
 		printStatus=False, debug=False):
-	"""Plots cross-section of charge density to pdf.
+	"""Plots cross-section of charge density evaluated at gamma-point to pdf.
+
 	All lengths measured in bohr radii (a0).
 
 	Args:
 		cell (Cell): Simulation cell to plot
-		bandNumber (int): Band number to plot
+		E (float): Band energy, nearest band energy will be used
 		axis (string): Cartesian axis ('x', 'y', or 'z') to set to constant value given by planeValue
 		minimum (int): Minimum value of coordinates
 		maximum (int): Maximum value of coordinates
@@ -289,29 +290,25 @@ def plotChargeDensity2D(
 		debug (bool, opt.): If true, print extra information during runtime
 	"""
 
+	if axis not in ['x', 'y', 'z']:
+		raise ValueError
+
 	# If no step given, set to gridSpacing
 	if not step:
 		step = cell.gridSpacing
-	# Normalise basis coefficients
-	if normalise:
-		cell.normaliseBand(bandNumber)
 
 	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
-	plotname = cell.name+'_ChargeDensity_'+axis+'_'+label+timeStamp
+	plotname = cell.name+'_ChargeDensityGamma_'+axis+'_'+label+timeStamp
 
 	# Initialise meshes
 	# 2D cartesian mesh (x, y, or z axis determined later)
 	space1, space2 = np.mgrid[minimum:maximum:step, minimum:maximum:step]
 
-	psi2 = np.zeros_like(space1)  # Wavefunction mesh (psi = R*Y)
+	psi2 = np.zeros_like(space1)
+	maxPsi2 = 0.0  # Colour plot sets limits to 0 to +maxPsi2
 
-	maxPsi2 = 0.0  # Colour plot sets limits to -maxpsi to +maxpsi
-
-	# Print debug info
-	if debug:
-		debugString = ''
-		debugString += str(cell.bands[bandNumber])+' '
-		print debugString
+	# Get nearest stored energy at gamma-point to requested energy
+	bandEnergy = sorted(cell.getGammaEnergies(), key=lambda t: abs(E - t))[0]
 
 	# Plot functions to pdf
 	with PdfPages('pdfs/' + plotname + '.pdf') as pdf:
@@ -323,19 +320,19 @@ def plotChargeDensity2D(
 				if axis == 'z':
 					if not planeValue:
 						planeValue = cell.zLength / 2
-					psi = cell.givePsi(space2[i, j], space1[i, j], planeValue, bandNumber=bandNumber)
+					psi = cell.getPsiGamma(bandEnergy, space2[i, j], space1[i, j], planeValue, debug=debug)
 					plt.xlabel('$x$ / $a_0$')
 					plt.ylabel('$y$ / $a_0$')
 				if axis == 'y':
 					if not planeValue:
 						planeValue = cell.yLength / 2
-					psi = cell.givePsi(space2[i, j], planeValue, space1[i, j], bandNumber=bandNumber)
+					psi = cell.getPsiGamma(bandEnergy, space2[i, j], planeValue, space1[i, j], debug=debug)
 					plt.xlabel('$x$ / $a_0$')
 					plt.ylabel('$z$ / $a_0$')
 				if axis == 'x':
 					if not planeValue:
 						planeValue = cell.xLength / 2
-					psi = cell.givePsi( planeValue, space2[i, j], space1[i, j], bandNumber=bandNumber)
+					psi = cell.getPsiGamma(bandEnergy, planeValue, space2[i, j], space1[i, j], debug=debug)
 					plt.xlabel('$y$ / $a_0$')
 					plt.ylabel('$z$ / $a_0$')
 			
@@ -344,7 +341,6 @@ def plotChargeDensity2D(
 				# Update maxpsi
 				if abs(psi2[i, j]) > maxPsi2:
 					maxPsi2 = psi2[i, j]
-
 		# Setup plot
 		plt.imshow(
 			psi2, interpolation='bilinear', origin='center', cmap=cm.copper,
@@ -353,7 +349,7 @@ def plotChargeDensity2D(
 		plt.grid()
 		axes = ['x', 'y', 'z']
 		axes.remove(axis)
-		ttl = (cell.name+' Charge Density in $'+axes[0]+'-'+axes[1]+'$ plane')
+		ttl = (cell.name+' Charge Density in $'+axes[0]+'-'+axes[1]+'$ plane at $'+axis+'='+str(planeValue)+'$')
 		plt.title(ttl)
 
 		# Save to pdf
@@ -363,8 +359,8 @@ def plotChargeDensity2D(
 			print 'Finished '+plotname+'.pdf'
 
 
-def plotChargeDensity3D(
-		cell, Emin, Emax, xrange=(0.0, 0.0), yrange=(0.0, 0.0), zrange=(0.0, 0.0), step=0.0, fraction=0.8, alpha=1.0,
+def plotChargeDensityGamma3D(
+		cell, E, xrange=(0.0, 0.0), yrange=(0.0, 0.0), zrange=(0.0, 0.0), step=0.0, fraction=0.8, alpha=1.0,
 		cmap=False, show=True, save=False, debug=False):
 	"""Plots charge density isosurface.
 
@@ -397,6 +393,9 @@ def plotChargeDensity3D(
 	if step == 0.0:
 		step = cell.gridSpacing
 
+	# Get nearest stored energy at gamma-point to requested energy
+	bandEnergy = sorted(cell.getGammaEnergies(), key=lambda t: abs(E - t))[0]
+
 	# Cartesian mesh
 	X, Y, Z = np.mgrid[xrange[0]:xrange[1]:step, yrange[0]:yrange[1]:step, zrange[0]:zrange[1]:step]
 
@@ -413,7 +412,7 @@ def plotChargeDensity3D(
 				z = Z[i, j, k]
 
 				# Calculate wavefunction
-				psi = cell.getWavefunction(Emin, Emax, x, y, z)
+				psi = cell.getPsiGamma(bandEnergy, x, y, z, debug=debug)
 
 				# Get charge density
 				psi2[i, j, k] = abs(psi)**2
@@ -464,7 +463,7 @@ def plotChargeDensity3D(
 	plt.close()
 
 
-def plotCurrent2D(
+def plotLDoS2D(
 		cell, Emin, Emax, T, axis, minimum, maximum, planeValue=None, step=None, label='',
 		printStatus=False, debug=False):
 	"""Plots cross-section of charge density to pdf.
@@ -477,7 +476,6 @@ def plotCurrent2D(
 		minimum (int): Minimum value of coordinates
 		maximum (int): Maximum value of coordinates
 		planeValue (float, opt.): Constant value assigned to Cartesian coordinate given by axis; Default is 0.0
-		normalise (bool, opt.): If true, normalise basis coefficients before plot
 		step (float, opt.): Interval between Cartesian mgrid points, measured in a0;
 							Default is cell.gridSpacing
 		label (string, opt.): Optional string to append to end of filename
@@ -490,7 +488,7 @@ def plotCurrent2D(
 		step = cell.gridSpacing
 
 	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
-	plotname = cell.name + '_LDoS_' + axis + '_' + label + timeStamp
+	plotName = cell.name + '_LDoS_' + axis + '_' + label + timeStamp
 
 	# Initialise meshes
 	# 2D cartesian mesh (x, y, or z axis determined later)
@@ -501,7 +499,7 @@ def plotCurrent2D(
 	maxI = 0.0  # Colour plot sets limits to -maxpsi to +maxpsi
 
 	# Plot functions to pdf
-	with PdfPages('pdfs/' + plotname + '.pdf') as pdf:
+	with PdfPages('pdfs/' + plotName + '.pdf') as pdf:
 		# Loop over all mesh points
 		for i in range(0, int((maximum - minimum) / step)):
 			for j in range(0, int((maximum - minimum) / step)):
@@ -510,19 +508,19 @@ def plotCurrent2D(
 				if axis == 'z':
 					if not planeValue:
 						planeValue = cell.zLength / 2
-					I[i, j] = cell.getCurrent(Emin, Emax, T, space2[i, j], space1[i, j], planeValue, debug=debug)
+					I[i, j] = cell.getLDoS(Emin, Emax, T, space2[i, j], space1[i, j], planeValue, debug=debug)
 					plt.xlabel('$x$ / $a_0$')
 					plt.ylabel('$y$ / $a_0$')
 				if axis == 'y':
 					if not planeValue:
 						planeValue = cell.yLength / 2
-					I[i, j] = cell.getCurrent(Emin, Emax, T, space2[i, j], planeValue, space1[i, j], debug=debug)
+					I[i, j] = cell.getLDoS(Emin, Emax, T, space2[i, j], planeValue, space1[i, j], debug=debug)
 					plt.xlabel('$x$ / $a_0$')
 					plt.ylabel('$z$ / $a_0$')
 				if axis == 'x':
 					if not planeValue:
 						planeValue = cell.xLength / 2
-					I[i, j] = cell.getCurrent(Emin, Emax, T, planeValue, space2[i, j], space1[i, j], debug=debug)
+					I[i, j] = cell.getLDoS(Emin, Emax, T, planeValue, space2[i, j], space1[i, j], debug=debug)
 					plt.xlabel('$y$ / $a_0$')
 					plt.ylabel('$z$ / $a_0$')
 
@@ -547,4 +545,108 @@ def plotCurrent2D(
 		pdf.savefig()
 		plt.close()
 		if printStatus:
-			print 'Finished ' + plotname + '.pdf'
+			print 'Finished ' + plotName + '.pdf'
+
+
+def plotLDoS3D(
+		cell, E, xrange=(0.0, 0.0), yrange=(0.0, 0.0), zrange=(0.0, 0.0), step=0.0, fraction=0.8, alpha=1.0,
+		cmap=False, show=True, save=False, debug=False):
+	"""Plots charge density isosurface.
+
+	All lengths measured in Bohr radii (a0).
+
+	Args:
+		cell (Cell): Simulation cell to plot
+		Emin (float): Minimum of energy range
+		Emax (float): Maximum of energy range
+		xrange((float), opt.): Limits of x axis
+		yrange((float), opt.): Limits of y axis
+		zrange((float), opt.): Limits of z axis
+		step (float, opt.): Interval between Cartesian mgrid points; Default is cell.gridSpacing
+		fraction (float, opt.): Sets value of isosurface to this fraction of max charge density
+		alpha (float, opt.): Transparency of plot surfaces
+		cmap (bool, opt.): If true, colour surface opaquely (ignoring alpha) according to z-value
+		show (bool, opt.): If true, show plot
+		save (bool, opt.): If true, save plot
+	"""
+
+	# If plot limits not given, set to limits of cell
+	if xrange == (0.0, 0.0):
+		xrange = (0.0, cell.xLength)
+	if yrange == (0.0, 0.0):
+		yrange = (0.0, cell.yLength)
+	if zrange == (0.0, 0.0):
+		zrange = (0.0, cell.zLength)
+
+	# If step not given, set to cell.gridSpacing
+	if step == 0.0:
+		step = cell.gridSpacing
+
+	# Get nearest stored energy at gamma-point to requested energy
+	bandEnergy = sorted(cell.getGammaEnergies(), key=lambda t: abs(E - t))[0]
+
+	# Cartesian mesh
+	X, Y, Z = np.mgrid[xrange[0]:xrange[1]:step, yrange[0]:yrange[1]:step, zrange[0]:zrange[1]:step]
+
+	psi2 = np.zeros_like(X, dtype=float)
+	psi2max = 0.0
+
+	# Loop over all mesh points
+	for i in range(int((xrange[1] - xrange[0]) / step)):
+		for j in range(int((yrange[1] - yrange[0]) / step)):
+			for k in range(int((zrange[1] - zrange[0]) / step)):
+				# Get coordinates
+				x = X[i, j, k]
+				y = Y[i, j, k]
+				z = Z[i, j, k]
+
+				# Calculate wavefunction
+				psi = cell.getPsiGamma(bandEnergy, x, y, z, debug=debug)
+
+				# Get charge density
+				psi2[i, j, k] = abs(psi)**2
+
+				# Set max value
+				if psi2[i, j, k] > psi2max:
+					psi2max = psi2[i, j, k]
+	if psi2max == 0.0:
+		raise ValueError
+	if debug:
+		print 'Isosurface value = '+str(fraction*psi2max)
+	# Make isosurface at psi2 = fraction * psi2max
+	mes = measure.marching_cubes(psi2, fraction*psi2max)
+	verts = mes[0]
+	faces = mes[1]
+
+	# Set up plot
+	fig, ax = plt.subplots(subplot_kw=dict(projection='3d'), figsize=(10, 10))
+	EminRelative = Emin - cell.fermiLevel
+	EmaxRelative = Emax - cell.fermiLevel
+	title = (
+		cell.name+' Charge Density Isosurface at '+str(fraction)+' of Maximum Density at \n Energies from '
+		+str(EminRelative)+' eV to '+str(EmaxRelative)+' eV relative to the Fermi Level')
+	plt.title(title)
+
+	# Set axes
+	ax.set_xlim3d(xrange[0]/step, xrange[1]/step)
+	ax.set_ylim3d(yrange[0]/step, yrange[1]/step)
+	ax.set_zlim3d(zrange[0]/step, zrange[1]/step)
+	ax.set_xlabel("x")
+	ax.set_ylabel("y")
+	ax.set_zlabel("z")
+
+	# Plot surface
+	if cmap:
+		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Spectral, lw=0.1)
+	else:
+		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], color=(1,0,0,alpha), lw=0.1)
+
+	# Save plot as png
+	if save:
+		timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
+		saveName = cell.name+"_ChargeDensity3D_"+str(fraction)+"_"+str(EminRelative)+"_"+str(EmaxRelative)+"_"+timeStamp
+		plt.savefig("figures3D/"+saveName+".png")
+	# Show plot
+	if show:
+		plt.show()
+	plt.close()
