@@ -217,10 +217,10 @@ class Cell(object):
 		f = 1.0 / (np.exp((energy - self.fermiLevel) / (BOLTZMANN * temperature)) + 1)
 		return f
 
-	def getCurrent(self, Emin, Emax, T, x, y, z):
+	def getCurrent(self, Emin, Emax, T, x, y, z, debug=False):
 
 		I = 0.0
-		w = 1/self.getTotalKPoints()
+		w = 1.0/self.getTotalKPoints()
 
 		for Kx in self.bands:
 			for Ky in self.bands[Kx]:
@@ -232,4 +232,7 @@ class Cell(object):
 								atom = self.atoms[atomKey]
 								psi += atom.getPsi1(Kx, Ky, Kz, E, x, y, z)
 							I += w * self.fermiDirac(E, T) * (abs(psi))**2
+					if debug:
+						print "Finished K-Point = "+str(Kx)+", "+str(Ky)+", "+str(Kz)
+		print "Finished current I = "+str(I)+", at r = ("+str(x)+", "+str(y)+", "+str(z)+")"
 		return I

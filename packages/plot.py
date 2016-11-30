@@ -462,3 +462,89 @@ def plotChargeDensity3D(
 	if show:
 		plt.show()
 	plt.close()
+
+
+def plotCurrent2D(
+		cell, Emin, Emax, T, axis, minimum, maximum, planeValue=None, step=None, label='',
+		printStatus=False, debug=False):
+	"""Plots cross-section of charge density to pdf.
+	All lengths measured in bohr radii (a0).
+
+	Args:
+		cell (Cell): Simulation cell to plot
+		bandNumber (int): Band number to plot
+		axis (string): Cartesian axis ('x', 'y', or 'z') to set to constant value given by planeValue
+		minimum (int): Minimum value of coordinates
+		maximum (int): Maximum value of coordinates
+		planeValue (float, opt.): Constant value assigned to Cartesian coordinate given by axis; Default is 0.0
+		normalise (bool, opt.): If true, normalise basis coefficients before plot
+		step (float, opt.): Interval between Cartesian mgrid points, measured in a0;
+							Default is cell.gridSpacing
+		label (string, opt.): Optional string to append to end of filename
+		printStatus (bool, opt.): If true, print update when file is saved
+		debug (bool, opt.): If true, print extra information during runtime
+	"""
+
+	# If no step given, set to gridSpacing
+	if not step:
+		step = cell.gridSpacing
+
+	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
+	plotname = cell.name + '_Current_' + axis + '_' + label + timeStamp
+
+	# Initialise meshes
+	# 2D cartesian mesh (x, y, or z axis determined later)
+	space1, space2 = np.mgrid[minimum:maximum:step, minimum:maximum:step]
+
+	I = np.zeros_like(space1)  # Wavefunction mesh (psi = R*Y)
+
+	maxI = 0.0  # Colour plot sets limits to -maxpsi to +maxpsi
+
+	# Plot functions to pdf
+	with PdfPages('pdfs/' + plotname + '.pdf') as pdf:
+		# Loop over all mesh points
+		for i in range(0, int((maximum - minimum) / step)):
+			for j in range(0, int((maximum - minimum) / step)):
+				# Use axis variable to determine which axes space1 and space2 refer to
+				# Evaluate spherical harmonic at mesh point
+				if axis == 'z':
+					if not planeValue:
+						planeValue = cell.zLength / 2
+					I[i, j] = cell.getCurrent(Emin, Emax, T, space1[i, j], space2[i, j], planeValue, debug=debug)
+					plt.xlabel('$x$ / $a_0$')
+					plt.ylabel('$y$ / $a_0$')
+				if axis == 'y':
+					if not planeValue:
+						planeValue = cell.yLength / 2
+					psi = cell.givePsi(space2[i, j], planeValue, space1[i, j], bandNumber=bandNumber)
+					plt.xlabel('$x$ / $a_0$')
+					plt.ylabel('$z$ / $a_0$')
+				if axis == 'x':
+					if not planeValue:
+						planeValue = cell.xLength / 2
+					psi = cell.givePsi(planeValue, space2[i, j], space1[i, j], bandNumber=bandNumber)
+					plt.xlabel('$y$ / $a_0$')
+					plt.ylabel('$z$ / $a_0$')
+
+				# Update maxpsi
+				if abs(I[i, j]) > maxI:
+					maxI = I[i, j]
+		print maxI
+		if maxI == 0.0:
+			raise ValueError
+		# Setup plot
+		plt.imshow(
+				I, interpolation='bilinear', origin='center', cmap=cm.Blues,
+				extent=(minimum, maximum, minimum, maximum))
+		plt.colorbar()
+		plt.grid()
+		axes = ['x', 'y', 'z']
+		axes.remove(axis)
+		ttl = (cell.name + ' Current in $' + axes[0] + '-' + axes[1] + '$ plane')
+		plt.title(ttl)
+
+		# Save to pdf
+		pdf.savefig()
+		plt.close()
+		if printStatus:
+			print 'Finished ' + plotname + '.pdf'

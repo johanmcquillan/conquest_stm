@@ -285,7 +285,7 @@ class Atom(Ion):
 									output = True
 		return output
 
-	def addCoefficient(self, Kx, Ky, Kz, E, PAO, coefficient, combine=False):
+	def addCoefficient(self, Kx, Ky, Kz, E, PAO, coefficient):
 		"""Add a complex coefficient to self.bands.
 
 		Args:
@@ -304,10 +304,7 @@ class Atom(Ion):
 		zeta = PAOdata[1]
 		m = PAOdata[2]
 
-		if combine and self.hasCoefficient(Kx, Ky, Kz, E, l, zeta, m):
-			self.bands[Kx][Ky][Kz][E][l][zeta][m] = self.bands[Kx][Ky][Kz][E][l][zeta][m] + coefficient
-		else:
-			self.bands[Kx][Ky][Kz][E][l][zeta][m] = coefficient
+		self.bands[Kx][Ky][Kz][E][l][zeta][m] = coefficient
 
 	def getCoefficient(self, Kx, Ky, Kz, E, l, zeta, m):
 		"""Return complex coefficient for given orbital.
@@ -427,7 +424,7 @@ class Atom(Ion):
 		psi = complex(0.0, 0.0)
 		for Kx in self.bands:
 			for Ky in self.bands[Kx]:
-				for Kz in self.bands[Ky]:
+				for Kz in self.bands[Kx][Ky]:
 					psi = psi + 1.0/totalKPoints * self.getPsiAtKPoint(Kx, Ky, Kz, Emin, Emax, x, y, z)
 		return psi
 
