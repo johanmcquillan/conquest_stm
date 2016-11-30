@@ -34,25 +34,37 @@ class Radial(object):
 		self.interpolatorCubic = interp1d(radii, radialFuncValues, kind='cubic')
 		self.cutoff = cutoff
 
-	def getValue(self, distance, interpolation='cubic'):
+	def interpolatorLinear(self, distance):
+		"""Use linear interpolation to calculate radial function value at distance"""
+		# Find the first r value larger than distance
+		i = 0
+		while self.radii[i] < distance:
+			i += 1
 
+		# Get nearest stored values
+		x1 = self.radii[i - 1]
+		x2 = self.radii[i]
+		y1 = self.radialFuncValues[i - 1]
+		y2 = self.radialFuncValues[i]
+
+		# Calculate via interpolation
+		return y1 + (distance - x1) * (y2 - y1) / (x2 - x1)
+
+	def getValue(self, distance, interpolation='cubic'):
+		"""Evaluate radial function value at distance using interpolation method.
+
+		Args:
+			distance (float): Distance to evaluate radial function
+			interpolation (string, opt.): Method of interpolation
+
+		Returns:
+			float: Radial function value
+		"""
 		if distance > self.cutoff:
 			value = 0.0
 		else:
 			if interpolation == 'linear':
-				# Find the first r value larger than distance
-				i = 0
-				while self.radii[i] < distance:
-					i += 1
-
-				# Get nearest stored values
-				x1 = self.radii[i - 1]
-				x2 = self.radii[i]
-				y1 = self.radialFuncValues[i - 1]
-				y2 = self.radialFuncValues[i]
-
-				# Calculate via interpolation
-				value = y1 + (distance - x1) * (y2 - y1) / (x2 - x1)
+				value = self.interpolatorLinear(distance)
 			elif interpolation == 'quadratic':
 				value = self.interpolatorQuadratic(distance)
 			elif interpolation == 'cubic':
@@ -66,6 +78,7 @@ class Radial(object):
 				raise ValueError(errorString)
 		return value
 
+
 class Ion(object):
 	"""
 	Stores data on an ion represented with a certain basis.
@@ -75,7 +88,6 @@ class Ion(object):
 	Attributes:
 		ionName (string): Name of ion (usually from name of .ion file)
 		radials (SmartDict): Radial objects accessed by radials[zeta][n][l], where all indices are int
-
 	"""
 
 	def __init__(self, ionName, radialDict=SmartDict()):
@@ -173,7 +185,7 @@ class Ion(object):
 			l (int): Orbital angular momentum quantum number
 			zeta (int): Indexes functions with different cutoffs
 			r (float): Radial distance from ion
-			interpolation (string, opt.): Method of interpolation; possible arguments are 'cubic' (default) and 'linear'
+			interpolation (string, opt.): Method of interpolation
 
 		Returns:
 			float: Radial function evaluated at r
