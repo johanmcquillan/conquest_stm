@@ -12,6 +12,8 @@ class Radial(object):
 	All lengths measured in Bohr radii (a0).
 	"""
 
+	interpolators = ['linear', 'quadratic', 'cubic']
+
 	def __init__(self, n, l, zeta, radii, radialFuncValues, cutoff):
 		"""Constructs radial part of a basis function.
 
@@ -28,52 +30,41 @@ class Radial(object):
 		self.l = l
 		self.radii = radii
 		self.radialFuncValues = radialFuncValues
-		self.radialInterpolator = interp1d(radii, radialFuncValues, kind='cubic')
+		self.interpolatorQuadratic = interp1d(radii, radialFuncValues, kind='quadratic')
+		self.interpolatorCubic = interp1d(radii, radialFuncValues, kind='cubic')
 		self.cutoff = cutoff
 
-	def getValueLinear(self, distance):
-		"""Use linear interpolation to evaluate radial function at distance.
-		
-		Args:
-			distance (float): Distance from origin
-
-		Returns:
-			float: Value of radial part
-		"""
-		if distance > self.cutoff:
-			value = 0.0
-		else:
-			# Find the first r value larger than distance
-			i = 0
-			while self.radii[i] < distance:
-				i += 1
-
-			# Get nearest stored values
-			x1 = self.radii[i - 1]
-			x2 = self.radii[i]
-			y1 = self.radialFuncValues[i - 1]
-			y2 = self.radialFuncValues[i]
-
-			# Calculate via interpolation
-			value = y1 + (distance - x1) * (y2 - y1) / (x2 - x1)
-		return value
-
-	def getValueCubic(self, distance):
-		"""Use cubic interpolation to evaluate radial function at distance.
-		
-		Args:
-			distance (float): Distance from origin
-		
-		Returns:
-			float: Value of radial part
-		"""
+	def getValue(self, distance, interpolation='cubic'):
 
 		if distance > self.cutoff:
 			value = 0.0
 		else:
-			value = self.radialInterpolator(distance)
-		return value
+			if interpolation == 'linear':
+				# Find the first r value larger than distance
+				i = 0
+				while self.radii[i] < distance:
+					i += 1
 
+				# Get nearest stored values
+				x1 = self.radii[i - 1]
+				x2 = self.radii[i]
+				y1 = self.radialFuncValues[i - 1]
+				y2 = self.radialFuncValues[i]
+
+				# Calculate via interpolation
+				value = y1 + (distance - x1) * (y2 - y1) / (x2 - x1)
+			elif interpolation == 'quadratic':
+				value = self.interpolatorQuadratic(distance)
+			elif interpolation == 'cubic':
+				value = self.interpolatorCubic(distance)
+			else:
+				errorString = "Interpolation method must be either "
+				for i in range(len(self.interpolators)):
+					errorString += self.interpolators[i]
+					if i < len(self.interpolators) - 1:
+						errorString += ', '
+				raise ValueError(errorString)
+		return value
 
 class Ion(object):
 	"""
@@ -168,10 +159,10 @@ class Ion(object):
 			Radial: Radial object for specified indices
 		"""
 
-		output = None
 		if self.hasRadial(l, zeta):
-			output = self.radials[l][zeta]
-		return output
+			return self.radials[l][zeta]
+		else:
+			raise ValueError("No radial data for "+self.ionName+", l="+str(l)+", zeta="+str(zeta))
 
 	def getRadialValue(self, l, zeta, r, interpolation='cubic'):
 		"""Use linear interpolation to evaluate radial function at distance r.
@@ -188,13 +179,7 @@ class Ion(object):
 			float: Radial function evaluated at r
 		"""
 
-		output = None
-		if self.hasRadial(l, zeta):
-			if interpolation == 'cubic':
-				output = self.radials[l][zeta].getValueCubic(r)
-			elif interpolation == 'linear':
-				output = self.radials[l][zeta].getValueLinear(r)
-		return output
+		return self.getRadial(l, zeta).getValue(r, interpolation=interpolation)
 
 	def getMaxCutoff(self):
 		"""Return the maximum cutoff radius for all stored Radials as a float.
