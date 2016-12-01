@@ -24,9 +24,9 @@ class Cell(object):
 			xMesh (3D mgrid): Mesh of x values
 			yMesh (3D mgrid): Mesh of y values
 			zMesh (3D mgrid): Mesh of z values
-			atoms (int : Atom): Atom objects of simulation
-								indexed by atom number
-			bands ([float]): Energies of bands in ascending order
+			atoms (int : Atom): Atom objects of simulation indexed by atom number
+			RYpoints (SmartDict): Basis function values, indexed by [atomKey][l][zeta][m][x][y][z]
+			bands (SmartDict): Energies of bands indexed by k-point (eg. [Kx][Ky][Kz])
 	"""
 
 	def __init__(self, name, fermiLevel, electrons, xLength, yLength, zLength, gridSpacing=0.1):
@@ -105,23 +105,33 @@ class Cell(object):
 		Args:
 			atom (Atom): Atom object to add to simulation
 			atomKey (int): Atom number, as given in Conquest_out
+			storeRYpoints (bool, opt.): If true, calculate basis function values at all points within cutoff region and
+										store. If false, these are calculated as needed during runtime
+			interpolation (bool, opt.): Interpolation method used during basis function calculation;
+										Not needed if storeRYpoints is false
 		"""
 
 		if storeRYpoints:
+			# Loop over all basis functions
 			for l in atom.radials:
 				for zeta in atom.radials[l]:
 					for m in range(-l, l+1):
+						# Loop over all mesh points
 						for i in range(self.xPoints):
 							for j in range(self.yPoints):
 								for k in range(self.zPoints):
+									# Get mesh coordinates
 									x = self.xMesh[i, j, k]
 									y = self.yMesh[i, j, k]
 									z = self.zMesh[i, j, k]
+									# Get coordinates relative to atom
 									relx = x - atom.x
 									rely = y - atom.y
 									relz = z - atom.z
 									r = np.sqrt(relx**2 + rely**2 + relz**2)
+									# Check if within cutoff region
 									if r <= atom.getRadial(l, zeta).cutoff:
+										# Store basis function value
 										self.RYpoints[atomKey][l][zeta][m][x][y][z] = atom.getRadialValue(
 												l, zeta, r, interpolation=interpolation) * sph(l, m, relx, rely, relz)
 
