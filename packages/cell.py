@@ -105,11 +105,6 @@ class Cell(object):
 			atomKey (int): Atom number, as given in Conquest_out
 		"""
 
-		# Reassign atom coordinates to nearest mesh points
-		atom.x = self.gridSpacing * min(range(0, self.xPoints), key=lambda i: abs(self.xMesh[i, 0, 0] - atom.x))
-		atom.y = self.gridSpacing * min(range(0, self.yPoints), key=lambda i: abs(self.yMesh[0, i, 0] - atom.y))
-		atom.z = self.gridSpacing * min(range(0, self.zPoints), key=lambda i: abs(self.zMesh[0, 0, i] - atom.z))
-
 		# Add to dict
 		self.atoms[atomKey] = atom
 
