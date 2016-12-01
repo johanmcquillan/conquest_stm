@@ -327,7 +327,7 @@ class Atom(Ion):
 					totalKPoints += 1
 		return totalKPoints
 
-	def getPsi(self, Kx, Ky, Kz, E, x, y, z, interpolation='cubic'):
+	def getPsi(self, Kx, Ky, Kz, E, x, y, z, interpolation='cubic', radialPoints=None):
 		"""Evaluate wavefunction contribution from this atom.
 
 		Args:
@@ -342,7 +342,7 @@ class Atom(Ion):
 
 		Returns:
 			complex: Wavefunction value
-			"""
+		"""
 		psi = complex(0.0, 0.0)
 
 		# Get relative displacement to atom
@@ -352,11 +352,15 @@ class Atom(Ion):
 		# Get relative distance to atom
 		r = np.sqrt(relx**2 + rely**2 + relz**2)
 		# If r is beyond atoms range, return 0j
-		if r <= self.getMaxCutoff():  # Loop over all radial functions
+		if r <= self.getMaxCutoff():
+			# Loop over all radial functions
 			for l in self.radials:
 				for zeta in self.radials[l]:
-					# Evaluate radial part
-					R = self.getRadialValue(l, zeta, r, interpolation=interpolation)
+					if radialPoints:
+						R = radialPoints[l][zeta][x][y][z]
+					else:
+						# Evaluate radial part
+						R = self.getRadialValue(l, zeta, r, interpolation=interpolation)
 					for m in range(-l, l + 1):
 						# Evaluate spherical harmonic
 						Y = sph(l, m, relx, rely, relz)

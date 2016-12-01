@@ -7,4 +7,4 @@ prsr.parseIons()
 prsr.parseConquestOutput()
 C = prsr.getCell('C6H6_SZ', gridSpacing=0.5)
 
-plot.plotLDoS2D(C, -2, 0, 0.01, 'z', 0, 20, interpolation='quadratic', debug=True)
+plot.plotLDoS2D(C, -2, 0, 0.01, 'z', 0, 20, interpolation='cubic', debug=True)

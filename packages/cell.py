@@ -61,6 +61,7 @@ class Cell(object):
 
 		# Initialise atoms and bands
 		self.atoms = {}
+		self.radialPoints = SmartDict()
 		self.bands = SmartDict()
 
 	def hasKPoint(self, Kx, Ky, Kz):
@@ -97,13 +98,30 @@ class Cell(object):
 				output = True
 		return output
 
-	def addAtom(self, atom, atomKey):
+	def addAtom(self, atom, atomKey, storeRadialMesh=True, interpolation='cubic'):
 		"""Add atom to self.atoms, indexed by atomKey
 
 		Args:
 			atom (Atom): Atom object to add to simulation
 			atomKey (int): Atom number, as given in Conquest_out
 		"""
+
+		if storeRadialMesh:
+			for l in atom.radials:
+				for zeta in atom.radials[l]:
+					for i in range(self.xPoints):
+						for j in range(self.yPoints):
+							for k in range(self.zPoints):
+								x = self.xMesh[i, j, k]
+								y = self.yMesh[i, j, k]
+								z = self.zMesh[i, j, k]
+								relx = x - atom.x
+								rely = y - atom.y
+								relz = z - atom.z
+								r = np.sqrt(relx**2 + rely**2 + relz**2)
+								if r <= atom.getRadial(l, zeta).cutoff:
+									self.radialPoints[atomKey][l][zeta][x][y][z] = atom.getRadialValue(
+											l, zeta, r, interpolation=interpolation)
 
 		# Add to dict
 		self.atoms[atomKey] = atom
@@ -166,7 +184,11 @@ class Cell(object):
 		"""
 		psi = complex(0.0, 0.0)
 		for atomKey in self.atoms:
-			psi += self.atoms[atomKey].getPsi(Kx, Ky, Kz, E, x, y, z, interpolation=interpolation)
+			if atomKey in self.radialPoints:
+				R = self.radialPoints[atomKey]
+			else:
+				R = None
+			psi += self.atoms[atomKey].getPsi(Kx, Ky, Kz, E, x, y, z, interpolation=interpolation, radialPoints=R)
 		return psi
 
 	def getPsiGamma(self, E, x, y, z):
