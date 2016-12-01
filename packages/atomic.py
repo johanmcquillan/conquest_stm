@@ -327,7 +327,7 @@ class Atom(Ion):
 					totalKPoints += 1
 		return totalKPoints
 
-	def getPsi(self, Kx, Ky, Kz, E, x, y, z, interpolation='cubic', radialPoints=None):
+	def getPsi(self, Kx, Ky, Kz, E, x, y, z, interpolation='cubic', RYpoints=None):
 		"""Evaluate wavefunction contribution from this atom.
 
 		Args:
@@ -356,18 +356,20 @@ class Atom(Ion):
 			# Loop over all radial functions
 			for l in self.radials:
 				for zeta in self.radials[l]:
-					if radialPoints:
-						R = radialPoints[l][zeta][x][y][z]
-					else:
-						# Evaluate radial part
+					# Evaluate radial part
+					if not RYpoints:
 						R = self.getRadialValue(l, zeta, r, interpolation=interpolation)
 					for m in range(-l, l + 1):
-						# Evaluate spherical harmonic
-						Y = sph(l, m, relx, rely, relz)
+						if RYpoints:
+							RY = RYpoints[l][zeta][m][x][y][z]
+						else:
+							# Evaluate spherical harmonic
+							Y = sph(l, m, relx, rely, relz)
+							RY = R*Y
 						# Get coefficient of basis function
 						coefficient = self.getCoefficient(Kx, Ky, Kz, E, l, zeta, m)
 						# Calculate and add contribution of basis function
-						psi += R * Y * coefficient
+						psi += RY * coefficient
 		return psi
 
 	def applyFactor(self, factor, Kx, Ky, Kz, E):
