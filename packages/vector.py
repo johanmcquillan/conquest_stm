@@ -20,6 +20,15 @@ class Vector(object):
 	def __str__(self):
 		return '('+str(self.x)+', '+str(self.y)+', '+str(self.z)+')'
 
+	def __hash__(self):
+		return hash((self.x, self.y, self.z))
+
+	def __eq__(self, other):
+		return (self.x, self.y, self.z) == (other.x, other.y, other.z)
+
+	def __ne__(self, other):
+		return not self == other
+
 	def subtract(self, V):
 		dx = self.x - V.x
 		dy = self.y - V.y
