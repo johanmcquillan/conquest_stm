@@ -384,7 +384,7 @@ class Atom(Ion):
 					totalKPoints += 1
 		return totalKPoints
 
-	def getPsi(self, Kx, Ky, Kz, E, position, interpolation='cubic', basisPoint=SmartDict()):
+	def getPsi(self, Kx, Ky, Kz, E, position, interpolation='cubic', basisPoint=SmartDict(), local=False):
 		"""Evaluate wavefunction contribution from this atom.
 
 		Args:
@@ -394,11 +394,17 @@ class Atom(Ion):
 			E (float): Band energy
 			position (Vector): 3D Cartesian real space vector
 			interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
+			basisPoint (SmartDict, opt.): Basis function values indexed by [l][zeta][m]
+			local (bool, opt.): If true, locality has already been checked ie. point is known to lie within atom cutoff
 
 		Returns:
 			complex: Wavefunction value
 		"""
 		psi = complex(0.0, 0.0)
+
+		if not local:
+			if not self.withinCutoff(position):
+				return psi
 
 		if not basisPoint:
 			for l in self.radials:

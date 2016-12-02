@@ -109,13 +109,17 @@ class Cell(object):
 		"""
 		atom = self.atoms[atomKey]
 		Y = 0.0
-		for l in atom.radials:
-			for zeta in atom.radials[l]:
-				R = atom.getRadialValueRelative(l, zeta, position, interpolation=interpolation)
-				for m in range(-l, l+1):
-					if R != 0:
-						Y = atom.getSPHrelative(l, m, position)
-					self.basisPoints[atomKey][position.x][position.y][position.z][l][zeta][m] = R*Y
+		# Check if atom is in range
+		if self.atoms[atomKey].withinCutoff(position):
+			for l in atom.radials:
+				for zeta in atom.radials[l]:
+					R = atom.getRadialValueRelative(l, zeta, position, interpolation=interpolation)
+					for m in range(-l, l+1):
+						if R != 0:
+							Y = atom.getSPHrelative(l, m, position)
+						self.basisPoints[atomKey][position.x][position.y][position.z][l][zeta][m] = R*Y
+		else:
+			self.basisPoints[atomKey][position.x][position.y][position.z] = SmartDict()
 
 	def hasBasisPoint(self, atomKey, position):
 		"""Check if basis point has already been calculated
@@ -198,16 +202,14 @@ class Cell(object):
 		psi = complex(0.0, 0.0)
 		# Loop over atoms
 		for atomKey in self.atoms:
-			# Check if atom is in range
-			if self.atoms[atomKey].withinCutoff(position):
-				# Check is basis function values have been calculated for this atom and point
-				if not self.hasBasisPoint(atomKey, position):
-					# Get and store basis function values
-					# Store values so they only need to be calculated once
-					self.setBasisPoint(atomKey, position, interpolation=interpolation)
-				# Use basis function value to calculate psi
-				BP = self.basisPoints[atomKey][position.x][position.y][position.z]
-				psi += self.atoms[atomKey].getPsi(Kx, Ky, Kz, E, position, basisPoint=BP)
+			# Check is basis function values have been calculated for this atom and point
+			if not self.hasBasisPoint(atomKey, position):
+				# Get and store basis function values
+				# Store values so they only need to be calculated once
+				self.setBasisPoint(atomKey, position, interpolation=interpolation)
+			# Use basis function value to calculate psi
+			BP = self.basisPoints[atomKey][position.x][position.y][position.z]
+			psi += self.atoms[atomKey].getPsi(Kx, Ky, Kz, E, position, basisPoint=BP, local=True)
 		return psi
 
 	def getPsiGamma(self, E, position):
@@ -250,8 +252,6 @@ class Cell(object):
 							# Calculate LDoS
 							psi = self.getPsi(Kx, Ky, Kz, E, position, interpolation=interpolation)
 							I += w * self.fermiDirac(E, T) * (abs(psi))**2
-					if debug and totalK != 1:
-						print "Finished k-point = "+str(Kx)+", "+str(Ky)+", "+str(Kz)
 		if debug:
 			print "Finished LDoS = "+str(I)+", at r = "+str(position)
 		return I
