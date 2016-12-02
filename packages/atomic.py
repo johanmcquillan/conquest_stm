@@ -215,9 +215,7 @@ class Atom(Ion):
 	Attributes:
 		ionName (string): Name of ion (usually from name of .ion file)
 		radials (SmartDict): Radial objects accessed by radials[l][zeta], where all indices are int
-		x (float): Cartesian x-coordinate of atom
-		y (float): Cartesian y-coordinate of atom
-		z (float): Cartesian z-coordinate of atom
+		position (Vector): 3D Cartesian real space vector for atom position
 		bands (SmartDict): Nested dict of complex basis coefficients;
 							Accessed by bands[bandEnergy][l][zeta][m]
 	"""
@@ -230,9 +228,7 @@ class Atom(Ion):
 			radials (SmartDict, optional): Radial objects, indexed by radialDict[zeta][n][l],
 											where all indices are int. Default is empty, radials
 											may be added after instantiation
-			x (float): Atomic x coordinate in simulation cell
-			y (float): Atomic y coordinate in simulation cell
-			z (float): Atomic z coordinate in simulation cell
+			atomPos (Vector): 3D Cartesian real space vector for atom position
 		"""
 		Ion.__init__(self, ionName, radials)
 		self.position = atomPos
@@ -272,15 +268,13 @@ class Atom(Ion):
 			raise ValueError("Need both l and zeta input, or neither")
 		return output
 
-	def hasCoefficient(self, Kx, Ky, Kz, E, l, zeta, m):
+	def hasCoefficient(self, K, E, l, zeta, m):
 		"""Check if atom stores coefficient for given orbital.
 
 		Encapsulation required due to autovivification of SmartDict.
 
 		Args:
-			Kx (float): K-point x coordinate
-			Ky (float): K-point y coordinate
-			Kz (float): K-point z coordinate
+			K (Vector): 3D Cartesian k-space vector
 			E (float): Band energy
 			l (int): Orbital angular momentum quantum number
 			zeta (int): Indexes functions with different cutoff but same n and l
@@ -291,23 +285,19 @@ class Atom(Ion):
 		"""
 
 		output = False
-		if Kx in self.bands:
-			if Ky in self.bands[Kx]:
-				if Kz in self.bands[Kx][Ky]:
-					if E in self.bands[Kx][Ky][Kz]:
-						if l in self.bands[Kx][Ky][Kz][E]:
-							if zeta in self.bands[Kx][Ky][Kz][E][l]:
-								if m in self.bands[Kx][Ky][Kz][E][l][zeta]:
-									output = True
+		if K in self.bands:
+			if E in self.bands[K]:
+				if l in self.bands[K][E]:
+					if zeta in self.bands[K][E][l]:
+						if m in self.bands[K][E][l][zeta]:
+							output = True
 		return output
 
-	def addCoefficient(self, Kx, Ky, Kz, E, PAO, coefficient):
+	def addCoefficient(self, K, E, PAO, coefficient):
 		"""Add a complex coefficient to self.bands.
 
 		Args:
-			Kx (float): K-point x coordinate
-			Ky (float): K-point y coordinate
-			Kz (float): K-point z coordinate
+			K (Vector): 3D Cartesian k-space vector
 			E (float): Band energy
 			PAO (int): index of PAO as given in .dat file
 			coefficient (complex): Coefficient of PAO
@@ -318,15 +308,13 @@ class Atom(Ion):
 		zeta = PAOdata[1]
 		m = PAOdata[2]
 
-		self.bands[Kx][Ky][Kz][E][l][zeta][m] = coefficient
+		self.bands[K][E][l][zeta][m] = coefficient
 
-	def getCoefficient(self, Kx, Ky, Kz, E, l, zeta, m):
+	def getCoefficient(self, K, E, l, zeta, m):
 		"""Return complex coefficient for given orbital.
 
 		Args:
-			Kx (float): K-point x coordinate
-			Ky (float): K-point y coordinate
-			Kz (float): K-point z coordinate
+			K (Vector): 3D Cartesian k-space vector
 			E (float): Band energy
 			l (int): Orbital angular momentum quantum number
 			zeta (int): Indexes functions with different cutoff but same n and l
@@ -336,8 +324,8 @@ class Atom(Ion):
 			complex: Coefficient for given orbital
 		"""
 		output = 0.0
-		if self.hasCoefficient(Kx, Ky, Kz, E, l, zeta, m):
-			output = self.bands[Kx][Ky][Kz][E][l][zeta][m]
+		if self.hasCoefficient(K, E, l, zeta, m):
+			output = self.bands[K][E][l][zeta][m]
 		return output
 
 	def getRadialValueRelative(self, l, zeta, position, interpolation='cubic'):
@@ -378,19 +366,15 @@ class Atom(Ion):
 	def getTotalKPoints(self):
 		"""Count total number of k-points"""
 		totalKPoints = 0
-		for Kx in self.bands:
-			for Ky in self.bands[Kx]:
-				for Kz in self.bands[Kx][Ky]:
-					totalKPoints += 1
+		for K in self.bands:
+			totalKPoints += 1
 		return totalKPoints
 
-	def getPsi(self, Kx, Ky, Kz, E, position, interpolation='cubic', basisPoint=SmartDict(), local=False):
+	def getPsi(self, K, E, position, interpolation='cubic', basisPoint=SmartDict(), local=False):
 		"""Evaluate wavefunction contribution from this atom.
 
 		Args:
-			Kx (float): K-point x coordinate
-			Ky (float): K-point y coordinate
-			Kz (float): K-point z coordinate
+			K (Vector): 3D Cartesian k-space vector
 			E (float): Band energy
 			position (Vector): 3D Cartesian real space vector
 			interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
@@ -415,23 +399,21 @@ class Atom(Ion):
 			for zeta in basisPoint[l]:
 				for m in basisPoint[l][zeta]:
 					if basisPoint[l][zeta][m] != 0:
-						coefficient = self.getCoefficient(Kx, Ky, Kz, E, l, zeta, m)
+						coefficient = self.getCoefficient(K, E, l, zeta, m)
 						psi += basisPoint[l][zeta][m] * coefficient
 		return psi
 
-	def applyFactor(self, factor, Kx, Ky, Kz, E):
+	def applyFactor(self, factor, K, E):
 		"""Apply a normalisation factor to all coefficients for a given energy and k-point.
 
 		Args:
 			factor (float): Normalisation factor to be applied
-			Kx (float): K-point x coordinate
-			Ky (float): K-point y coordinate
-			Kz (float): K-point z coordinate
+			K (Vector): 3D Cartesian k-space vector
 			E (float): Energy of band to which to apply factor
 		"""
 		# Loop over all coefficients
-		for l in self.bands[Kx][Ky][Kz][E]:
-			for zeta in self.bands[Kx][Ky][Kz][E][l]:
-				for m in self.bands[Kx][Ky][Kz][E][l][zeta]:
+		for l in self.bands[K][E]:
+			for zeta in self.bands[K][E][l]:
+				for m in self.bands[K][E][l][zeta]:
 					# Apply factor
-					self.bands[Kx][Ky][Kz][E][l][zeta][m] *= factor
+					self.bands[K][E][l][zeta][m] *= factor

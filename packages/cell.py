@@ -26,7 +26,7 @@ class Cell(object):
 			zMesh (3D mgrid): Mesh of z values
 			atoms (int : Atom): Atom objects of simulation indexed by atom number
 			basisPoints (SmartDict): Basis function values, indexed by [atomKey][x][y][z][l][zeta][m]
-			bands (SmartDict): Energies of bands indexed by k-point (eg. [Kx][Ky][Kz])
+			bands (Vector : [float]): Energies of bands indexed by k-point vector
 	"""
 
 	def __init__(self, name, fermiLevel, electrons, xLength, yLength, zLength, gridSpacing=0.1):
@@ -63,39 +63,20 @@ class Cell(object):
 		# Initialise atoms and bands
 		self.atoms = {}
 		self.basisPoints = SmartDict()
-		self.bands = SmartDict()
+		self.bands = {}
 
-	def hasKPoint(self, Kx, Ky, Kz):
-		"""Check if cell stores specified k-point.
-
-		Encapsulation required due to autovivification of SmartDict.
-
-		Args:
-			Kx (float): K-point x coordinate
-			Ky (float): K-point y coordinate
-			Kz (float): K-point z coordinate
-		"""
-		output = False
-		if Kx in self.bands:
-			if Ky in self.bands[Kx]:
-				if Kz in self.bands[Kx][Ky]:
-					output = True
-		return output
-
-	def hasBand(self, Kx, Ky, Kz, E):
+	def hasBand(self, K, E):
 		"""Check if cell stores specified band.
 
 		Encapsulation required due to autovivification of SmartDict.
 
 		Args:
-			Kx (float): K-point x coordinate
-			Ky (float): K-point y coordinate
-			Kz (float): K-point z coordinate
+			K (Vector): 3D Cartesian k-space vector
 			E (float): Band energy
 		"""
 		output = False
-		if self.hasKPoint(Kx, Ky, Kz):
-			if E in self.bands[Kx][Ky][Kz]:
+		if K in self.bands:
+			if E in self.bands[K]:
 				output = True
 		return output
 
@@ -145,17 +126,15 @@ class Cell(object):
 		self.atoms[atomKey] = atom
 
 		# Loop over atoms k-points
-		for Kx in atom.bands:
-			for Ky in atom.bands[Kx]:
-				for Kz in atom.bands[Kx][Ky]:
-					# If cell does not have k-point, create empty band energy list
-					if not self.hasKPoint(Kx, Ky, Kz):
-						self.bands[Kx][Ky][Kz] = []
-					# Add band energies to k-point
-					for E in atom.bands[Kx][Ky][Kz]:
-						self.bands[Kx][Ky][Kz].append(E)
-					# Sort energy list
-					self.bands[Kx][Ky][Kz] = sorted(self.bands[Kx][Ky][Kz])
+		for K in atom.bands:
+			# If cell does not have k-point, create empty band energy list
+			if K not in self.bands:
+				self.bands[K] = []
+			# Add band energies to k-point
+			for E in atom.bands[K]:
+				self.bands[K].append(E)
+			# Sort energy list
+			self.bands[K] = sorted(self.bands[K])
 
 	def getGammaEnergies(self):
 		"""Return list of energies at gamma-point"""
@@ -164,10 +143,8 @@ class Cell(object):
 	def getTotalKPoints(self):
 		"""Count total number of k-points"""
 		totalKPoints = 0
-		for Kx in self.bands:
-			for Ky in self.bands[Kx]:
-				for Kz in self.bands[Kx][Ky]:
-					totalKPoints += 1
+		for K in self.bands:
+			totalKPoints += 1
 		return totalKPoints
 
 	def fermiDirac(self, energy, temperature):
@@ -183,13 +160,11 @@ class Cell(object):
 		f = 1.0 / (np.exp((energy - self.fermiLevel) / (BOLTZMANN * temperature)) + 1)
 		return f
 
-	def getPsi(self, Kx, Ky, Kz, E, position, interpolation='cubic'):
+	def getPsi(self, K, E, position, interpolation='cubic'):
 		"""Evaluate wavefunction at specific position, k-point, and energy.
 
 		Args:
-			Kx (float): K-point x coordinate
-			Ky (float): K-point y coordinate
-			Kz (float): K-point z coordinate
+			K (Vector): 3D Cartesian k-space vector
 			E (float): Band energy
 			position (Vector): 3D Cartesian real space vector
 			interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
@@ -207,7 +182,7 @@ class Cell(object):
 				self.setBasisPoint(atomKey, position, interpolation=interpolation)
 			# Use basis function value to calculate psi
 			BP = self.basisPoints[atomKey][position]
-			psi += self.atoms[atomKey].getPsi(Kx, Ky, Kz, E, position, basisPoint=BP, local=True)
+			psi += self.atoms[atomKey].getPsi(K, E, position, basisPoint=BP, local=True)
 		return psi
 
 	def getPsiGamma(self, E, position):
@@ -241,15 +216,12 @@ class Cell(object):
 		w = 1.0/totalK  # K-point weighting
 
 		# Loop over all k-points
-		for Kx in self.bands:
-			for Ky in self.bands[Kx]:
-				for Kz in self.bands[Kx][Ky]:
-					# Loop over bands in energy range
-					for E in self.bands[Kx][Ky][Kz]:
-						if Emin < E < Emax:
-							# Calculate LDoS
-							psi = self.getPsi(Kx, Ky, Kz, E, position, interpolation=interpolation)
-							I += w * self.fermiDirac(E, T) * (abs(psi))**2
+		for K in self.bands:
+			for E in self.bands[K]:
+				if Emin < E < Emax:
+					# Calculate LDoS
+					psi = self.getPsi(K, E, position, interpolation=interpolation)
+					I += w * self.fermiDirac(E, T) * (abs(psi))**2
 		if debug:
 			print "Finished LDoS = "+str(I)+", at r = "+str(position)
 		return I

@@ -165,6 +165,7 @@ class Parser(object):
 					Kx = float(data[0])
 					Ky = float(data[1])
 					Kz = float(data[2])
+					K = Vector(Kx, Ky, Kz)
 					try:
 						line = Fcoeff.next()
 						while '#Kpoint' not in line:
@@ -203,7 +204,7 @@ class Parser(object):
 								coeffString = coeffString.replace(')', '')
 								complexString = coeffString.split(',')
 								complexCoeff = complex(float(complexString[0]), float(complexString[1]))
-								self.atoms[conq][a].addCoefficient(Kx, Ky, Kz, bandE, PAO, complexCoeff)
+								self.atoms[conq][a].addCoefficient(K, bandE, PAO, complexCoeff)
 								line = Fcoeff.next()
 
 					except StopIteration:

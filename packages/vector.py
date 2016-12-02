@@ -39,3 +39,7 @@ class Vector(object):
 		if not self.r:
 			self.r = np.sqrt(self.x**2 + self.y**2 + self.z**2)
 		return self.r
+
+	@staticmethod
+	def zero():
+		return Vector(0.0, 0.0, 0.0)

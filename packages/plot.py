@@ -489,7 +489,6 @@ def plotLDoS2D(cell, Emin, Emax, T, axis, minimum, maximum, planeValue=None, ste
 		step (float, opt.): Interval between Cartesian mgrid points, measured in a0;
 							Default is cell.gridSpacing
 		interpolation (string, opt.): Method of interpolation; possible arguments are 'cubic' (default) and 'linear'
-		label (string, opt.): Optional string to append to end of filename
 		printStatus (bool, opt.): If true, print update when file is saved
 		debug (bool, opt.): If true, print extra information during runtime
 	"""
