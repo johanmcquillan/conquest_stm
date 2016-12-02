@@ -25,7 +25,7 @@ class Cell(object):
 			yMesh (3D mgrid): Mesh of y values
 			zMesh (3D mgrid): Mesh of z values
 			atoms (int : Atom): Atom objects of simulation indexed by atom number
-			RYpoints (SmartDict): Basis function values, indexed by [atomKey][l][zeta][m][x][y][z]
+			basisPoints (SmartDict): Basis function values, indexed by [atomKey][l][zeta][m][x][y][z]
 			bands (SmartDict): Energies of bands indexed by k-point (eg. [Kx][Ky][Kz])
 	"""
 
@@ -62,7 +62,7 @@ class Cell(object):
 
 		# Initialise atoms and bands
 		self.atoms = {}
-		self.RYpoints = SmartDict()
+		self.basisPoints = SmartDict()
 		self.bands = SmartDict()
 
 	def hasKPoint(self, Kx, Ky, Kz):
@@ -99,42 +99,34 @@ class Cell(object):
 				output = True
 		return output
 
-	def addAtom(self, atom, atomKey, storeRYpoints=True, interpolation='cubic'):
+	def setBasisPoint(self, atomKey, x, y, z, interpolation='cubic'):
+		atom = self.atoms[atomKey]
+		Y = 0.0
+		for l in atom.radials:
+			for zeta in atom.radials[l]:
+				R = atom.getRadialValueRelative(l, zeta, x, y, z, interpolation=interpolation)
+				for m in range(-l, l+1):
+					if R != 0:
+						Y = atom.getSPHrelative(l, m, x, y, z)
+					self.basisPoints[atomKey][x][y][z][l][zeta][m] = R*Y
+
+	def hasBasisPoint(self, atomKey, x, y, z):
+		"""Check if basis point has already been calculated"""
+		output = False
+		if atomKey in self.basisPoints:
+			if x in self.basisPoints[atomKey]:
+				if y in self.basisPoints[atomKey][x]:
+					if z in self.basisPoints[atomKey][x][y]:
+						output = True
+		return output
+
+	def addAtom(self, atom, atomKey):
 		"""Add atom to self.atoms, indexed by atomKey
 
 		Args:
 			atom (Atom): Atom object to add to simulation
 			atomKey (int): Atom number, as given in Conquest_out
-			storeRYpoints (bool, opt.): If true, calculate basis function values at all points within cutoff region and
-										store. If false, these are calculated as needed during runtime
-			interpolation (bool, opt.): Interpolation method used during basis function calculation;
-										Not needed if storeRYpoints is false
 		"""
-
-		if storeRYpoints:
-			# Loop over all basis functions
-			for l in atom.radials:
-				for zeta in atom.radials[l]:
-					for m in range(-l, l+1):
-						# Loop over all mesh points
-						for i in range(self.xPoints):
-							for j in range(self.yPoints):
-								for k in range(self.zPoints):
-									# Get mesh coordinates
-									x = self.xMesh[i, j, k]
-									y = self.yMesh[i, j, k]
-									z = self.zMesh[i, j, k]
-									# Get coordinates relative to atom
-									relx = x - atom.x
-									rely = y - atom.y
-									relz = z - atom.z
-									r = np.sqrt(relx**2 + rely**2 + relz**2)
-									# Check if within cutoff region
-									if r <= atom.getRadial(l, zeta).cutoff:
-										# Store basis function value
-										self.RYpoints[atomKey][l][zeta][m][x][y][z] = atom.getRadialValue(
-												l, zeta, r, interpolation=interpolation) * sph(l, m, relx, rely, relz)
-
 		# Add to dict
 		self.atoms[atomKey] = atom
 
@@ -178,7 +170,7 @@ class Cell(object):
 		f = 1.0 / (np.exp((energy - self.fermiLevel) / (BOLTZMANN * temperature)) + 1)
 		return f
 
-	def getPsi(self, Kx, Ky, Kz, E, x, y, z, interpolation='cubic'):
+	def getPsi(self, Kx, Ky, Kz, E, x, y, z, r=None, interpolation='cubic'):
 		"""Evaluate wavefunction at specific position, k-point, and energy.
 
 		Args:
@@ -195,12 +187,18 @@ class Cell(object):
 			complex: Wavefunction value
 		"""
 		psi = complex(0.0, 0.0)
+		# Loop over atoms
 		for atomKey in self.atoms:
-			if atomKey in self.RYpoints:
-				RY = self.RYpoints[atomKey]
-			else:
-				RY = None
-			psi += self.atoms[atomKey].getPsi(Kx, Ky, Kz, E, x, y, z, interpolation=interpolation, RYpoints=RY)
+			# Check if atom is in range
+			#if self.atoms[atomKey].withinCutoff(x, y, z):
+				# Check is basis function values have been calculated for this atom and point
+			if not self.hasBasisPoint(atomKey, x, y, z):
+				# Get and store basis function values
+				# Store values so they only need to be calculated once
+				self.setBasisPoint(atomKey, x, y, z, interpolation=interpolation)
+			# Use basis function value to calculate psi
+			BP = self.basisPoints[atomKey][x][y][z]
+			psi += self.atoms[atomKey].getPsi(Kx, Ky, Kz, E, x, y, z, basisPoint=BP)
 		return psi
 
 	def getPsiGamma(self, E, x, y, z):
@@ -249,7 +247,7 @@ class Cell(object):
 							psi = self.getPsi(Kx, Ky, Kz, E, x, y, z, interpolation=interpolation)
 							I += w * self.fermiDirac(E, T) * (abs(psi))**2
 					if debug and totalK != 1:
-						print "Finished K-Point = "+str(Kx)+", "+str(Ky)+", "+str(Kz)
+						print "Finished k-point = "+str(Kx)+", "+str(Ky)+", "+str(Kz)
 		if debug:
-			print "Finished current I = "+str(I)+", at r = ("+str(x)+", "+str(y)+", "+str(z)+")"
+			print "Finished LDoS = "+str(I)+", at r = ("+str(x)+", "+str(y)+", "+str(z)+")"
 		return I

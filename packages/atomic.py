@@ -250,6 +250,19 @@ class Atom(Ion):
 		self.radials = I.radials
 		self.sortPAOs()
 
+	def withinCutoff(self, x, y, z, l=None, zeta=None):
+		"""Return true if (x, y, z) is within cutoff region."""
+		output = False
+		r = np.sqrt((x - self.x)**2 + (y - self.y)**2 + (z - self.z)**2)
+		if l and zeta:
+			if self.hasRadial(l, zeta):
+				if r <= self.getRadial(l, zeta).cutoff:
+					output = True
+		else:
+			if r <= self.getMaxCutoff():
+				output = True
+		return output
+
 	def hasCoefficient(self, Kx, Ky, Kz, E, l, zeta, m):
 		"""Check if atom stores coefficient for given orbital.
 
@@ -318,6 +331,30 @@ class Atom(Ion):
 			output = self.bands[Kx][Ky][Kz][E][l][zeta][m]
 		return output
 
+	def getRelativeDistance(self, x, y, z):
+		"""Get distance from atom to (x, y, z)"""
+		return np.sqrt((x - self.x)**2 + (y - self.y)**2 + (z - self.z)**2)
+
+	def getRadialValueRelative(self, l, zeta, x, y, z, interpolation='cubic'):
+		"""Evaluate radial part of wavefunction at (x, y, z)"""
+		R = 0.0
+		if self.hasRadial(l, zeta):
+			r = self.getRelativeDistance(x, y, z)
+			R = self.getRadialValue(l, zeta, r, interpolation=interpolation)
+		return R
+
+	def getSPHrelative(self, l, m, x, y, z):
+		"""Evaluate spherical harmonic with atom as origin"""
+		return sph(l, m, x - self.x, y - self.y, z - self.z)
+
+	def getBasisPoint(self, l, zeta, m, x, y, z, interpolation='cubic'):
+		"""Evaluate basis function (radial part * spherical harmonic)"""
+		R = self.getRadialValueRelative(l, zeta, x, y, z, interpolation=interpolation)
+		Y = 0.0
+		if R != 0:  # If R == 0, basis point is 0, no need to calculate Y
+			Y = self.getSPHrelative(l, m, x, y, z)
+		return R*Y
+
 	def getTotalKPoints(self):
 		"""Count total number of k-points"""
 		totalKPoints = 0
@@ -327,7 +364,7 @@ class Atom(Ion):
 					totalKPoints += 1
 		return totalKPoints
 
-	def getPsi(self, Kx, Ky, Kz, E, x, y, z, interpolation='cubic', RYpoints=None):
+	def getPsi(self, Kx, Ky, Kz, E, x, y, z, interpolation='cubic', basisPoint=SmartDict()):
 		"""Evaluate wavefunction contribution from this atom.
 
 		Args:
@@ -345,31 +382,35 @@ class Atom(Ion):
 		"""
 		psi = complex(0.0, 0.0)
 
-		# Get relative displacement to atom
-		relx = x - self.x
-		rely = y - self.y
-		relz = z - self.z
-		# Get relative distance to atom
-		r = np.sqrt(relx**2 + rely**2 + relz**2)
-		# If r is beyond atoms range, return 0j
-		if r <= self.getMaxCutoff():
-			# Loop over all radial functions
+		if not basisPoint:
 			for l in self.radials:
 				for zeta in self.radials[l]:
-					# Evaluate radial part
-					if not RYpoints:
-						R = self.getRadialValue(l, zeta, r, interpolation=interpolation)
-					for m in range(-l, l + 1):
-						if RYpoints:
-							RY = RYpoints[l][zeta][m][x][y][z]
-						else:
-							# Evaluate spherical harmonic
-							Y = sph(l, m, relx, rely, relz)
-							RY = R*Y
-						# Get coefficient of basis function
-						coefficient = self.getCoefficient(Kx, Ky, Kz, E, l, zeta, m)
-						# Calculate and add contribution of basis function
-						psi += RY * coefficient
+					for m in range(l, l+1):
+						basisPoint[l][zeta][m] = self.getBasisPoint(l, zeta, m, x, y, z, interpolation=interpolation)
+		for l in basisPoint:
+			for zeta in basisPoint[l]:
+				for m in basisPoint[l][zeta]:
+					coefficient = self.getCoefficient(Kx, Ky, Kz, E, l, zeta, m)
+					psi += basisPoint[l][zeta][m] * coefficient
+		# # If r is beyond atoms range, return 0j
+		# if r <= self.getMaxCutoff():
+		# 	# Loop over all radial functions
+		# 	for l in self.radials:
+		# 		for zeta in self.radials[l]:
+		# 			# Evaluate radial part
+		# 			if not RYpoints:
+		# 				R = self.getRadialValue(l, zeta, r, interpolation=interpolation)
+		# 			for m in range(-l, l + 1):
+		# 				if RYpoints:
+		# 					RY = RYpoints[l][zeta][m][x][y][z]
+		# 				else:
+		# 					# Evaluate spherical harmonic
+		# 					Y = sph(l, m, relx, rely, relz)
+		# 					RY = R*Y
+		# 				# Get coefficient of basis function
+		# 				coefficient = self.getCoefficient(Kx, Ky, Kz, E, l, zeta, m)
+		# 				# Calculate and add contribution of basis function
+		# 				psi += RY * coefficient
 		return psi
 
 	def applyFactor(self, factor, Kx, Ky, Kz, E):
