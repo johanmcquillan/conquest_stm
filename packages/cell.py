@@ -117,9 +117,9 @@ class Cell(object):
 					for m in range(-l, l+1):
 						if R != 0:
 							Y = atom.getSPHrelative(l, m, position)
-						self.basisPoints[atomKey][position.x][position.y][position.z][l][zeta][m] = R*Y
+						self.basisPoints[atomKey][position][l][zeta][m] = R*Y
 		else:
-			self.basisPoints[atomKey][position.x][position.y][position.z] = SmartDict()
+			self.basisPoints[atomKey][position] = SmartDict()
 
 	def hasBasisPoint(self, atomKey, position):
 		"""Check if basis point has already been calculated
@@ -130,10 +130,8 @@ class Cell(object):
 		"""
 		output = False
 		if atomKey in self.basisPoints:
-			if position.x in self.basisPoints[atomKey]:
-				if position.y in self.basisPoints[atomKey][position.x]:
-					if position.z in self.basisPoints[atomKey][position.x][position.y]:
-						output = True
+			if position in self.basisPoints[atomKey]:
+				output = True
 		return output
 
 	def addAtom(self, atom, atomKey):
@@ -208,7 +206,7 @@ class Cell(object):
 				# Store values so they only need to be calculated once
 				self.setBasisPoint(atomKey, position, interpolation=interpolation)
 			# Use basis function value to calculate psi
-			BP = self.basisPoints[atomKey][position.x][position.y][position.z]
+			BP = self.basisPoints[atomKey][position]
 			psi += self.atoms[atomKey].getPsi(Kx, Ky, Kz, E, position, basisPoint=BP, local=True)
 		return psi
 
