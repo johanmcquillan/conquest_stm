@@ -55,7 +55,7 @@ class Radial(object):
 
 		Args:
 			distance (float): Distance to evaluate radial function
-			interpolation (string, opt.): Method of interpolation
+			interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
 
 		Returns:
 			float: Radial function value
@@ -176,7 +176,7 @@ class Ion(object):
 		else:
 			raise ValueError("No radial data for "+self.ionName+", l="+str(l)+", zeta="+str(zeta))
 
-	def getRadialValue(self, l, zeta, r, interpolation='cubic'):
+	def getRadialValue(self, l, zeta, distance, interpolation='cubic'):
 		"""Use linear interpolation to evaluate radial function at distance r.
 
 		Encapsulation required due to autovivification of SmartDict.
@@ -184,14 +184,14 @@ class Ion(object):
 		Args:
 			l (int): Orbital angular momentum quantum number
 			zeta (int): Indexes functions with different cutoffs
-			r (float): Radial distance from ion
-			interpolation (string, opt.): Method of interpolation
+			distance (float): Radial distance from ion
+			interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
 
 		Returns:
 			float: Radial function evaluated at r
 		"""
 
-		return self.getRadial(l, zeta).getValue(r, interpolation=interpolation)
+		return self.getRadial(l, zeta).getValue(distance, interpolation=interpolation)
 
 	def getMaxCutoff(self):
 		"""Return the maximum cutoff radius for all stored Radials as a float.
@@ -222,7 +222,7 @@ class Atom(Ion):
 							Accessed by bands[bandEnergy][l][zeta][m]
 	"""
 
-	def __init__(self, ionName, x, y, z, radials=SmartDict()):
+	def __init__(self, ionName, atomPos, radials=SmartDict()):
 		"""Constructor for atom.
 
 		Args:
@@ -235,9 +235,7 @@ class Atom(Ion):
 			z (float): Atomic z coordinate in simulation cell
 		"""
 		Ion.__init__(self, ionName, radials)
-		self.x = x
-		self.y = y
-		self.z = z
+		self.position = atomPos
 		self.bands = SmartDict()
 
 	def setIon(self, I):
@@ -250,17 +248,28 @@ class Atom(Ion):
 		self.radials = I.radials
 		self.sortPAOs()
 
-	def withinCutoff(self, x, y, z, l=None, zeta=None):
-		"""Return true if (x, y, z) is within cutoff region."""
+	def withinCutoff(self, position, l=None, zeta=None):
+		"""Return true if within cutoff region.
+
+		Args:
+			position (Vector): 3D Cartesian real space vector
+			l (int, opt.): Orbital angular momentum quantum number; to check specific radial, needs zeta
+			zeta (int, opt.): Zeta index; to check specific radial, needs l
+
+		Returns:
+			bool: True if within cutoff radius
+		"""
 		output = False
-		r = np.sqrt((x - self.x)**2 + (y - self.y)**2 + (z - self.z)**2)
-		if l and zeta:
+		distance = position.subtract(self.position).getr()
+		if not (l and zeta):
+			if distance <= self.getMaxCutoff():
+				output = True
+		elif l and zeta:
 			if self.hasRadial(l, zeta):
-				if r <= self.getRadial(l, zeta).cutoff:
+				if distance <= self.getRadial(l, zeta).cutoff:
 					output = True
 		else:
-			if r <= self.getMaxCutoff():
-				output = True
+			raise ValueError("Need both l and zeta input, or neither")
 		return output
 
 	def hasCoefficient(self, Kx, Ky, Kz, E, l, zeta, m):
@@ -331,28 +340,39 @@ class Atom(Ion):
 			output = self.bands[Kx][Ky][Kz][E][l][zeta][m]
 		return output
 
-	def getRelativeDistance(self, x, y, z):
-		"""Get distance from atom to (x, y, z)"""
-		return np.sqrt((x - self.x)**2 + (y - self.y)**2 + (z - self.z)**2)
+	def getRadialValueRelative(self, l, zeta, position, interpolation='cubic'):
+		"""Evaluate radial part of wavefunction
 
-	def getRadialValueRelative(self, l, zeta, x, y, z, interpolation='cubic'):
-		"""Evaluate radial part of wavefunction at (x, y, z)"""
+		Args:
+			l (int): Orbital angular momentum quantum number
+			zeta (int): Zeta index
+			m (int): Azimuthal orbital angular momentum quantum number
+			position (Vector): 3D Cartesian real space vector
+			interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
+		"""
 		R = 0.0
 		if self.hasRadial(l, zeta):
-			r = self.getRelativeDistance(x, y, z)
-			R = self.getRadialValue(l, zeta, r, interpolation=interpolation)
+			distance = position.subtract(self.position).getr()
+			R = self.getRadialValue(l, zeta, distance, interpolation=interpolation)
 		return R
 
-	def getSPHrelative(self, l, m, x, y, z):
-		"""Evaluate spherical harmonic with atom as origin"""
-		return sph(l, m, x - self.x, y - self.y, z - self.z)
+	def getSPHrelative(self, l, m, position):
+		"""Evaluate spherical harmonic with atom as origin
 
-	def getBasisPoint(self, l, zeta, m, x, y, z, interpolation='cubic'):
+		Args:
+			l (int): Orbital angular momentum quantum number
+			m (int): Azimuthal orbital angular momentum quantum number
+			position (Vector): 3D Cartesian real space vector
+		"""
+		position2 = position.subtract(self.position)
+		return sph(l, m, position2.x, position2.y, position2.z)
+
+	def getBasisPoint(self, l, zeta, m, position, interpolation='cubic'):
 		"""Evaluate basis function (radial part * spherical harmonic)"""
-		R = self.getRadialValueRelative(l, zeta, x, y, z, interpolation=interpolation)
+		R = self.getRadialValueRelative(l, zeta, position, interpolation=interpolation)
 		Y = 0.0
 		if R != 0:  # If R == 0, basis point is 0, no need to calculate Y
-			Y = self.getSPHrelative(l, m, x, y, z)
+			Y = self.getSPHrelative(l, m, position)
 		return R*Y
 
 	def getTotalKPoints(self):
@@ -364,7 +384,7 @@ class Atom(Ion):
 					totalKPoints += 1
 		return totalKPoints
 
-	def getPsi(self, Kx, Ky, Kz, E, x, y, z, interpolation='cubic', basisPoint=SmartDict()):
+	def getPsi(self, Kx, Ky, Kz, E, position, interpolation='cubic', basisPoint=SmartDict()):
 		"""Evaluate wavefunction contribution from this atom.
 
 		Args:
@@ -372,10 +392,8 @@ class Atom(Ion):
 			Ky (float): K-point y coordinate
 			Kz (float): K-point z coordinate
 			E (float): Band energy
-			x (float): Cartesian x coordinate
-			y (float): Cartesian y coordinate
-			z (float): Cartesian z coordinate
-			interpolation (string, opt.): Method of interpolation; possible arguments are 'cubic' (default) and 'linear'
+			position (Vector): 3D Cartesian real space vector
+			interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
 
 		Returns:
 			complex: Wavefunction value
@@ -386,31 +404,13 @@ class Atom(Ion):
 			for l in self.radials:
 				for zeta in self.radials[l]:
 					for m in range(l, l+1):
-						basisPoint[l][zeta][m] = self.getBasisPoint(l, zeta, m, x, y, z, interpolation=interpolation)
+						basisPoint[l][zeta][m] = self.getBasisPoint(l, zeta, m, position, interpolation=interpolation)
 		for l in basisPoint:
 			for zeta in basisPoint[l]:
 				for m in basisPoint[l][zeta]:
-					coefficient = self.getCoefficient(Kx, Ky, Kz, E, l, zeta, m)
-					psi += basisPoint[l][zeta][m] * coefficient
-		# # If r is beyond atoms range, return 0j
-		# if r <= self.getMaxCutoff():
-		# 	# Loop over all radial functions
-		# 	for l in self.radials:
-		# 		for zeta in self.radials[l]:
-		# 			# Evaluate radial part
-		# 			if not RYpoints:
-		# 				R = self.getRadialValue(l, zeta, r, interpolation=interpolation)
-		# 			for m in range(-l, l + 1):
-		# 				if RYpoints:
-		# 					RY = RYpoints[l][zeta][m][x][y][z]
-		# 				else:
-		# 					# Evaluate spherical harmonic
-		# 					Y = sph(l, m, relx, rely, relz)
-		# 					RY = R*Y
-		# 				# Get coefficient of basis function
-		# 				coefficient = self.getCoefficient(Kx, Ky, Kz, E, l, zeta, m)
-		# 				# Calculate and add contribution of basis function
-		# 				psi += RY * coefficient
+					if basisPoint[l][zeta][m] != 0:
+						coefficient = self.getCoefficient(Kx, Ky, Kz, E, l, zeta, m)
+						psi += basisPoint[l][zeta][m] * coefficient
 		return psi
 
 	def applyFactor(self, factor, Kx, Ky, Kz, E):

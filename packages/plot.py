@@ -12,6 +12,7 @@ from matplotlib import cm, colors
 from skimage import measure
 
 from sph import sph
+from vector import Vector
 
 # Spectroscopic notation dictionary
 SPECTRAL = {0: 's', 1: 'p', 2: 'd', 3: 'f', 4: 'g',
@@ -516,25 +517,23 @@ def plotLDoS2D(cell, Emin, Emax, T, axis, minimum, maximum, planeValue=None, ste
 			if axis == 'z':
 				if not planeValue:
 					planeValue = cell.zLength / 2
-				I[i, j] = cell.getLDoS(
-						Emin, Emax, T, space2[i, j], space1[i, j], planeValue, interpolation=interpolation, debug=debug)
+				V = Vector(space2[i, j], space1[i, j], planeValue)
 				label1 = '$x$ / $a_0$'
 				label2 = '$y$ / $a_0$'
 			if axis == 'y':
 				if not planeValue:
 					planeValue = cell.yLength / 2
-				I[i, j] = cell.getLDoS(
-						Emin, Emax, T, space2[i, j], planeValue, space1[i, j], interpolation=interpolation, debug=debug)
+				V = Vector(space2[i, j], planeValue, space1[i, j])
 				label1 = '$x$ / $a_0$'
 				label2 = '$z$ / $a_0$'
 			if axis == 'x':
 				if not planeValue:
 					planeValue = cell.xLength / 2
-				I[i, j] = cell.getLDoS(
-						Emin, Emax, T, planeValue, space2[i, j], space1[i, j], interpolation=interpolation, debug=debug)
+				V = Vector(planeValue, space2[i, j], space1[i, j])
 				label1 = '$y$ / $a_0$'
 				label2 = '$z$ / $a_0$'
-
+			I[i, j] = cell.getLDoS(Emin, Emax, T, V, interpolation=interpolation, debug=debug)
+			del V
 			# Update maxpsi
 			if abs(I[i, j]) > maxI:
 				maxI = I[i, j]
@@ -613,9 +612,10 @@ def plotLDoS3D(
 				x = X[i, j, k]
 				y = Y[i, j, k]
 				z = Z[i, j, k]
+				V = Vector(x, y, z)
 
 				# Calculate wavefunction
-				psi = cell.getPsi(Emin, Emax, x, y, z, debug=debug)
+				psi = cell.getPsi(Emin, Emax, V, debug=debug)
 
 				# Get charge density
 				psi2[i, j, k] = abs(psi)**2

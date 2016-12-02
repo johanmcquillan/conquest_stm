@@ -1,6 +1,6 @@
 import numpy as np
 from smartDict import SmartDict
-from sph import sph
+from vector import Vector
 
 BOLTZMANN = 8.6173303E-5  # Boltzmann's Constant in eV/K
 
@@ -25,7 +25,7 @@ class Cell(object):
 			yMesh (3D mgrid): Mesh of y values
 			zMesh (3D mgrid): Mesh of z values
 			atoms (int : Atom): Atom objects of simulation indexed by atom number
-			basisPoints (SmartDict): Basis function values, indexed by [atomKey][l][zeta][m][x][y][z]
+			basisPoints (SmartDict): Basis function values, indexed by [atomKey][x][y][z][l][zeta][m]
 			bands (SmartDict): Energies of bands indexed by k-point (eg. [Kx][Ky][Kz])
 	"""
 
@@ -99,24 +99,36 @@ class Cell(object):
 				output = True
 		return output
 
-	def setBasisPoint(self, atomKey, x, y, z, interpolation='cubic'):
+	def setBasisPoint(self, atomKey, position, interpolation='cubic'):
+		"""Calculate and save basis function values for all points within cutoff region.
+
+		Args:
+			atomKey (int): Atom number, as given in Conquest_out
+			position (Vector): 3D Cartesian real space vector
+			interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
+		"""
 		atom = self.atoms[atomKey]
 		Y = 0.0
 		for l in atom.radials:
 			for zeta in atom.radials[l]:
-				R = atom.getRadialValueRelative(l, zeta, x, y, z, interpolation=interpolation)
+				R = atom.getRadialValueRelative(l, zeta, position, interpolation=interpolation)
 				for m in range(-l, l+1):
 					if R != 0:
-						Y = atom.getSPHrelative(l, m, x, y, z)
-					self.basisPoints[atomKey][x][y][z][l][zeta][m] = R*Y
+						Y = atom.getSPHrelative(l, m, position)
+					self.basisPoints[atomKey][position.x][position.y][position.z][l][zeta][m] = R*Y
 
-	def hasBasisPoint(self, atomKey, x, y, z):
-		"""Check if basis point has already been calculated"""
+	def hasBasisPoint(self, atomKey, position):
+		"""Check if basis point has already been calculated
+
+		Args:
+			atomKey (int): Atom number, as given in Conquest_out
+			position (Vector): 3D Cartesian real space vector
+		"""
 		output = False
 		if atomKey in self.basisPoints:
-			if x in self.basisPoints[atomKey]:
-				if y in self.basisPoints[atomKey][x]:
-					if z in self.basisPoints[atomKey][x][y]:
+			if position.x in self.basisPoints[atomKey]:
+				if position.y in self.basisPoints[atomKey][position.x]:
+					if position.z in self.basisPoints[atomKey][position.x][position.y]:
 						output = True
 		return output
 
@@ -124,7 +136,7 @@ class Cell(object):
 		"""Add atom to self.atoms, indexed by atomKey
 
 		Args:
-			atom (Atom): Atom object to add to simulation
+			atom (Atom): Atom object
 			atomKey (int): Atom number, as given in Conquest_out
 		"""
 		# Add to dict
@@ -161,7 +173,6 @@ class Cell(object):
 
 		Args:
 			energy (float): Energy in eV
-			fermiLevel (float): Fermi Level in eV
 			temperature (float): Absolute temperature in K
 
 		Returns:
@@ -170,7 +181,7 @@ class Cell(object):
 		f = 1.0 / (np.exp((energy - self.fermiLevel) / (BOLTZMANN * temperature)) + 1)
 		return f
 
-	def getPsi(self, Kx, Ky, Kz, E, x, y, z, r=None, interpolation='cubic'):
+	def getPsi(self, Kx, Ky, Kz, E, position, interpolation='cubic'):
 		"""Evaluate wavefunction at specific position, k-point, and energy.
 
 		Args:
@@ -178,10 +189,8 @@ class Cell(object):
 			Ky (float): K-point y coordinate
 			Kz (float): K-point z coordinate
 			E (float): Band energy
-			x (float): Cartesian x-coordinate
-			y (float): Cartesian y-coordinate
-			z (float): Cartesian z-coordinate
-			interpolation (string, opt.): Method of interpolation; possible arguments are 'cubic' (default) and 'linear'
+			position (Vector): 3D Cartesian real space vector
+			interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
 
 		Returns:
 			complex: Wavefunction value
@@ -190,43 +199,38 @@ class Cell(object):
 		# Loop over atoms
 		for atomKey in self.atoms:
 			# Check if atom is in range
-			#if self.atoms[atomKey].withinCutoff(x, y, z):
+			if self.atoms[atomKey].withinCutoff(position):
 				# Check is basis function values have been calculated for this atom and point
-			if not self.hasBasisPoint(atomKey, x, y, z):
-				# Get and store basis function values
-				# Store values so they only need to be calculated once
-				self.setBasisPoint(atomKey, x, y, z, interpolation=interpolation)
-			# Use basis function value to calculate psi
-			BP = self.basisPoints[atomKey][x][y][z]
-			psi += self.atoms[atomKey].getPsi(Kx, Ky, Kz, E, x, y, z, basisPoint=BP)
+				if not self.hasBasisPoint(atomKey, position):
+					# Get and store basis function values
+					# Store values so they only need to be calculated once
+					self.setBasisPoint(atomKey, position, interpolation=interpolation)
+				# Use basis function value to calculate psi
+				BP = self.basisPoints[atomKey][position.x][position.y][position.z]
+				psi += self.atoms[atomKey].getPsi(Kx, Ky, Kz, E, position, basisPoint=BP)
 		return psi
 
-	def getPsiGamma(self, E, x, y, z):
+	def getPsiGamma(self, E, position):
 		"""Evaluate wavefunction at specific position and energy using only gamma-point.
 
 		Args:
 			E (float): Band energy
-			x (float): Cartesian x-coordinate
-			y (float): Cartesian y-coordinate
-			z (float): Cartesian z-coordinate
-			debug (bool, opt.): If true, print extra information during runtime
+			position (Vector): 3D Cartesian real space vector
 
 		Returns:
 			complex: Wavefunction value
 			"""
-		return self.getPsi(0.0, 0.0, 0.0, E, x, y, z)
+		return self.getPsi(0.0, 0.0, 0.0, E, position)
 
-	def getLDoS(self, Emin, Emax, T, x, y, z, interpolation='cubic', debug=False):
+	def getLDoS(self, Emin, Emax, T, position, interpolation='cubic', debug=False):
 		"""Evaluate local density of states (LDoS) within energy range at specific point.
 
 		Args:
 			Emin (float): Minimum energy
 			Emax (float): Maximum energy
 			T (float): Absolute temperature in K
-			x (float): Cartesian x-coordinate
-			y (float): Cartesian y-coordinate
-			z (float): Cartesian z-coordinate
-			interpolation (string, opt.): Method of interpolation; possible arguments are 'cubic' (default) and 'linear'
+			position (Vector): 3D Cartesian real space vector
+			interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
 			debug (bool, opt.): If true, print extra information during runtime
 
 		Returns:
@@ -244,10 +248,10 @@ class Cell(object):
 					for E in self.bands[Kx][Ky][Kz]:
 						if Emin < E < Emax:
 							# Calculate LDoS
-							psi = self.getPsi(Kx, Ky, Kz, E, x, y, z, interpolation=interpolation)
+							psi = self.getPsi(Kx, Ky, Kz, E, position, interpolation=interpolation)
 							I += w * self.fermiDirac(E, T) * (abs(psi))**2
 					if debug and totalK != 1:
 						print "Finished k-point = "+str(Kx)+", "+str(Ky)+", "+str(Kz)
 		if debug:
-			print "Finished LDoS = "+str(I)+", at r = ("+str(x)+", "+str(y)+", "+str(z)+")"
+			print "Finished LDoS = "+str(I)+", at r = "+str(position)
 		return I

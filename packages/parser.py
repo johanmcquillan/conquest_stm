@@ -3,6 +3,7 @@ import math
 import atomic
 from cell import Cell
 from smartDict import SmartDict
+from vector import Vector
 
 HA_TO_EV = 0.03674932  # Factor to convert Hartrees to electron volts
 
@@ -141,7 +142,8 @@ class Parser(object):
 					atomDataList = atomData[atomKey]
 					if atomDataList[3] == ionType:
 						x, y, z = atomDataList[:3]
-						self.atoms[conq][atomKey] = atomic.Atom(ionName, x, y, z)
+						v = Vector(x, y, z)
+						self.atoms[conq][atomKey] = atomic.Atom(ionName, v)
 						self.atoms[conq][atomKey].setIon(self.ions[ionName])
 						if conq not in self.electrons:
 							self.electrons[conq] = 0

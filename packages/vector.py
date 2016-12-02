@@ -17,6 +17,9 @@ class Vector(object):
 		self.z = z
 		self.r = None
 
+	def __str__(self):
+		return '('+str(self.x)+', '+str(self.y)+', '+str(self.z)+')'
+
 	def subtract(self, V):
 		dx = self.x - V.x
 		dy = self.y - V.y
