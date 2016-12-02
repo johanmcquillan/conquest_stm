@@ -256,7 +256,7 @@ class Atom(Ion):
 			bool: True if within cutoff radius
 		"""
 		output = False
-		distance = position.subtract(self.position).getr()
+		distance = position.subtract(self.position).getMagnitude()
 		if not (l and zeta):
 			if distance <= self.getMaxCutoff():
 				output = True
@@ -340,7 +340,7 @@ class Atom(Ion):
 		"""
 		R = 0.0
 		if self.hasRadial(l, zeta):
-			distance = position.subtract(self.position).getr()
+			distance = position.subtract(self.position).getMagnitude()
 			R = self.getRadialValue(l, zeta, distance, interpolation=interpolation)
 		return R
 

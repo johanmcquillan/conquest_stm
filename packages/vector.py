@@ -15,7 +15,7 @@ class Vector(object):
 		self.x = x
 		self.y = y
 		self.z = z
-		self.r = None
+		self.magnitude = None
 
 	def __str__(self):
 		return '('+str(self.x)+', '+str(self.y)+', '+str(self.z)+')'
@@ -30,16 +30,21 @@ class Vector(object):
 		return not self == other
 
 	def subtract(self, V):
+		"""Subtract vector from this vector"""
 		dx = self.x - V.x
 		dy = self.y - V.y
 		dz = self.z - V.z
 		return Vector(dx, dy, dz)
 
-	def getr(self):
-		if not self.r:
-			self.r = np.sqrt(self.x**2 + self.y**2 + self.z**2)
-		return self.r
+	def getMagnitude(self):
+		"""Get vector magnitude"""
+		if self == self.zero():
+			self.magnitude = 0
+		elif not self.magnitude:
+			self.magnitude = np.sqrt(self.x**2 + self.y**2 + self.z**2)
+		return self.magnitude
 
 	@staticmethod
 	def zero():
+		"""Zero vector"""
 		return Vector(0.0, 0.0, 0.0)
