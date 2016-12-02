@@ -138,7 +138,7 @@ class Cell(object):
 
 	def getGammaEnergies(self):
 		"""Return list of energies at gamma-point"""
-		return sorted(self.bands[0.0][0.0][0.0])
+		return sorted(self.bands[Vector.zero()])
 
 	def getTotalKPoints(self):
 		"""Count total number of k-points"""
@@ -195,7 +195,7 @@ class Cell(object):
 		Returns:
 			complex: Wavefunction value
 			"""
-		return self.getPsi(0.0, 0.0, 0.0, E, position)
+		return self.getPsi(Vector.zero(), E, position)
 
 	def getLDoS(self, Emin, Emax, T, position, interpolation='cubic', debug=False):
 		"""Evaluate local density of states (LDoS) within energy range at specific point.
