@@ -363,13 +363,6 @@ class Atom(Ion):
 			Y = self.getSPHrelative(l, m, position)
 		return R*Y
 
-	def getTotalKPoints(self):
-		"""Count total number of k-points"""
-		totalKPoints = 0
-		for K in self.bands:
-			totalKPoints += 1
-		return totalKPoints
-
 	def getPsi(self, K, E, position, interpolation='cubic', basisPoint=SmartDict(), local=False):
 		"""Evaluate wavefunction contribution from this atom.
 

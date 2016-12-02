@@ -140,13 +140,6 @@ class Cell(object):
 		"""Return list of energies at gamma-point"""
 		return sorted(self.bands[Vector.zero()])
 
-	def getTotalKPoints(self):
-		"""Count total number of k-points"""
-		totalKPoints = 0
-		for K in self.bands:
-			totalKPoints += 1
-		return totalKPoints
-
 	def fermiDirac(self, energy, temperature):
 		"""Calculate Fermi-Dirac distribution value.
 
@@ -212,7 +205,7 @@ class Cell(object):
 			float: LDoS value
 		"""
 		I = 0.0
-		totalK = self.getTotalKPoints()
+		totalK = len(self.bands)
 		w = 1.0/totalK  # K-point weighting
 
 		# Loop over all k-points
