@@ -324,7 +324,9 @@ class Atom(Ion):
 			complex: Coefficient for given orbital
 		"""
 		output = 0.0
-		if self.hasCoefficient(K, E, l, zeta, m):
+		if self.bands.locked:
+			output = self.bands[K][E][l][zeta][m]
+		elif self.hasCoefficient(K, E, l, zeta, m):
 			output = self.bands[K][E][l][zeta][m]
 		return output
 

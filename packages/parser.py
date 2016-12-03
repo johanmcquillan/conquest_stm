@@ -237,6 +237,7 @@ class Parser(object):
 		C = Cell(conq, fermi, electrons, x, y, z, gridSpacing=gridSpacing)
 
 		for atomKey in self.atoms[conq]:
+			self.atoms[conq][atomKey].bands.lock()
 			C.addAtom(self.atoms[conq][atomKey], atomKey)
 
 		return C

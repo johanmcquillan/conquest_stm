@@ -124,7 +124,6 @@ class Cell(object):
 		"""
 		# Add to dict
 		self.atoms[atomKey] = atom
-
 		# Loop over atoms k-points
 		for K in atom.bands:
 			# If cell does not have k-point, create empty band energy list
