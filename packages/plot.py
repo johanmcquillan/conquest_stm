@@ -19,7 +19,7 @@ SPECTRAL = {0: 's', 1: 'p', 2: 'd', 3: 'f', 4: 'g',
                5: 'h', 6: 'i', 7: 'j', 8: 'k'}
 
 
-def plotRadials(ions, points=500, printStatus=False, spectro=True):
+def plot_radials(ions, points=500, printStatus=False, spectro=True):
 	"""Plot all radial functions from self.ions to pdf
 
 	Args:
@@ -50,7 +50,7 @@ def plotRadials(ions, points=500, printStatus=False, spectro=True):
 			for l in ion.radials:
 				for zeta in ion.radials[l]:
 					# Get Radial and data from ion
-					radial = ion.getRadial(l, zeta)
+					radial = ion.get_radial(l, zeta)
 					n = radial.n
 					step = radial.cutoff / points
 					r = np.arange(0.0, radial.cutoff, step)
@@ -75,7 +75,7 @@ def plotRadials(ions, points=500, printStatus=False, spectro=True):
 			plt.close()
 
 
-def plotSPH2D(l, m, axis, minimum=-8.0, maximum=8.0, planeValue=0.0, step=0.1, printStatus=False):
+def plot_sph_2d(l, m, axis, minimum=-8.0, maximum=8.0, planeValue=0.0, step=0.1, printStatus=False):
 	"""Plots cross-section of spherical harmonic to pdf.
 	All lengths measured in bohr radii (a0).
 
@@ -140,7 +140,7 @@ def plotSPH2D(l, m, axis, minimum=-8.0, maximum=8.0, planeValue=0.0, step=0.1, p
 			print 'Finished '+plotName+'.pdf'
 
 
-def plotSPH3D(l, m):
+def plot_sph_3d(l, m):
 	"""Plots 3D spherical harmonic isosurface.
 
 	Args:
@@ -182,7 +182,7 @@ def plotSPH3D(l, m):
 	plt.close()
 
 
-def plotBasis2D(
+def plot_basis_2d(
 		ionName, ion, zeta, n, l, m, axis, minimum=-8, maximum=8, planeValue=0.0, step=0.1, printStatus=False,
 		spectro=False):
 	"""Plots cross-section of basis function of ion to pdf.
@@ -237,7 +237,7 @@ def plotBasis2D(
 
 			# Evaluate value of Radial at mesh point and get psi
 			distance = np.sqrt(space1[i, j]**2 + space2[i, j]**2 + planeValue**2)
-			R[i, j] = ion.getRadialValue(l, zeta, distance)
+			R[i, j] = ion.get_radial_value(l, zeta, distance)
 			psi[i, j] = Y[i, j] * R[i, j]
 
 			# Update maxpsi
@@ -277,7 +277,7 @@ def plotBasis2D(
 			print 'Finished '+plotName+'.pdf'
 
 
-def plotChargeDensityGamma2D(
+def plot_charge_density_gamma_2d(
 		cell, E, axis, minimum, maximum, step=None, planeValue=None, label='',
 		printStatus=False):
 	"""Plots cross-section of charge density evaluated at gamma-point to pdf.
@@ -312,7 +312,7 @@ def plotChargeDensityGamma2D(
 	maxPsi2 = 0.0  # Colour plot sets limits to 0 to +maxPsi2
 
 	# Get nearest stored energy at gamma-point to requested energy
-	bandEnergy = sorted(cell.getGammaEnergies(), key=lambda t: abs(E - t))[0]
+	bandEnergy = sorted(cell.get_gamma_energies(), key=lambda t: abs(E - t))[0]
 
 	# Loop over all mesh points
 	for i in range(0, int((maximum - minimum) / step)):
@@ -322,19 +322,19 @@ def plotChargeDensityGamma2D(
 			if axis == 'z':
 				if not planeValue:
 					planeValue = cell.zLength / 2
-				psi = cell.getPsiGamma(bandEnergy, space2[i, j], space1[i, j], planeValue)
+				psi = cell.get_psi_gamma(bandEnergy, space2[i, j], space1[i, j], planeValue)
 				label1 = '$x$ / $a_0$'
 				label2 = '$y$ / $a_0$'
 			if axis == 'y':
 				if not planeValue:
 					planeValue = cell.yLength / 2
-				psi = cell.getPsiGamma(bandEnergy, space2[i, j], planeValue, space1[i, j])
+				psi = cell.get_psi_gamma(bandEnergy, space2[i, j], planeValue, space1[i, j])
 				label1 = '$x$ / $a_0$'
 				label2 = '$z$ / $a_0$'
 			if axis == 'x':
 				if not planeValue:
 					planeValue = cell.xLength / 2
-				psi = cell.getPsiGamma(bandEnergy, planeValue, space2[i, j], space1[i, j])
+				psi = cell.get_psi_gamma(bandEnergy, planeValue, space2[i, j], space1[i, j])
 				label1 = '$y$ / $a_0$'
 				label2 = '$z$ / $a_0$'
 
@@ -369,7 +369,7 @@ def plotChargeDensityGamma2D(
 			print 'Finished '+plotName+'.pdf'
 
 
-def plotChargeDensityGamma3D(
+def plot_charge_density_gamma_3d(
 		cell, E, xrange=(0.0, 0.0), yrange=(0.0, 0.0), zrange=(0.0, 0.0), step=0.0, fraction=0.8, alpha=1.0,
 		cmap=False, show=True, save=False, debug=False):
 	"""Plots charge density isosurface.
@@ -404,7 +404,7 @@ def plotChargeDensityGamma3D(
 		step = cell.gridSpacing
 
 	# Get nearest stored energy at gamma-point to requested energy
-	bandEnergy = sorted(cell.getGammaEnergies(), key=lambda t: abs(E - t))[0]
+	bandEnergy = sorted(cell.get_gamma_energies(), key=lambda t: abs(E - t))[0]
 
 	# Cartesian mesh
 	X, Y, Z = np.mgrid[xrange[0]:xrange[1]:step, yrange[0]:yrange[1]:step, zrange[0]:zrange[1]:step]
@@ -422,7 +422,7 @@ def plotChargeDensityGamma3D(
 				z = Z[i, j, k]
 
 				# Calculate wavefunction
-				psi = cell.getPsiGamma(bandEnergy, x, y, z)
+				psi = cell.get_psi_gamma(bandEnergy, x, y, z)
 
 				# Get charge density
 				psi2[i, j, k] = abs(psi)**2
@@ -472,7 +472,7 @@ def plotChargeDensityGamma3D(
 	plt.close()
 
 
-def plotLDoS2D(cell, Emin, Emax, T, axis, minimum, maximum, planeValue=None, step=None, interpolation='cubic', printStatus=False, debug=False):
+def plot_ldos_2d(cell, Emin, Emax, T, axis, minimum, maximum, planeValue=None, step=None, interpolation='cubic', printStatus=False, debug=False):
 	"""Plots cross-section of charge density to pdf.
 
 	All lengths measured in bohr radii (a0).
@@ -531,7 +531,7 @@ def plotLDoS2D(cell, Emin, Emax, T, axis, minimum, maximum, planeValue=None, ste
 				V = Vector(planeValue, space2[i, j], space1[i, j])
 				label1 = '$y$ / $a_0$'
 				label2 = '$z$ / $a_0$'
-			I[i, j] = cell.getLDoS(Emin, Emax, T, V, interpolation=interpolation, debug=debug)
+			I[i, j] = cell.get_ldos(Emin, Emax, T, V, interpolation=interpolation, debug=debug)
 			del V
 			# Update maxpsi
 			if abs(I[i, j]) > maxI:
@@ -562,7 +562,7 @@ def plotLDoS2D(cell, Emin, Emax, T, axis, minimum, maximum, planeValue=None, ste
 			print 'Finished ' + plotName + '.pdf'
 
 
-def plotLDoS3D(
+def plot_ldos_3d(
 		cell, Emin, Emax, xrange=(0.0, 0.0), yrange=(0.0, 0.0), zrange=(0.0, 0.0), step=0.0, fraction=0.8, alpha=1.0,
 		cmap=False, show=True, save=False, debug=False):
 	"""Plots charge density isosurface.
@@ -614,7 +614,7 @@ def plotLDoS3D(
 				V = Vector(x, y, z)
 
 				# Calculate wavefunction
-				psi = cell.getPsi(Emin, Emax, V, debug=debug)
+				psi = cell.get_psi(Emin, Emax, V, debug=debug)
 
 				# Get charge density
 				psi2[i, j, k] = abs(psi)**2

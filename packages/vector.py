@@ -36,7 +36,7 @@ class Vector(object):
 		dz = self.z - V.z
 		return Vector(dx, dy, dz)
 
-	def getMagnitude(self):
+	def get_magnitude(self):
 		"""Get vector magnitude"""
 		if self == self.zero():
 			self.magnitude = 0

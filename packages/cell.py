@@ -65,7 +65,7 @@ class Cell(object):
 		self.basisPoints = SmartDict()
 		self.bands = {}
 
-	def hasBand(self, K, E):
+	def has_band(self, K, E):
 		"""Check if cell stores specified band.
 
 		Encapsulation required due to autovivification of SmartDict.
@@ -80,7 +80,7 @@ class Cell(object):
 				output = True
 		return output
 
-	def setBasisPoint(self, atomKey, position, interpolation='cubic'):
+	def set_basis_point(self, atomKey, position, interpolation='cubic'):
 		"""Calculate and save basis function values for all points within cutoff region.
 
 		Args:
@@ -91,18 +91,18 @@ class Cell(object):
 		atom = self.atoms[atomKey]
 		Y = 0.0
 		# Check if atom is in range
-		if self.atoms[atomKey].withinCutoff(position):
+		if self.atoms[atomKey].within_cutoff(position):
 			for l in atom.radials:
 				for zeta in atom.radials[l]:
-					R = atom.getRadialValueRelative(l, zeta, position, interpolation=interpolation)
+					R = atom.get_radial_value_relative(l, zeta, position, interpolation=interpolation)
 					for m in range(-l, l+1):
 						if R != 0:
-							Y = atom.getSPHrelative(l, m, position)
+							Y = atom.get_sph_relative(l, m, position)
 						self.basisPoints[atomKey][position][l][zeta][m] = R*Y
 		else:
 			self.basisPoints[atomKey][position] = SmartDict()
 
-	def hasBasisPoint(self, atomKey, position):
+	def has_basis_point(self, atomKey, position):
 		"""Check if basis point has already been calculated
 
 		Args:
@@ -115,7 +115,7 @@ class Cell(object):
 				output = True
 		return output
 
-	def addAtom(self, atom, atomKey):
+	def add_atom(self, atom, atomKey):
 		"""Add atom to self.atoms, indexed by atomKey
 
 		Args:
@@ -135,11 +135,11 @@ class Cell(object):
 			# Sort energy list
 			self.bands[K] = sorted(self.bands[K])
 
-	def getGammaEnergies(self):
+	def get_gamma_energies(self):
 		"""Return list of energies at gamma-point"""
 		return sorted(self.bands[Vector.zero()])
 
-	def fermiDirac(self, energy, temperature):
+	def fermi_dirac(self, energy, temperature):
 		"""Calculate Fermi-Dirac distribution value.
 
 		Args:
@@ -152,7 +152,7 @@ class Cell(object):
 		f = 1.0 / (np.exp((energy - self.fermiLevel) / (BOLTZMANN * temperature)) + 1)
 		return f
 
-	def getPsi(self, K, E, position, interpolation='cubic'):
+	def get_psi(self, K, E, position, interpolation='cubic'):
 		"""Evaluate wavefunction at specific position, k-point, and energy.
 
 		Args:
@@ -168,16 +168,16 @@ class Cell(object):
 		# Loop over atoms
 		for atomKey in self.atoms:
 			# Check is basis function values have been calculated for this atom and point
-			if not self.hasBasisPoint(atomKey, position):
+			if not self.has_basis_point(atomKey, position):
 				# Get and store basis function values
 				# Store values so they only need to be calculated once
-				self.setBasisPoint(atomKey, position, interpolation=interpolation)
+				self.set_basis_point(atomKey, position, interpolation=interpolation)
 			# Use basis function value to calculate psi
 			BP = self.basisPoints[atomKey][position]
-			psi += self.atoms[atomKey].getPsi(K, E, position, basisPoint=BP, local=True)
+			psi += self.atoms[atomKey].get_psi(K, E, position, basisPoint=BP, local=True)
 		return psi
 
-	def getPsiGamma(self, E, position):
+	def get_psi_gamma(self, E, position):
 		"""Evaluate wavefunction at specific position and energy using only gamma-point.
 
 		Args:
@@ -187,9 +187,9 @@ class Cell(object):
 		Returns:
 			complex: Wavefunction value
 			"""
-		return self.getPsi(Vector.zero(), E, position)
+		return self.get_psi(Vector.zero(), E, position)
 
-	def getLDoS(self, Emin, Emax, T, position, interpolation='cubic', debug=False):
+	def get_ldos(self, Emin, Emax, T, position, interpolation='cubic', debug=False):
 		"""Evaluate local density of states (LDoS) within energy range at specific point.
 
 		Args:
@@ -212,8 +212,8 @@ class Cell(object):
 			for E in self.bands[K]:
 				if Emin < E < Emax:
 					# Calculate LDoS
-					psi = self.getPsi(K, E, position, interpolation=interpolation)
-					I += w * self.fermiDirac(E, T) * (abs(psi))**2
+					psi = self.get_psi(K, E, position, interpolation=interpolation)
+					I += w * self.fermi_dirac(E, T) * (abs(psi)) ** 2
 		if debug:
 			print "Finished LDoS = "+str(I)+", at r = "+str(position)
 		return I

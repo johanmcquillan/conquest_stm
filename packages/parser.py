@@ -144,7 +144,7 @@ class Parser(object):
 						x, y, z = atomDataList[:3]
 						v = Vector(x, y, z)
 						self.atoms[conq][atomKey] = atomic.Atom(ionName, v)
-						self.atoms[conq][atomKey].setIon(self.ions[ionName])
+						self.atoms[conq][atomKey].set_ion(self.ions[ionName])
 						if conq not in self.electrons:
 							self.electrons[conq] = 0
 						self.electrons[conq] += numberOfElectrons
@@ -204,7 +204,7 @@ class Parser(object):
 								coeffString = coeffString.replace(')', '')
 								complexString = coeffString.split(',')
 								complexCoeff = complex(float(complexString[0]), float(complexString[1]))
-								self.atoms[conq][a].addCoefficient(K, bandE, PAO, complexCoeff)
+								self.atoms[conq][a].add_coefficient(K, bandE, PAO, complexCoeff)
 								line = Fcoeff.next()
 
 					except StopIteration:
@@ -238,7 +238,7 @@ class Parser(object):
 
 		for atomKey in self.atoms[conq]:
 			self.atoms[conq][atomKey].bands.lock()
-			C.addAtom(self.atoms[conq][atomKey], atomKey)
+			C.add_atom(self.atoms[conq][atomKey], atomKey)
 
 		return C
 

@@ -30,11 +30,11 @@ class Radial(object):
 		self.l = l
 		self.radii = radii
 		self.radialFuncValues = radialFuncValues
-		self.interpolatorQuadratic = interp1d(radii, radialFuncValues, kind='quadratic')
-		self.interpolatorCubic = interp1d(radii, radialFuncValues, kind='cubic')
+		self.interpolator_quadratic = interp1d(radii, radialFuncValues, kind='quadratic')
+		self.interpolator_cubic = interp1d(radii, radialFuncValues, kind='cubic')
 		self.cutoff = cutoff
 
-	def interpolatorLinear(self, distance):
+	def interpolator_linear(self, distance):
 		"""Use linear interpolation to calculate radial function value at distance"""
 		# Find the first r value larger than distance
 		i = 0
@@ -50,7 +50,7 @@ class Radial(object):
 		# Calculate via interpolation
 		return y1 + (distance - x1) * (y2 - y1) / (x2 - x1)
 
-	def getValue(self, distance, interpolation='cubic'):
+	def get_value(self, distance, interpolation='cubic'):
 		"""Evaluate radial function value at distance using interpolation method.
 
 		Args:
@@ -64,11 +64,11 @@ class Radial(object):
 			value = 0.0
 		else:
 			if interpolation == 'linear':
-				value = self.interpolatorLinear(distance)
+				value = self.interpolator_linear(distance)
 			elif interpolation == 'quadratic':
-				value = self.interpolatorQuadratic(distance)
+				value = self.interpolator_quadratic(distance)
 			elif interpolation == 'cubic':
-				value = self.interpolatorCubic(distance)
+				value = self.interpolator_cubic(distance)
 			else:
 				errorString = "Interpolation method must be either "
 				for i in range(len(self.interpolators)):
@@ -121,7 +121,7 @@ class Ion(object):
 					sortedPAOs.append([l, zeta, m])
 		return sortedPAOs
 
-	def hasRadial(self, l, zeta):
+	def has_radial(self, l, zeta):
 		"""Check if Ion has radial object for specified object without creating
 		a dict.
 
@@ -140,7 +140,7 @@ class Ion(object):
 				return True
 		return output
 
-	def addRadial(self, radial):
+	def add_radial(self, radial):
 		"""Adds radial to self.radials.
 
 		Overwrites radial with same metadata (l, zeta).
@@ -157,7 +157,7 @@ class Ion(object):
 		self.radials[l][zeta] = radial
 		self.sortPAOs()
 
-	def getRadial(self, l, zeta):
+	def get_radial(self, l, zeta):
 		"""Return Radial object for specified orbital.
 
 		Encapsulation needed such that self.radials (SmartDict) does not create
@@ -171,12 +171,12 @@ class Ion(object):
 			Radial: Radial object for specified indices
 		"""
 
-		if self.hasRadial(l, zeta):
+		if self.has_radial(l, zeta):
 			return self.radials[l][zeta]
 		else:
 			raise ValueError("No radial data for "+self.ionName+", l="+str(l)+", zeta="+str(zeta))
 
-	def getRadialValue(self, l, zeta, distance, interpolation='cubic'):
+	def get_radial_value(self, l, zeta, distance, interpolation='cubic'):
 		"""Use linear interpolation to evaluate radial function at distance r.
 
 		Encapsulation required due to autovivification of SmartDict.
@@ -191,9 +191,9 @@ class Ion(object):
 			float: Radial function evaluated at r
 		"""
 
-		return self.getRadial(l, zeta).getValue(distance, interpolation=interpolation)
+		return self.get_radial(l, zeta).get_value(distance, interpolation=interpolation)
 
-	def getMaxCutoff(self):
+	def get_max_cutoff(self):
 		"""Return the maximum cutoff radius for all stored Radials as a float.
 
 		Beyond the cutoff the radial part of the wavefunction is defined to be 0.		
@@ -234,7 +234,7 @@ class Atom(Ion):
 		self.position = atomPos
 		self.bands = SmartDict()
 
-	def setIon(self, I):
+	def set_ion(self, I):
 		"""Copy all attributes from an Ion to this Atom.
 
 		Args:
@@ -244,7 +244,7 @@ class Atom(Ion):
 		self.radials = I.radials
 		self.sortPAOs()
 
-	def withinCutoff(self, position, l=None, zeta=None):
+	def within_cutoff(self, position, l=None, zeta=None):
 		"""Return true if within cutoff region.
 
 		Args:
@@ -256,19 +256,19 @@ class Atom(Ion):
 			bool: True if within cutoff radius
 		"""
 		output = False
-		distance = position.subtract(self.position).getMagnitude()
+		distance = position.subtract(self.position).get_magnitude()
 		if not (l and zeta):
-			if distance <= self.getMaxCutoff():
+			if distance <= self.get_max_cutoff():
 				output = True
 		elif l and zeta:
-			if self.hasRadial(l, zeta):
-				if distance <= self.getRadial(l, zeta).cutoff:
+			if self.has_radial(l, zeta):
+				if distance <= self.get_radial(l, zeta).cutoff:
 					output = True
 		else:
 			raise ValueError("Need both l and zeta input, or neither")
 		return output
 
-	def hasCoefficient(self, K, E, l, zeta, m):
+	def has_coefficient(self, K, E, l, zeta, m):
 		"""Check if atom stores coefficient for given orbital.
 
 		Encapsulation required due to autovivification of SmartDict.
@@ -293,7 +293,7 @@ class Atom(Ion):
 							output = True
 		return output
 
-	def addCoefficient(self, K, E, PAO, coefficient):
+	def add_coefficient(self, K, E, PAO, coefficient):
 		"""Add a complex coefficient to self.bands.
 
 		Args:
@@ -310,7 +310,7 @@ class Atom(Ion):
 
 		self.bands[K][E][l][zeta][m] = coefficient
 
-	def getCoefficient(self, K, E, l, zeta, m):
+	def get_coefficient(self, K, E, l, zeta, m):
 		"""Return complex coefficient for given orbital.
 
 		Args:
@@ -326,11 +326,11 @@ class Atom(Ion):
 		output = 0.0
 		if self.bands.locked:
 			output = self.bands[K][E][l][zeta][m]
-		elif self.hasCoefficient(K, E, l, zeta, m):
+		elif self.has_coefficient(K, E, l, zeta, m):
 			output = self.bands[K][E][l][zeta][m]
 		return output
 
-	def getRadialValueRelative(self, l, zeta, position, interpolation='cubic'):
+	def get_radial_value_relative(self, l, zeta, position, interpolation='cubic'):
 		"""Evaluate radial part of wavefunction
 
 		Args:
@@ -341,12 +341,12 @@ class Atom(Ion):
 			interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
 		"""
 		R = 0.0
-		if self.hasRadial(l, zeta):
-			distance = position.subtract(self.position).getMagnitude()
-			R = self.getRadialValue(l, zeta, distance, interpolation=interpolation)
+		if self.has_radial(l, zeta):
+			distance = position.subtract(self.position).get_magnitude()
+			R = self.get_radial_value(l, zeta, distance, interpolation=interpolation)
 		return R
 
-	def getSPHrelative(self, l, m, position):
+	def get_sph_relative(self, l, m, position):
 		"""Evaluate spherical harmonic with atom as origin
 
 		Args:
@@ -357,15 +357,15 @@ class Atom(Ion):
 		position2 = position.subtract(self.position)
 		return sph(l, m, position2.x, position2.y, position2.z)
 
-	def getBasisPoint(self, l, zeta, m, position, interpolation='cubic'):
+	def get_basis_point(self, l, zeta, m, position, interpolation='cubic'):
 		"""Evaluate basis function (radial part * spherical harmonic)"""
-		R = self.getRadialValueRelative(l, zeta, position, interpolation=interpolation)
+		R = self.get_radial_value_relative(l, zeta, position, interpolation=interpolation)
 		Y = 0.0
 		if R != 0:  # If R == 0, basis point is 0, no need to calculate Y
-			Y = self.getSPHrelative(l, m, position)
+			Y = self.get_sph_relative(l, m, position)
 		return R*Y
 
-	def getPsi(self, K, E, position, interpolation='cubic', basisPoint=SmartDict(), local=False):
+	def get_psi(self, K, E, position, interpolation='cubic', basisPoint=SmartDict(), local=False):
 		"""Evaluate wavefunction contribution from this atom.
 
 		Args:
@@ -382,23 +382,23 @@ class Atom(Ion):
 		psi = complex(0.0, 0.0)
 
 		if not local:
-			if not self.withinCutoff(position):
+			if not self.within_cutoff(position):
 				return psi
 
 		if not basisPoint:
 			for l in self.radials:
 				for zeta in self.radials[l]:
 					for m in range(l, l+1):
-						basisPoint[l][zeta][m] = self.getBasisPoint(l, zeta, m, position, interpolation=interpolation)
+						basisPoint[l][zeta][m] = self.get_basis_point(l, zeta, m, position, interpolation=interpolation)
 		for l in basisPoint:
 			for zeta in basisPoint[l]:
 				for m in basisPoint[l][zeta]:
 					if basisPoint[l][zeta][m] != 0:
-						coefficient = self.getCoefficient(K, E, l, zeta, m)
+						coefficient = self.get_coefficient(K, E, l, zeta, m)
 						psi += basisPoint[l][zeta][m] * coefficient
 		return psi
 
-	def applyFactor(self, factor, K, E):
+	def apply_factor(self, factor, K, E):
 		"""Apply a normalisation factor to all coefficients for a given energy and k-point.
 
 		Args:
