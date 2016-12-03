@@ -45,7 +45,7 @@ cell = Cell(conqFile+'_EXAMPLE', fermi, electrons, 20.0, 20.0, 15.0, gridSpacing
 
 # Add the atoms to the cell
 for atomKey in atoms:
-	cell.addAtom(atoms[atomKey], atomKey)
+	cell.add_atom(atoms[atomKey], atomKey)
 
 # io.plot has methods to plot 2D and 3D
 

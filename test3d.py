@@ -17,4 +17,4 @@ del prsr
 
 #plot.plotChargeDensity3D(cell, cell.fermiLevel, cell.fermiLevel-1.0, fraction=0.05, cmap=True, save=False, show=True, debug=True)
 
-plot.plotLDoS2D(cell, -2, 0, 0.01, 'z', 0, 14, 32, interpolation='quadratic', debug=True)
+plot.plot_ldos_2d(cell, -2, 0, 0.01, 'z', 0, 14, 32, interpolation='quadratic', debug=True)

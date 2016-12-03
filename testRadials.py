@@ -10,4 +10,4 @@ prsr.parseIons()
 
 ions = prsr.ions
 
-plot.plotRadials(ions, spectro=True)
+plot.plot_radials(ions, spectro=True)

@@ -336,7 +336,6 @@ class Atom(Ion):
 		Args:
 			l (int): Orbital angular momentum quantum number
 			zeta (int): Zeta index
-			m (int): Azimuthal orbital angular momentum quantum number
 			position (Vector): 3D Cartesian real space vector
 			interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
 		"""

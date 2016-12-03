@@ -46,4 +46,4 @@ while not quit:
 							print "m must be and integer "+str(-l)+" and "+str(+l)+" inclusive"
 		if not quit:
 			print "Showing Spherical Harmonic for l="+str(l)+" and m="+str(m)
-			plot.plotSPH3D(l, m)
+			plot.plot_sph_3d(l, m)
