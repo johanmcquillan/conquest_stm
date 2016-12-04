@@ -256,7 +256,7 @@ class Atom(Ion):
 			bool: True if within cutoff radius
 		"""
 		output = False
-		distance = position.subtract(self.position).get_magnitude()
+		distance = abs(position - self.position)
 		if not (l and zeta):
 			if distance <= self.get_max_cutoff():
 				output = True
@@ -341,7 +341,7 @@ class Atom(Ion):
 		"""
 		R = 0.0
 		if self.has_radial(l, zeta):
-			distance = position.subtract(self.position).get_magnitude()
+			distance = abs(position - self.position)
 			R = self.get_radial_value(l, zeta, distance, interpolation=interpolation)
 		return R
 
@@ -353,7 +353,7 @@ class Atom(Ion):
 			m (int): Azimuthal orbital angular momentum quantum number
 			position (Vector): 3D Cartesian real space vector
 		"""
-		position2 = position.subtract(self.position)
+		position2 = position - self.position
 		return sph(l, m, position2.x, position2.y, position2.z)
 
 	def get_basis_point(self, l, zeta, m, position, interpolation='cubic'):
