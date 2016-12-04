@@ -29,12 +29,20 @@ class Vector(object):
 	def __ne__(self, other):
 		return not self == other
 
-	def subtract(self, V):
-		"""Subtract vector from this vector"""
-		dx = self.x - V.x
-		dy = self.y - V.y
-		dz = self.z - V.z
-		return Vector(dx, dy, dz)
+	def __abs__(self):
+		return self.get_magnitude()
+
+	def __div__(self, other):
+		return Vector(self.x / other, self.y / other, self.z / other)
+
+	def __neg__(self):
+		return Vector(-self.x, -self.y, -self.z)
+
+	def __add__(self, other):
+		return Vector(self.x + other.x, self.y + other.y, self.z + other.z)
+
+	def __sub__(self, other):
+		return Vector(self.x - other.x, self.y - other.y, self.z - other.z)
 
 	def get_magnitude(self):
 		"""Get vector magnitude"""
