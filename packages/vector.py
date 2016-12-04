@@ -44,6 +44,25 @@ class Vector(object):
 	def __sub__(self, other):
 		return Vector(self.x - other.x, self.y - other.y, self.z - other.z)
 
+	def project_x(self):
+		"""Project vector onto x-axis"""
+		return Vector(self.x, 0, 0)
+
+	def project_y(self):
+		"""Project vector onto y-axis"""
+		return Vector(0, self.y, 0)
+
+	def project_z(self):
+		"""Project vector onto z-axis"""
+		return Vector(0, 0, self.z)
+
+	def is_positive(self):
+		"""Return true if all components are greater or equal to 0"""
+		if self.x >= 0 and self.y >= 0 and self.z >= 0:
+			return True
+		else:
+			return False
+
 	def get_magnitude(self):
 		"""Get vector magnitude"""
 		if self == self.zero():
