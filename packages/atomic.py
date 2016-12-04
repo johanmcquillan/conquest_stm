@@ -244,6 +244,30 @@ class Atom(Ion):
 		self.radials = I.radials
 		self.sortPAOs()
 
+	def within_cutoff_relative(self, relative_position, l=None, zeta=None):
+		"""Return true if within cutoff region.
+
+		Args:
+			position (Vector): 3D Cartesian real space vector
+			l (int, opt.): Orbital angular momentum quantum number; to check specific radial, needs zeta
+			zeta (int, opt.): Zeta index; to check specific radial, needs l
+
+		Returns:
+			bool: True if within cutoff radius
+		"""
+		output = False
+		distance = abs(relative_position)
+		if not (l and zeta):
+			if distance <= self.get_max_cutoff():
+				output = True
+		elif l and zeta:
+			if self.has_radial(l, zeta):
+				if distance <= self.get_radial(l, zeta).cutoff:
+					output = True
+		else:
+			raise ValueError("Need both l and zeta input, or neither")
+		return output
+
 	def within_cutoff(self, position, l=None, zeta=None):
 		"""Return true if within cutoff region.
 
@@ -256,17 +280,8 @@ class Atom(Ion):
 			bool: True if within cutoff radius
 		"""
 		output = False
-		distance = abs(position - self.position)
-		if not (l and zeta):
-			if distance <= self.get_max_cutoff():
-				output = True
-		elif l and zeta:
-			if self.has_radial(l, zeta):
-				if distance <= self.get_radial(l, zeta).cutoff:
-					output = True
-		else:
-			raise ValueError("Need both l and zeta input, or neither")
-		return output
+		relative_position = abs(position - self.position)
+		return self.within_cutoff_relative(relative_position, l, zeta)
 
 	def has_coefficient(self, K, E, l, zeta, m):
 		"""Check if atom stores coefficient for given orbital.
@@ -330,7 +345,7 @@ class Atom(Ion):
 			output = self.bands[K][E][l][zeta][m]
 		return output
 
-	def get_radial_value_relative(self, l, zeta, position, interpolation='cubic'):
+	def get_radial_value_relative(self, l, zeta, relative_position, interpolation='cubic'):
 		"""Evaluate radial part of wavefunction
 
 		Args:
@@ -341,7 +356,7 @@ class Atom(Ion):
 		"""
 		R = 0.0
 		if self.has_radial(l, zeta):
-			distance = abs(position - self.position)
+			distance = abs(relative_position)
 			R = self.get_radial_value(l, zeta, distance, interpolation=interpolation)
 		return R
 
@@ -358,10 +373,10 @@ class Atom(Ion):
 
 	def get_basis_point(self, l, zeta, m, position, interpolation='cubic'):
 		"""Evaluate basis function (radial part * spherical harmonic)"""
-		R = self.get_radial_value_relative(l, zeta, position, interpolation=interpolation)
+		R = self.get_radial_value_relative(l, zeta, position - self.position, interpolation=interpolation)
 		Y = 0.0
 		if R != 0:  # If R == 0, basis point is 0, no need to calculate Y
-			Y = self.get_sph_relative(l, m, position)
+			Y = self.get_sph_relative(l, m, position - self.position)
 		return R*Y
 
 	def get_psi(self, K, E, position, interpolation='cubic', basisPoint=SmartDict(), local=False):

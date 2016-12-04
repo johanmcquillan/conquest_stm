@@ -8,7 +8,7 @@ class Vector(object):
 		x (float): Component value in x direction
 		y (float): Component value in y direction
 		z (float): Component value in z direction
-		r (float): Vector magnitude. Initially null - only calculates if needed, saves computational cost
+		magnitude (float): Vector magnitude. Initially null - only calculates if needed, saves computational cost
 	"""
 
 	def __init__(self, x, y, z):
@@ -30,7 +30,11 @@ class Vector(object):
 		return not self == other
 
 	def __abs__(self):
-		return self.get_magnitude()
+		if self == self.zero():
+			self.magnitude = 0
+		elif not self.magnitude:
+			self.magnitude = np.sqrt(self.x**2 + self.y**2 + self.z**2)
+		return self.magnitude
 
 	def __neg__(self):
 		"""Return negative of vector"""
@@ -67,20 +71,23 @@ class Vector(object):
 		"""Project vector onto z-axis"""
 		return Vector(0, 0, self.z)
 
+	def dot(self, other):
+		"""Return dot product of this vector and an other vector"""
+		return self.x*other.x + self.y*other.y + self.z*other.z
+
+	def cross(self, other):
+		"""Return cross product of this vector and an other vector"""
+		x = self.y*other.z - self.z*other.y
+		y = self.z*other.x - self.x*other.z
+		z = self.x*other.y - self.y*other.x
+		return Vector(x, y, z)
+
 	def is_positive(self):
 		"""Return true if all components are greater or equal to 0"""
 		if self.x >= 0 and self.y >= 0 and self.z >= 0:
 			return True
 		else:
 			return False
-
-	def get_magnitude(self):
-		"""Get vector magnitude"""
-		if self == self.zero():
-			self.magnitude = 0
-		elif not self.magnitude:
-			self.magnitude = np.sqrt(self.x**2 + self.y**2 + self.z**2)
-		return self.magnitude
 
 	@staticmethod
 	def zero():

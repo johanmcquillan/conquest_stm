@@ -1,4 +1,5 @@
 import numpy as np
+from copy import deepcopy
 from smartDict import SmartDict
 from vector import Vector
 
@@ -47,10 +48,9 @@ class Cell(object):
 		self.name = name
 		self.fermiLevel = fermiLevel
 		self.electrons = electrons
-		self.xLength = xLength
-		self.yLength = yLength
-		self.zLength = zLength
 		self.gridSpacing = gridSpacing
+
+		self.vector = Vector(xLength, yLength, zLength)
 
 		# Calculator number of points
 		self.xPoints = int(xLength / gridSpacing)
@@ -68,8 +68,6 @@ class Cell(object):
 	def has_band(self, K, E):
 		"""Check if cell stores specified band.
 
-		Encapsulation required due to autovivification of SmartDict.
-
 		Args:
 			K (Vector): 3D Cartesian k-space vector
 			E (float): Band energy
@@ -79,6 +77,35 @@ class Cell(object):
 			if E in self.bands[K]:
 				output = True
 		return output
+
+	def constrain_vector(self, vector):
+		"""Return a vector that is constrained within simulation cell"""
+		new_vector = deepcopy(vector)
+
+		# Check if vector components are greater than half of cell sides
+		# If greater, add or subtract cell length
+
+		if vector.x > self.vector.x/2:
+			new_vector -= self.vector.project_x()
+		elif vector.x <= -self.vector.x/2:
+			new_vector += self.vector.project_x()
+
+		if vector.y > self.vector.y/2:
+			new_vector -= self.vector.project_y()
+		elif vector.y <= -self.vector.y/2:
+			new_vector += self.vector.project_y()
+
+		if vector.z > self.vector.z/2:
+			new_vector -= self.vector.project_z()
+		elif vector.z <= -self.vector.z/2:
+			new_vector += self.vector.project_z()
+
+		# If vector is unchanged return
+		# If vector has changed, constrain
+		if new_vector == vector:
+			return new_vector
+		else:
+			return self.constrain_vector(new_vector)
 
 	def set_basis_point(self, atomKey, position, interpolation='cubic'):
 		"""Calculate and save basis function values for all points within cutoff region.
@@ -91,13 +118,14 @@ class Cell(object):
 		atom = self.atoms[atomKey]
 		Y = 0.0
 		# Check if atom is in range
-		if self.atoms[atomKey].within_cutoff(position):
+		relative_position = self.constrain_vector(position - self.atoms[atomKey].position)
+		if abs(relative_position) < self.atoms[atomKey].get_max_cutoff():
 			for l in atom.radials:
 				for zeta in atom.radials[l]:
-					R = atom.get_radial_value_relative(l, zeta, position, interpolation=interpolation)
+					R = atom.get_radial_value_relative(l, zeta, relative_position, interpolation=interpolation)
 					for m in range(-l, l+1):
 						if R != 0:
-							Y = atom.get_sph_relative(l, m, position)
+							Y = atom.get_sph_relative(l, m, relative_position)
 						self.basisPoints[atomKey][position][l][zeta][m] = R*Y
 		else:
 			self.basisPoints[atomKey][position] = SmartDict()

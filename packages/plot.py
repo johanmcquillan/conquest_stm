@@ -96,7 +96,7 @@ def plot_sph_2d(l, m, axis, minimum=-8.0, maximum=8.0, planeValue=0.0, step=0.1,
 	# Initialise meshes
 	# 2D cartesian mesh (x, y, or z axis determined later)
 	space1, space2 = np.mgrid[minimum:maximum:step, minimum:maximum:step]
-	Y = np.empty_like(space1)  # Spherical Harmonic mesh
+	Y = np.empty_like(space1, dtype=float)  # Spherical Harmonic mesh
 
 	maxY = 0.1  # Colour plot sets limits to -maxY and +maxY
 	for i in range(0, int((maximum - minimum) / step)):
@@ -151,7 +151,7 @@ def plot_sph_3d(l, m):
 	# Get mesh of angles
 	THETA, PHI = np.mgrid[0:2*np.pi:50j, 0:np.pi:50j]
 	# Initialise mesh of 
-	SPH = np.zeros_like(PHI)
+	SPH = np.zeros_like(PHI, dtype=float)
 
 	# Loop over mesh
 	for i in range(0, SPH.shape[0]):
@@ -211,9 +211,9 @@ def plot_basis_2d(
 	# 2D cartesian mesh (x, y, or z axis determined later)
 	space1, space2 = np.mgrid[minimum:maximum:step, minimum:maximum:step]
 
-	Y = np.empty_like(space1)  # Spherical Harmonic mesh
-	R = np.empty_like(space1)  # Radial Function mesh
-	psi = np.empty_like(space1)  # Basis Function mesh (psi = R*Y)
+	Y = np.empty_like(space1, dtype=float)  # Spherical Harmonic mesh
+	R = np.empty_like(space1, dtype=float)  # Radial Function mesh
+	psi = np.empty_like(space1, dtype=float)  # Basis Function mesh (psi = R*Y)
 
 	maxPsi = 0.1  # Colour plot sets limits to -maxPsi to +maxPsi
 
@@ -308,7 +308,7 @@ def plot_charge_density_gamma_2d(
 	# 2D cartesian mesh (x, y, or z axis determined later)
 	space1, space2 = np.mgrid[minimum:maximum:step, minimum:maximum:step]
 
-	psi2 = np.zeros_like(space1)
+	psi2 = np.zeros_like(space1, dtype=float)
 	maxPsi2 = 0.0  # Colour plot sets limits to 0 to +maxPsi2
 
 	# Get nearest stored energy at gamma-point to requested energy
@@ -504,10 +504,9 @@ def plot_ldos_2d(cell, Emin, Emax, T, axis, minimum, maximum, planeValue=None, s
 	# 2D cartesian mesh (x, y, or z axis determined later)
 	space1, space2 = np.mgrid[minimum:maximum:step, minimum:maximum:step]
 
-	I = np.zeros_like(space1)  # Wavefunction mesh (psi = R*Y)
+	I = np.zeros_like(space1, dtype=float)  # Wavefunction mesh (psi = R*Y)
 
 	maxI = 0.0  # Colour plot sets limits to -maxpsi to +maxpsi
-
 	# Loop over all mesh points
 	for i in range(0, int((maximum - minimum) / step)):
 		for j in range(0, int((maximum - minimum) / step)):
@@ -532,11 +531,9 @@ def plot_ldos_2d(cell, Emin, Emax, T, axis, minimum, maximum, planeValue=None, s
 				label1 = '$y$ / $a_0$'
 				label2 = '$z$ / $a_0$'
 			I[i, j] = cell.get_ldos(Emin, Emax, T, V, interpolation=interpolation, debug=debug)
-			del V
 			# Update maxpsi
 			if abs(I[i, j]) > maxI:
 				maxI = I[i, j]
-
 	if maxI == 0.0:
 		raise ValueError("LDoS is zero at all points")
 
@@ -547,7 +544,8 @@ def plot_ldos_2d(cell, Emin, Emax, T, axis, minimum, maximum, planeValue=None, s
 		plt.imshow(
 				I, interpolation='bilinear', origin='center', cmap=cm.copper,
 				extent=(minimum, maximum, minimum, maximum))
-		plt.colorbar()
+		clb = plt.colorbar()
+		clb.ax.set_title('$a_0^{-3/2}$')
 		plt.xlabel(label1)
 		plt.ylabel(label2)
 		axes = ['x', 'y', 'z']
