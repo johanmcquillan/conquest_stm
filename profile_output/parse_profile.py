@@ -16,11 +16,14 @@ headers = profile.next().split()
 calls = []
 
 for line in profile:
-	calls.append(line.split())
+	if len(line.split()) == 6:
+		calls.append(line.split())
+	else:
+		calls[-1].extend(line.split())
 
 calls = sorted(calls, key=lambda x: float(x[3]), reverse=True)
 
-width = '12'
+width = '13'
 rowformat = '%'+width+'s %'+width+'s %'+width+'s %'+width+'s %'+width+'s %'+width+'s'
 
 print rowformat % (headers[0], headers[1], headers[2], headers[3], headers[4], headers[5])
