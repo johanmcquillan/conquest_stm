@@ -32,17 +32,28 @@ class Vector(object):
 	def __abs__(self):
 		return self.get_magnitude()
 
-	def __div__(self, other):
-		return Vector(self.x / other, self.y / other, self.z / other)
-
 	def __neg__(self):
+		"""Return negative of vector"""
 		return Vector(-self.x, -self.y, -self.z)
 
+	def __mul__(self, other):
+		"""Multiply vector by number"""
+		return Vector(self.x * other, self.y * other, self.z * other)
+
+	def __rmul__(self, other):
+		return self * other
+
+	def __div__(self, other):
+		"""Divide vector by number"""
+		return self * 1.0/other
+
 	def __add__(self, other):
+		"""Add two vectors"""
 		return Vector(self.x + other.x, self.y + other.y, self.z + other.z)
 
 	def __sub__(self, other):
-		return Vector(self.x - other.x, self.y - other.y, self.z - other.z)
+		"""Subtract two vectors"""
+		return self + (-other)
 
 	def project_x(self):
 		"""Project vector onto x-axis"""
