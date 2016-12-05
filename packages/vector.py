@@ -18,18 +18,27 @@ class Vector(object):
 		self.magnitude = None
 
 	def __str__(self):
+		"""Return string of components"""
 		return '('+str(self.x)+', '+str(self.y)+', '+str(self.z)+')'
 
 	def __hash__(self):
+		"""Return hash of tuple of components"""
 		return hash((self.x, self.y, self.z))
 
 	def __eq__(self, other):
+		"""Check if each component of vectors are equal"""
 		return (self.x, self.y, self.z) == (other.x, other.y, other.z)
 
 	def __ne__(self, other):
+		"""Inverse of self -- other"""
 		return not self == other
 
 	def __abs__(self):
+		"""Return magnitude of vector.
+
+		self.magnitude is not initially calculated to save time.
+		After initial calculation, it is saved for future reference.
+		"""
 		if self == self.zero():
 			self.magnitude = 0
 		elif not self.magnitude:
@@ -45,6 +54,7 @@ class Vector(object):
 		return Vector(self.x * other, self.y * other, self.z * other)
 
 	def __rmul__(self, other):
+		"""Multiply vector by number"""
 		return self * other
 
 	def __div__(self, other):

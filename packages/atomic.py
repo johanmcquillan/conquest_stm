@@ -1,4 +1,4 @@
-import numpy as np
+
 from scipy.interpolate import interp1d
 
 from sph import sph
@@ -148,7 +148,6 @@ class Ion(object):
 		Args:
 			radial (Radial): Radial object to add
 		"""
-
 		# Get metadata
 		zeta = radial.zeta
 		l = radial.l
@@ -170,7 +169,6 @@ class Ion(object):
 		Returns:
 			Radial: Radial object for specified indices
 		"""
-
 		if self.has_radial(l, zeta):
 			return self.radials[l][zeta]
 		else:
@@ -190,7 +188,6 @@ class Ion(object):
 		Returns:
 			float: Radial function evaluated at r
 		"""
-
 		return self.get_radial(l, zeta).get_value(distance, interpolation=interpolation)
 
 	def get_max_cutoff(self):
@@ -215,7 +212,7 @@ class Atom(Ion):
 	Attributes:
 		ionName (string): Name of ion (usually from name of .ion file)
 		radials (SmartDict): Radial objects accessed by radials[l][zeta], where all indices are int
-		position (Vector): 3D Cartesian real space vector for atom position
+		atom_pos (Vector): 3D Cartesian real space vector for atom position
 		bands (SmartDict): Nested dict of complex basis coefficients;
 							Accessed by bands[bandEnergy][l][zeta][m]
 	"""
@@ -231,7 +228,7 @@ class Atom(Ion):
 			atomPos (Vector): 3D Cartesian real space vector for atom position
 		"""
 		Ion.__init__(self, ionName, radials)
-		self.position = atomPos
+		self.atom_pos = atomPos
 		self.bands = SmartDict()
 
 	def set_ion(self, I):
@@ -248,7 +245,7 @@ class Atom(Ion):
 		"""Return true if within cutoff region.
 
 		Args:
-			position (Vector): 3D Cartesian real space vector
+			relative_position (Vector): 3D Cartesian real space vector relative to atom position
 			l (int, opt.): Orbital angular momentum quantum number; to check specific radial, needs zeta
 			zeta (int, opt.): Zeta index; to check specific radial, needs l
 
@@ -272,15 +269,14 @@ class Atom(Ion):
 		"""Return true if within cutoff region.
 
 		Args:
-			position (Vector): 3D Cartesian real space vector
+			position (Vector): 3D Cartesian real space vector relative to cell origin
 			l (int, opt.): Orbital angular momentum quantum number; to check specific radial, needs zeta
 			zeta (int, opt.): Zeta index; to check specific radial, needs l
 
 		Returns:
 			bool: True if within cutoff radius
 		"""
-		output = False
-		relative_position = abs(position - self.position)
+		relative_position = position - self.atom_pos
 		return self.within_cutoff_relative(relative_position, l, zeta)
 
 	def has_coefficient(self, K, E, l, zeta, m):
@@ -298,7 +294,6 @@ class Atom(Ion):
 		Returns:
 			boolean: True if coefficient is stored, false if not
 		"""
-
 		output = False
 		if K in self.bands:
 			if E in self.bands[K]:
@@ -317,7 +312,6 @@ class Atom(Ion):
 			PAO (int): index of PAO as given in .dat file
 			coefficient (complex): Coefficient of PAO
 		"""
-
 		PAOdata = self.sortPAOs()[PAO - 1]
 		l = PAOdata[0]
 		zeta = PAOdata[1]
@@ -351,8 +345,11 @@ class Atom(Ion):
 		Args:
 			l (int): Orbital angular momentum quantum number
 			zeta (int): Zeta index
-			position (Vector): 3D Cartesian real space vector
+			relative_position (Vector): 3D Cartesian real space vector relative to atom
 			interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
+
+		Returns:
+			float: Value of radial part of wavefunction
 		"""
 		R = 0.0
 		if self.has_radial(l, zeta):
@@ -360,23 +357,27 @@ class Atom(Ion):
 			R = self.get_radial_value(l, zeta, distance, interpolation=interpolation)
 		return R
 
-	def get_sph_relative(self, l, m, position):
-		"""Evaluate spherical harmonic with atom as origin
+	def get_sph(self, l, m, position):
+		"""Evaluate real spherical harmonic with atom as origin
 
 		Args:
 			l (int): Orbital angular momentum quantum number
 			m (int): Azimuthal orbital angular momentum quantum number
-			position (Vector): 3D Cartesian real space vector
+			position (Vector): 3D Cartesian real space vector relative to cell
+
+		Returns:
+			float: Value of real spherical harmonic
 		"""
-		position2 = position - self.position
-		return sph(l, m, position2)
+		relative_position = position - self.atom_pos
+		return sph(l, m, relative_position)
 
 	def get_basis_point(self, l, zeta, m, position, interpolation='cubic'):
 		"""Evaluate basis function (radial part * spherical harmonic)"""
-		R = self.get_radial_value_relative(l, zeta, position - self.position, interpolation=interpolation)
+		relative_position = position - self.atom_pos
+		R = self.get_radial_value_relative(l, zeta, relative_position, interpolation=interpolation)
 		Y = 0.0
 		if R != 0:  # If R == 0, basis point is 0, no need to calculate Y
-			Y = self.get_sph_relative(l, m, position - self.position)
+			Y = sph(l, m, relative_position)
 		return R*Y
 
 	def get_psi(self, K, E, position, interpolation='cubic', basisPoint=SmartDict(), local=False):
@@ -385,7 +386,7 @@ class Atom(Ion):
 		Args:
 			K (Vector): 3D Cartesian k-space vector
 			E (float): Band energy
-			position (Vector): 3D Cartesian real space vector
+			position (Vector): 3D Cartesian real space vector relative to cell
 			interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
 			basisPoint (SmartDict, opt.): Basis function values indexed by [l][zeta][m]
 			local (bool, opt.): If true, locality has already been checked ie. point is known to lie within atom cutoff
