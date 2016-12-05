@@ -82,7 +82,13 @@ class Vector(object):
 		z = self.x*other.y - self.y*other.x
 		return Vector(x, y, z)
 
-	
+	def normalise(self):
+		"""Return vector normalised to unit magnitude"""
+		magnitude = abs(self)
+		if magnitude != 0:
+			return self / magnitude
+		else:
+			return self
 
 	def is_positive(self):
 		"""Return true if all components are greater or equal to 0"""
