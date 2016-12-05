@@ -6,13 +6,13 @@ lMax = 4
 print "3-DIMENSIONAL SPHERICAL HARMONICS"
 print "   Enter 'q' to quit"
 
-quit = False
-while not quit:
+quitting = False
+while not quitting:
 	gotL = False
-	while not gotL and not quit:
+	while not gotL and not quitting:
 		lString = raw_input("Enter Degree, l = ")
 		if lString == "q":
-			quit = True
+			quitting = True
 		else:
 			try:
 				l = int(lString)
@@ -23,18 +23,18 @@ while not quit:
 			except ValueError:
 				print "l must be between an integer between 0 and "+str(lMax)+" inclusive"
 
-	if not quit:
+	if not quitting:
 		if l == 0:
 			m = 0
 		else:
 			gotM = False
-			while not gotM and not quit:
+			while not gotM and not quitting:
 				if l == 0:
 					m = 0
 				else:
 					mString = raw_input("Enter Order, m = ")
 					if mString == "q":
-						quit = True
+						quitting = True
 					else:
 						try:
 							m = int(mString)
@@ -44,6 +44,6 @@ while not quit:
 								gotM = True
 						except ValueError:
 							print "m must be and integer "+str(-l)+" and "+str(+l)+" inclusive"
-		if not quit:
+		if not quitting:
 			print "Showing Spherical Harmonic for l="+str(l)+" and m="+str(m)
 			plot.plot_sph_3d(l, m)
