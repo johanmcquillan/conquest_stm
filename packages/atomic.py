@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.interpolate import interp1d
 
-from sph import sph
+from sph import sph_vector
 from smartDict import SmartDict
 
 
@@ -369,7 +369,7 @@ class Atom(Ion):
 			position (Vector): 3D Cartesian real space vector
 		"""
 		position2 = position - self.position
-		return sph(l, m, position2.x, position2.y, position2.z)
+		return sph_vector(l, m, position2)
 
 	def get_basis_point(self, l, zeta, m, position, interpolation='cubic'):
 		"""Evaluate basis function (radial part * spherical harmonic)"""

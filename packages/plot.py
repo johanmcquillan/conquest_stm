@@ -223,20 +223,21 @@ def plot_basis_2d(
 			# Use axis variable to determine which axes space1 and space2 refer to
 			# Evaluate spherical harmonic at mesh point
 			if axis == 'z':
-				Y[i, j] = sph(l, m, space2[i, j], space1[i, j], planeValue)
+				r = Vector(space2[i, j], space1[i, j], planeValue)
 				plt.xlabel('$x$ / $a_0$')
 				plt.ylabel('$y$ / $a_0$')
 			if axis == 'y':
-				Y[i, j] = sph(l, m, space2[i, j], planeValue, space1[i, j])
+				r = Vector(space2[i, j], planeValue, space1[i, j])
 				plt.xlabel('$x$ / $a_0$')
 				plt.ylabel('$z$ / $a_0$')
 			if axis == 'x':
-				Y[i, j] = sph(l, m, planeValue, space2[i, j], space1[i, j])
+				r = Vector(planeValue, space2[i, j], space1[i, j])
 				plt.xlabel('$y$ / $a_0$')
 				plt.ylabel('$z$ / $a_0$')
 
+			Y[i, j] = sph(l, m, r)
 			# Evaluate value of Radial at mesh point and get psi
-			distance = np.sqrt(space1[i, j]**2 + space2[i, j]**2 + planeValue**2)
+			distance = abs(r)
 			R[i, j] = ion.get_radial_value(l, zeta, distance)
 			psi[i, j] = Y[i, j] * R[i, j]
 
@@ -322,22 +323,23 @@ def plot_charge_density_gamma_2d(
 			if axis == 'z':
 				if not planeValue:
 					planeValue = cell.zLength / 2
-				psi = cell.get_psi_gamma(bandEnergy, space2[i, j], space1[i, j], planeValue)
+				r = Vector(space2[i, j], space1[i, j], planeValue)
 				label1 = '$x$ / $a_0$'
 				label2 = '$y$ / $a_0$'
 			if axis == 'y':
 				if not planeValue:
 					planeValue = cell.yLength / 2
-				psi = cell.get_psi_gamma(bandEnergy, space2[i, j], planeValue, space1[i, j])
+				r = Vector(space2[i, j], planeValue, space1[i, j])
 				label1 = '$x$ / $a_0$'
 				label2 = '$z$ / $a_0$'
 			if axis == 'x':
 				if not planeValue:
 					planeValue = cell.xLength / 2
-				psi = cell.get_psi_gamma(bandEnergy, planeValue, space2[i, j], space1[i, j])
+				r = Vector(planeValue, space2[i, j], space1[i, j])
 				label1 = '$y$ / $a_0$'
 				label2 = '$z$ / $a_0$'
 
+			psi = cell.get_psi_gamma(bandEnergy, r)
 			psi2[i, j] += abs(psi)**2
 
 			# Update maxpsi
@@ -420,9 +422,10 @@ def plot_charge_density_gamma_3d(
 				x = X[i, j, k]
 				y = Y[i, j, k]
 				z = Z[i, j, k]
+				r = Vector(x, y, z)
 
 				# Calculate wavefunction
-				psi = cell.get_psi_gamma(bandEnergy, x, y, z)
+				psi = cell.get_psi_gamma(bandEnergy, r)
 
 				# Get charge density
 				psi2[i, j, k] = abs(psi)**2

@@ -82,6 +82,8 @@ class Vector(object):
 		z = self.x*other.y - self.y*other.x
 		return Vector(x, y, z)
 
+	
+
 	def is_positive(self):
 		"""Return true if all components are greater or equal to 0"""
 		if self.x >= 0 and self.y >= 0 and self.z >= 0:

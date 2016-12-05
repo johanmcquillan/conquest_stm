@@ -21,7 +21,7 @@ SPH41 = 3.0/4.0 * np.sqrt(5.0 / (2*np.pi))
 SPH40 = 3.0/16.0 * np.sqrt(1.0 / np.pi)
 
 
-def sph(l, m, x, y, z):
+def sph(l, m, vector):
 	"""Return value of real spherical harmonic using Cartesian coordinates.
 
 	Valid indices are l > 0; -l < m < +l.
@@ -40,7 +40,7 @@ def sph(l, m, x, y, z):
 	harmonic = 0.0
 
 	# Normalise coordinates to unit magnitude
-	magnitude = np.sqrt(x**2 + y**2 + z**2)
+	magnitude = abs(vector)
 	if magnitude != 0:
 		x = x / magnitude
 		y = y / magnitude
