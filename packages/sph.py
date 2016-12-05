@@ -40,11 +40,10 @@ def sph(l, m, vector):
 	harmonic = 0.0
 
 	# Normalise coordinates to unit magnitude
-	magnitude = abs(vector)
-	if magnitude != 0:
-		x = x / magnitude
-		y = y / magnitude
-		z = z / magnitude
+	normalised_vector = vector.normalise()
+	x = normalised_vector.x
+	y = normalised_vector.y
+	z = normalised_vector.z
 
 	# Choose correct form of spherical harmonic depending on l and m
 	if l == 0:
