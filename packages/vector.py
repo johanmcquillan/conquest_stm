@@ -49,7 +49,7 @@ class Vector(object):
 
 	def __div__(self, other):
 		"""Divide vector by number"""
-		return self * 1.0/other
+		return self * (1.0/other)
 
 	def __add__(self, other):
 		"""Add two vectors"""
