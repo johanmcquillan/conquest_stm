@@ -160,7 +160,8 @@ def plot_sph_3d(l, m):
 			x = np.sin(THETA[i, j]) * np.cos(PHI[i, j])
 			y = np.sin(THETA[i, j]) * np.sin(PHI[i, j])
 			z = np.cos(THETA[i, j])
-			SPH[i, j] = abs(sph(l, m, x, y, z))
+			r = Vector(x, y, z)
+			SPH[i, j] = abs(sph(l, m, r))
 	# Get cartesian mesh
 	X = SPH * np.sin(THETA) * np.cos(PHI)
 	Y = SPH * np.sin(THETA) * np.sin(PHI)
