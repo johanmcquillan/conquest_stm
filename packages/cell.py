@@ -1,5 +1,7 @@
 import numpy as np
 from copy import deepcopy
+
+from sph import sph
 from smartDict import SmartDict
 from vector import Vector
 
@@ -30,7 +32,7 @@ class Cell(object):
 			bands (Vector : [float]): Energies of bands indexed by k-point vector
 	"""
 
-	def __init__(self, name, fermiLevel, electrons, xLength, yLength, zLength, gridSpacing=0.1):
+	def __init__(self, name, fermiLevel, xLength, yLength, zLength, gridSpacing=0.1):
 		"""Constructs 3D cell with given dimensional.
 
 		All lengths measured in Bohr radii (a0);
@@ -47,7 +49,6 @@ class Cell(object):
 
 		self.name = name
 		self.fermiLevel = fermiLevel
-		self.electrons = electrons
 		self.gridSpacing = gridSpacing
 
 		self.vector = Vector(xLength, yLength, zLength)
@@ -118,14 +119,14 @@ class Cell(object):
 		atom = self.atoms[atomKey]
 		Y = 0.0
 		# Check if atom is in range
-		relative_position = self.constrain_vector(position - self.atoms[atomKey].position)
+		relative_position = self.constrain_vector(position - self.atoms[atomKey].atom_pos)
 		if abs(relative_position) < self.atoms[atomKey].get_max_cutoff():
 			for l in atom.radials:
 				for zeta in atom.radials[l]:
 					R = atom.get_radial_value_relative(l, zeta, relative_position, interpolation=interpolation)
 					for m in range(-l, l+1):
 						if R != 0:
-							Y = atom.get_sph_relative(l, m, relative_position)
+							Y = sph(l, m, relative_position)
 						self.basisPoints[atomKey][position][l][zeta][m] = R*Y
 		else:
 			self.basisPoints[atomKey][position] = SmartDict()
