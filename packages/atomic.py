@@ -1,8 +1,11 @@
 
+import numpy as np
+
 from scipy.interpolate import interp1d
 
 from sph import sph
 from smartDict import SmartDict
+from vector import Vector
 
 
 class Radial(object):
@@ -427,3 +430,29 @@ class Atom(Ion):
 				for m in self.bands[K][E][l][zeta]:
 					# Apply factor
 					self.bands[K][E][l][zeta][m] *= factor
+
+	def get_grid(self, grid_spacing):
+		cut = self.get_max_cutoff()
+		x_lower_lim = self.atom_pos.x - cut
+		x_upper_lim = self.atom_pos.x + cut
+		y_lower_lim = self.atom_pos.y - cut
+		y_upper_lim = self.atom_pos.y + cut
+		z_lower_lim = self.atom_pos.z - cut
+		z_upper_lim = self.atom_pos.z + cut
+		x_mesh, y_mesh, z_mesh = np.mgrid[x_lower_lim:x_upper_lim:grid_spacing, y_lower_lim:y_upper_lim:grid_spacing, z_lower_lim:z_upper_lim:grid_spacing]
+		points = int(2.0*cut/grid_spacing)
+		basis_points = np.empty_like(x_mesh, dtype=SmartDict())
+		for i in range(points):
+			for j in range(points):
+				for k in range(points):
+					x = x_mesh[i, j, k]
+					y = y_mesh[i, j, k]
+					z = z_mesh[i, j, k]
+					relative_position = Vector(x, y, z) - self.atom_pos
+					for l in self.radials:
+						for zeta in self.radials[l]:
+							R = self.get_radial_value_relative(l, zeta, relative_position)
+							for m in range(-l, l+1):
+								Y = sph(l, m, relative_position)
+								basis_points[i, j, k][l][zeta][m] = R*Y
+		return basis_points
