@@ -1,11 +1,15 @@
 
 import argparse
 
-parser = argparse.ArgumentParser(description='Get filename')
-parser.add_argument('filename', metavar='i', type=str, help='File to read')
+arg_parser = argparse.ArgumentParser(description='Get filename')
+arg_parser.add_argument('filename', metavar='fname', type=str, help='File to read')
+arg_parser.add_argument('-o', '--order_by', metavar='order', type=int, help='Field to order by', default=3)
 
-filename = vars(parser.parse_args())['filename']
+args = arg_parser.parse_args()
+
+filename = vars(args)['filename']
 profile = open(filename)
+order = vars(args)['order_by']
 
 profile.next()
 profile.next()
@@ -21,7 +25,7 @@ for line in profile:
 	else:
 		calls[-1].extend(line.split())
 
-calls = sorted(calls, key=lambda x: float(x[3]), reverse=True)
+calls = sorted(calls, key=lambda x: float(x[order].split('/')[0]), reverse=True)
 
 width = '13'
 rowformat = '%'+width+'s %'+width+'s %'+width+'s %'+width+'s %'+width+'s %'+width+'s'

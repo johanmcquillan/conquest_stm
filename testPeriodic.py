@@ -68,7 +68,7 @@ for i in range(length):
 			y = yMesh[i, j, k]
 			z = zMesh[i, j, k]
 			r = Vector(x, y, z)
-			relative_r = constrain_vector(r - atom.position)
+			relative_r = constrain_vector(r - atom.atom_pos)
 			if atom.within_cutoff_relative(relative_r):
 				ax.scatter(x, y, z, 'o')
 
