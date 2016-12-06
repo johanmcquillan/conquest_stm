@@ -431,17 +431,35 @@ class Atom(Ion):
 					# Apply factor
 					self.bands[K][E][l][zeta][m] *= factor
 
+	@staticmethod
+	def get_nearest_mesh_point(position, grid_spacing):
+		div_x, mod_x = divmod(position, grid_spacing)
+		div_y, mod_y = divmod(position, grid_spacing)
+		div_z, mod_z = divmod(position, grid_spacing)
+		if mod_x > grid_spacing/2:
+			div_x += grid_spacing
+		if mod_y > grid_spacing/2:
+			div_y += grid_spacing
+		if mod_z > grid_spacing/2:
+			div_z += grid_spacing
+		x = div_x * grid_spacing
+		y = div_y * grid_spacing
+		z = div_z * grid_spacing
+		return Vector(x, y, z)
+
 	def get_grid(self, grid_spacing):
 		cut = self.get_max_cutoff()
-		x_lower_lim = self.atom_pos.x - cut
-		x_upper_lim = self.atom_pos.x + cut
-		y_lower_lim = self.atom_pos.y - cut
-		y_upper_lim = self.atom_pos.y + cut
-		z_lower_lim = self.atom_pos.z - cut
-		z_upper_lim = self.atom_pos.z + cut
+		cut_vector = Vector(cut, cut, cut)
+		atom_pos_on_mesh = self.get_nearest_mesh_point(self.atom_pos, grid_spacing)
+		x_lower_lim = atom_pos_on_mesh.x - cut
+		x_upper_lim = atom_pos_on_mesh.x + cut
+		y_lower_lim = atom_pos_on_mesh.y - cut
+		y_upper_lim = atom_pos_on_mesh.y + cut
+		z_lower_lim = atom_pos_on_mesh.z - cut
+		z_upper_lim = atom_pos_on_mesh.z + cut
 		x_mesh, y_mesh, z_mesh = np.mgrid[x_lower_lim:x_upper_lim:grid_spacing, y_lower_lim:y_upper_lim:grid_spacing, z_lower_lim:z_upper_lim:grid_spacing]
 		points = int(2.0*cut/grid_spacing)
-		basis_points = np.empty_like(x_mesh, dtype=SmartDict())
+		basis_points = np.empty_like(x_mesh, dtype=SmartDict)
 		for i in range(points):
 			for j in range(points):
 				for k in range(points):
@@ -454,5 +472,7 @@ class Atom(Ion):
 							R = self.get_radial_value_relative(l, zeta, relative_position)
 							for m in range(-l, l+1):
 								Y = sph(l, m, relative_position)
+								if not basis_points[i, j, k]:
+									basis_points[i, j, k] = SmartDict()
 								basis_points[i, j, k][l][zeta][m] = R*Y
 		return basis_points

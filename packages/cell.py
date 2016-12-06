@@ -32,7 +32,7 @@ class Cell(object):
 			bands (Vector : [float]): Energies of bands indexed by k-point vector
 	"""
 
-	def __init__(self, name, fermiLevel, xLength, yLength, zLength, gridSpacing=0.1):
+	def __init__(self, name, fermiLevel, xLength, yLength, zLength, gridSpacing=0.5, debug=False):
 		"""Constructs 3D cell with given dimensional.
 
 		All lengths measured in Bohr radii (a0);
@@ -65,6 +65,7 @@ class Cell(object):
 		self.atoms = {}
 		self.basisPoints = SmartDict()
 		self.bands = {}
+		self.support_grid = self.get_support_grid(debug=debug)
 
 	def has_band(self, K, E):
 		"""Check if cell stores specified band.
@@ -246,3 +247,15 @@ class Cell(object):
 		if debug:
 			print "Finished LDoS = "+str(I)+", at r = "+str(position)
 		return I
+
+	def get_support_grid(self, debug=False):
+
+		support_grid = SmartDict()
+		for atomKey in self.atoms:
+			atom = self.atoms[atomKey]
+			support_grid[atomKey] = atom.get_grid(self.gridSpacing)
+			if debug:
+				print "Finished atom "+atom.ionName+" "+str(atomKey)
+		return support_grid
+
+	def
