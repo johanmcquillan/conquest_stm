@@ -30,10 +30,7 @@ def sph(l, m, vector):
 	Args:
 		l (int): Degree; Orbital angular momentum quantum number; Must be => 0
 		m (int): Order; Azimuthal quantum number; must be within -l >= m >= l
-		x (float): Cartesian x coordinate at which to evaluate spherical harmonic
-		y (float): Cartesian y coordinate at which to evaluate spherical harmonic
-		z (float): Cartesian z coordinate at which to evaluate spherical harmonic
-
+		vector (Vector): 3D real space Cartesian vector
 	Returns:
 		harmonic (float): Spherical harmonic for given l and m, evaluated at (x, y, z)"""
 

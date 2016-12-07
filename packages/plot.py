@@ -565,8 +565,8 @@ def plot_ldos_2d(cell, Emin, Emax, T, axis, minimum, maximum, planeValue=None, s
 
 
 def plot_ldos_3d(
-		cell, Emin, Emax, xrange=(0.0, 0.0), yrange=(0.0, 0.0), zrange=(0.0, 0.0), step=0.0, fraction=0.8, alpha=1.0,
-		cmap=False, show=True, save=False, debug=False):
+		cell, Emin, Emax, T, xrange=(0.0, 0.0), yrange=(0.0, 0.0), zrange=(0.0, 0.0), step=0.0, fraction=0.8, alpha=1.0,
+		cmap=False, show=True, save=False, debug=False, recalculate=False):
 	"""Plots charge density isosurface.
 
 	All lengths measured in Bohr radii (a0).
@@ -597,41 +597,20 @@ def plot_ldos_3d(
 
 	# If step not given, set to cell.gridSpacing
 	if step == 0.0:
-		step = cell.gridSpacing
+		step = cell.grid_spacing
 
 	# Cartesian mesh
-	X, Y, Z = np.mgrid[xrange[0]:xrange[1]:step, yrange[0]:yrange[1]:step, zrange[0]:zrange[1]:step]
 
-	psi2 = np.zeros_like(X, dtype=float)
-	psi2max = 0.0
+	ldos = cell.get_ldos_grid(Emin, Emax, T, debug=debug, recalculate=recalculate)
+	max_ldos = np.max(ldos)
 
-	# Loop over all mesh points
-	for i in range(int((xrange[1] - xrange[0]) / step)):
-		for j in range(int((yrange[1] - yrange[0]) / step)):
-			for k in range(int((zrange[1] - zrange[0]) / step)):
-				# Get coordinates
-				x = X[i, j, k]
-				y = Y[i, j, k]
-				z = Z[i, j, k]
-				V = Vector(x, y, z)
-
-				# Calculate wavefunction
-				psi = cell.get_psi(Emin, Emax, V, debug=debug)
-
-				# Get charge density
-				psi2[i, j, k] = abs(psi)**2
-
-				# Set max value
-				if psi2[i, j, k] > psi2max:
-					psi2max = psi2[i, j, k]
-
-	if psi2max == 0.0:
-		raise ValueError("Wavefunction is zero at all points")
+	if max_ldos == 0.0:
+		raise ValueError("LDoS is zero at all points")
 
 	if debug:
-		print 'Isosurface value = '+str(fraction*psi2max)
+		print 'Isosurface value = '+str(fraction*max_ldos)
 	# Make isosurface at psi2 = fraction * psi2max
-	mes = measure.marching_cubes(psi2, fraction*psi2max)
+	mes = measure.marching_cubes(ldos, fraction*max_ldos)
 	verts = mes[0]
 	faces = mes[1]
 
