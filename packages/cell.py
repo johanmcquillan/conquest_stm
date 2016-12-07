@@ -610,9 +610,10 @@ class Cell(object):
 				k = int(line_split[2])
 				# Get LDoS value
 				value = float(line_split[3])
+				ldos_grid[i, j, k] = value
 			except StopIteration:
 				end_of_file = True
 		if debug:
 			print "LDoS grid successfully read"
-		print np.max(ldos_grid)
+			print np.max(ldos_grid)
 		return ldos_grid
