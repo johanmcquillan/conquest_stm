@@ -16,6 +16,7 @@ class Vector(object):
 		self.y = y
 		self.z = z
 		self.magnitude = None
+		self.hash = None
 
 	def __str__(self):
 		"""Return string of components"""
@@ -23,7 +24,9 @@ class Vector(object):
 
 	def __hash__(self):
 		"""Return hash of tuple of components"""
-		return hash((self.x, self.y, self.z))
+		if not self.hash:
+			self.hash = hash((self.x, self.y, self.z))
+		return self.hash
 
 	def __eq__(self, other):
 		"""Check if each component of vectors are equal"""
