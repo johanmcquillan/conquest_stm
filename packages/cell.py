@@ -378,7 +378,7 @@ class Cell(object):
 				print "Calculated support grid for atom " + atom.ionName + " " + str(atomKey)
 		return support_grid
 
-	def calculate_ldos_grid(self, Emin, Emax, T, recalculate=False, write=True, debug=False):
+	def calculate_ldos_grid(self, Emin, Emax, T, partial_grid=None, recalculate=False, write=True, debug=False):
 		"""Calculate LDoS mesh.
 
 		Args:
@@ -392,19 +392,32 @@ class Cell(object):
 		Returns:
 			3D np.array: LDoS mesh
 		"""
-		if debug:
-			print "Calculating LDoS grid"
-		ldos_grid = np.zeros_like(self.xMesh, dtype=float)
+
+		if partial_grid:
+			open_argument = 'r+'
+			ldos_grid = partial_grid
+			partial_grid = True
+		else:
+			if debug:
+				print "Calculating LDoS grid"
+			open_argument ='w'
+			ldos_grid = np.zeros_like(self.xMesh, dtype=float)
+
 		support_grid = self.get_support_grid(debug=debug, recalculate=recalculate)
 		totalK = len(self.bands)
 		w = 1.0 / totalK  # K-point weighting
+
+		if write or partial_grid:
+			ldos_file = open(LDOS_FNAME+".temp", open_argument, 0)
+		else:
+			ldos_file = None
 
 		# Iterate over mesh points
 		for i in range(self.xPoints):
 			for j in range(self.yPoints):
 				for k in range(self.zPoints):
 					# Iterate over k-points
-					if support_grid[i, j, k]:
+					if support_grid[i, j, k] and (partial_grid and not ldos_grid[i, j, k]):
 						for K in self.bands:
 							# Iterate over energies within range
 							for E in self.bands[K]:
@@ -426,13 +439,19 @@ class Cell(object):
 									ldos_grid[i, j, k] += w * self.fermi_dirac(E, T) * (abs(psi)) ** 2
 					if debug:
 						print "Completed ", i, j, k
+					if write or partial_grid:
+						ldos_file.write(str(i)+" "+str(j)+" "+str(k)+" "+str(ldos_grid[i, j, k])+"\n")
+		if write or partial_grid:
+			ldos_file.write('end')
+			ldos_file.close()
 		return ldos_grid
 
-	def get_support_grid(self, recalculate=False, write=True, debug=False):
+	def get_support_grid(self, recalculate=False, resume=True, write=True, debug=False):
 		"""Get support function mesh.
 
 		Args:
-			recalculate (bool, opt.): Force recalculation, even if already stored
+			recalculate (bool, opt.): Force recalculation, even if already stored; Overrides resume
+			resume (bool, opt.): If unfinished mesh files found, continue where they left off
 			write (bool, opt.): Write to file with name SUPPORT_FNAME
 			debug (bool, opt.): Print extra information during runtime
 
@@ -450,14 +469,15 @@ class Cell(object):
 				self.write_support(recalculate=False, debug=False)
 		return self.support_grid
 
-	def get_ldos_grid(self, Emin, Emax, T, recalculate=False, write=True, debug=False):
+	def get_ldos_grid(self, Emin, Emax, T, recalculate=False, resume=True, write=True, debug=False):
 		"""Get LDoS mesh.
 
 		Args:
 			Emin: Minimum energy
 			Emax: Maximum energy
 			T: Absolute temperature in Kelvin
-			recalculate (bool, opt.): Force recalculation of meshes, even if already stored
+			recalculate (bool, opt.): Force recalculation of meshes, even if already stored; Overrides resume
+			resume (bool, opt.): If unfinished mesh files found, continue where they left off
 			write (bool, opt.): Write calculated grids to file
 			debug (bool, opt.): Print extra information during runtime
 
@@ -470,9 +490,6 @@ class Cell(object):
 		else:
 			# Calculate LDoS on mesh
 			self.ldos_grid = self.calculate_ldos_grid(Emin, Emax, T, recalculate=recalculate, write=write, debug=debug)
-			# Write to file
-			if write:
-				self.write_ldos(debug=debug, recalculate=False)
 		return self.ldos_grid
 
 	def write_support(self, recalculate=False, debug=False):
@@ -591,7 +608,7 @@ class Cell(object):
 			print "Support grid successfully read"
 		return support_grid
 
-	def read_ldos_grid(self, debug=False):
+	def read_ldos_grid(self, resume=True, debug=False):
 		"""Read LDoS mesh from file"""
 		ldos_file = open(LDOS_FNAME, 'r')
 		ldos_grid = np.zeros_like(self.xMesh, dtype=float)
@@ -600,6 +617,12 @@ class Cell(object):
 			print "Reading LDoS grid from "+LDOS_FNAME
 
 		end_of_file = False
+		all_points_completed = False
+		line = ldos_file.next()
+		line_split = line.split()
+		Emin = float(line_split[0])
+		Emax = float(line_split[1])
+		T = float(line_split[2])
 		line = ldos_file.next()
 		line_split = line.split()
 		while not end_of_file:
@@ -611,9 +634,22 @@ class Cell(object):
 				# Get LDoS value
 				value = float(line_split[3])
 				ldos_grid[i, j, k] = value
+				line = ldos_file.next()
+				line_split = line.split()
+				if line_split[0] == 'end':
+					end_of_file = True
+					all_points_completed = True
 			except StopIteration:
 				end_of_file = True
-		if debug:
+
+		if not all_points_completed:
+			if resume:
+				if debug:
+					print LDOS_FNAME+" is incomplete - Calculating missing points"
+				ldos_grid = self.calculate_ldos_grid(
+						Emin, Emax, T, partial_grid=ldos_grid, recalculate=False, debug=debug)
+				all_points_completed = True
+		if debug and all_points_completed:
 			print "LDoS grid successfully read"
 			print np.max(ldos_grid)
 		return ldos_grid
