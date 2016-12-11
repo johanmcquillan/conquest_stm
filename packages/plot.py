@@ -373,7 +373,7 @@ def plot_charge_density_gamma_2d(
 
 
 def plot_charge_density_gamma_3d(
-		cell, E, xrange=(0.0, 0.0), yrange=(0.0, 0.0), zrange=(0.0, 0.0), step=0.0, fraction=0.8, alpha=1.0,
+		cell, E, x_range=(0.0, 0.0), y_range=(0.0, 0.0), z_range=(0.0, 0.0), step=0.0, fraction=0.8, alpha=1.0,
 		cmap=False, show=True, save=False, debug=False):
 	"""Plots charge density isosurface.
 
@@ -382,9 +382,9 @@ def plot_charge_density_gamma_3d(
 	Args:
 		cell (Cell): Simulation cell to plot
 		E (float): Band energy
-		xrange((float), opt.): Limits of x axis
-		yrange((float), opt.): Limits of y axis
-		zrange((float), opt.): Limits of z axis
+		x_range((float), opt.): Limits of x axis
+		y_range((float), opt.): Limits of y axis
+		z_range((float), opt.): Limits of z axis
 		step (float, opt.): Interval between Cartesian mgrid points; Default is cell.gridSpacing
 		fraction (float, opt.): Sets value of isosurface to this fraction of max charge density
 		alpha (float, opt.): Transparency of plot surfaces
@@ -395,12 +395,12 @@ def plot_charge_density_gamma_3d(
 	"""
 
 	# If plot limits not given, set to limits of cell
-	if xrange == (0.0, 0.0):
-		xrange = (0.0, cell.xLength)
-	if yrange == (0.0, 0.0):
-		yrange = (0.0, cell.yLength)
-	if zrange == (0.0, 0.0):
-		zrange = (0.0, cell.zLength)
+	if x_range == (0.0, 0.0):
+		x_range = (0.0, cell.xLength)
+	if y_range == (0.0, 0.0):
+		y_range = (0.0, cell.yLength)
+	if z_range == (0.0, 0.0):
+		z_range = (0.0, cell.zLength)
 
 	# If step not given, set to cell.gridSpacing
 	if step == 0.0:
@@ -410,15 +410,15 @@ def plot_charge_density_gamma_3d(
 	bandEnergy = sorted(cell.get_gamma_energies(), key=lambda t: abs(E - t))[0]
 
 	# Cartesian mesh
-	X, Y, Z = np.mgrid[xrange[0]:xrange[1]:step, yrange[0]:yrange[1]:step, zrange[0]:zrange[1]:step]
+	X, Y, Z = np.mgrid[x_range[0]:x_range[1]:step, y_range[0]:y_range[1]:step, z_range[0]:z_range[1]:step]
 
 	psi2 = np.zeros_like(X, dtype=float)
 	psi2max = 0.0
 
 	# Loop over all mesh points
-	for i in range(int((xrange[1] - xrange[0]) / step)):
-		for j in range(int((yrange[1] - yrange[0]) / step)):
-			for k in range(int((zrange[1] - zrange[0]) / step)):
+	for i in range(int((x_range[1] - x_range[0]) / step)):
+		for j in range(int((y_range[1] - y_range[0]) / step)):
+			for k in range(int((z_range[1] - z_range[0]) / step)):
 				# Get coordinates
 				x = X[i, j, k]
 				y = Y[i, j, k]
@@ -452,9 +452,9 @@ def plot_charge_density_gamma_3d(
 	plt.title(title)
 
 	# Set axes
-	ax.set_xlim3d(xrange[0]/step, xrange[1]/step)
-	ax.set_ylim3d(yrange[0]/step, yrange[1]/step)
-	ax.set_zlim3d(zrange[0]/step, zrange[1]/step)
+	ax.set_xlim3d(x_range[0]/step, x_range[1]/step)
+	ax.set_ylim3d(y_range[0]/step, y_range[1]/step)
+	ax.set_zlim3d(z_range[0]/step, z_range[1]/step)
 	ax.set_xlabel("x")
 	ax.set_ylabel("y")
 	ax.set_zlabel("z")
@@ -565,7 +565,7 @@ def plot_ldos_2d(cell, min_E, max_E, T, axis, minimum, maximum, planeValue=None,
 
 
 def plot_ldos_3d(
-		cell, min_E, max_E, T, xrange=(0.0, 0.0), yrange=(0.0, 0.0), zrange=(0.0, 0.0), step=0.0, fraction=0.8, alpha=1.0,
+		cell, min_E, max_E, T, x_range=(0.0, 0.0), y_range=(0.0, 0.0), z_range=(0.0, 0.0), step=0.0, fraction=0.8, alpha=1.0,
 		cmap=True, show=True, save=False, debug=False, recalculate=False):
 	"""Plots charge density isosurface.
 
@@ -575,9 +575,9 @@ def plot_ldos_3d(
 		cell (Cell): Simulation cell to plot
 		min_E (float): Minimum of energy range
 		max_E (float): Maximum of energy range
-		xrange((float), opt.): Limits of x axis
-		yrange((float), opt.): Limits of y axis
-		zrange((float), opt.): Limits of z axis
+		x_range((float), opt.): Limits of x axis
+		y_range((float), opt.): Limits of y axis
+		z_range((float), opt.): Limits of z axis
 		step (float, opt.): Interval between Cartesian mgrid points; Default is cell.gridSpacing
 		fraction (float, opt.): Sets value of isosurface to this fraction of max charge density
 		alpha (float, opt.): Transparency of plot surfaces
@@ -588,12 +588,12 @@ def plot_ldos_3d(
 	"""
 
 	# If plot limits not given, set to limits of cell
-	if xrange == (0.0, 0.0):
-		xrange = (0.0, cell.vector.x)
-	if yrange == (0.0, 0.0):
-		yrange = (0.0, cell.vector.y)
-	if zrange == (0.0, 0.0):
-		zrange = (0.0, cell.vector.z)
+	if x_range == (0.0, 0.0):
+		x_range = (0.0, cell.vector.x)
+	if y_range == (0.0, 0.0):
+		y_range = (0.0, cell.vector.y)
+	if z_range == (0.0, 0.0):
+		z_range = (0.0, cell.vector.z)
 
 	# If step not given, set to cell.grid_spacing
 	if step == 0.0:
@@ -624,9 +624,9 @@ def plot_ldos_3d(
 	plt.title(title)
 
 	# Set axes
-	ax.set_xlim3d(xrange[0]/step, xrange[1]/step)
-	ax.set_ylim3d(yrange[0]/step, yrange[1]/step)
-	ax.set_zlim3d(zrange[0]/step, zrange[1]/step)
+	ax.set_xlim3d(x_range[0]/step, x_range[1]/step)
+	ax.set_ylim3d(y_range[0]/step, y_range[1]/step)
+	ax.set_zlim3d(z_range[0]/step, z_range[1]/step)
 	ax.set_xlabel("x")
 	ax.set_ylabel("y")
 	ax.set_zlabel("z")
