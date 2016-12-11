@@ -680,15 +680,15 @@ class Cell(object):
 			3D np.array: LDoS mesh
 		"""
 		# Read ldos grid from file if not stored by cell
-		filename = MESH_FOLDER + LDOS_FNAME + self.name + "_" + str(Emin) + "_" + str(Emax) + "_" + str(T) + EXT
+		filename = MESH_FOLDER+LDOS_FNAME+self.name+"_"+str(Emin)+"_"+str(Emax)+"_"+str(T)+EXT
 		print filename
 		print os.path.isfile(filename)
 		if not recalculate and os.path.isfile(filename):
-			self.ldos_grid = self.read_ldos_grid(Emin, Emax, T, debug=debug)
+			ldos_grid = self.read_ldos_grid(Emin, Emax, T, debug=debug)
 		else:
 			# Calculate LDoS on mesh
-			self.ldos_grid = self.calculate_ldos_grid(Emin, Emax, T, recalculate=recalculate, write=write, debug=debug)
+			ldos_grid = self.calculate_ldos_grid(Emin, Emax, T, recalculate=recalculate, write=write, debug=debug)
 			if write:
-				self.write_ldos(self.ldos_grid, Emin, Emax, T, debug=debug)
-		return self.ldos_grid
+				self.write_ldos(ldos_grid, Emin, Emax, T, debug=debug)
+		return ldos_grid
 
