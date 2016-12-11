@@ -197,7 +197,7 @@ class Parser(object):
 				data = line.split()
 				fermi_lvl = float(data[2]) * HA_TO_EV
 
-				C = Cell(conquest_out, fermi_lvl, cellLengthX, cellLengthY, cellLengthZ, grid_spacing=grid_spacing, debug=debug)
+				C = Cell(conquest_out, fermi_lvl, cellLengthX, cellLengthY, cellLengthZ, grid_spacing=grid_spacing)
 
 				for atomKey in atoms:
 					atoms[atomKey].bands.lock()

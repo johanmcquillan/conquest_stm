@@ -566,7 +566,7 @@ def plot_ldos_2d(cell, Emin, Emax, T, axis, minimum, maximum, planeValue=None, s
 
 def plot_ldos_3d(
 		cell, Emin, Emax, T, xrange=(0.0, 0.0), yrange=(0.0, 0.0), zrange=(0.0, 0.0), step=0.0, fraction=0.8, alpha=1.0,
-		cmap=False, show=True, save=False, debug=False, recalculate=False):
+		cmap=True, show=True, save=False, debug=False, recalculate=False):
 	"""Plots charge density isosurface.
 
 	All lengths measured in Bohr radii (a0).
@@ -589,26 +589,27 @@ def plot_ldos_3d(
 
 	# If plot limits not given, set to limits of cell
 	if xrange == (0.0, 0.0):
-		xrange = (0.0, cell.xLength)
+		xrange = (0.0, cell.vector.x)
 	if yrange == (0.0, 0.0):
-		yrange = (0.0, cell.yLength)
+		yrange = (0.0, cell.vector.y)
 	if zrange == (0.0, 0.0):
-		zrange = (0.0, cell.zLength)
+		zrange = (0.0, cell.vector.z)
 
-	# If step not given, set to cell.gridSpacing
+	# If step not given, set to cell.grid_spacing
 	if step == 0.0:
 		step = cell.grid_spacing
 
-	# Cartesian mesh
+	# Get energy relative to Fermi level
+	EminAbsolute = Emin + cell.fermiLevel
+	EmaxAbsolute = Emax + cell.fermiLevel
 
-	ldos = cell.get_ldos_grid(Emin, Emax, T, debug=debug, recalculate=recalculate)
+	# Cartesian mesh
+	ldos = cell.get_ldos_grid(EminAbsolute, EmaxAbsolute, T, debug=debug, recalculate=recalculate)
 	max_ldos = np.max(ldos)
 
 	if max_ldos == 0.0:
 		raise ValueError("LDoS is zero at all points")
 
-	if debug:
-		print 'Isosurface value = '+str(fraction*max_ldos)
 	# Make isosurface at psi2 = fraction * psi2max
 	mes = measure.marching_cubes(ldos, fraction*max_ldos)
 	verts = mes[0]
@@ -617,12 +618,9 @@ def plot_ldos_3d(
 	# Set up plot
 	fig, ax = plt.subplots(subplot_kw=dict(projection='3d'), figsize=(10, 10))
 
-	# Get energy relative to Fermi level
-	EminRelative = Emin - cell.fermiLevel
-	EmaxRelative = Emax - cell.fermiLevel
 	title = (
 		cell.name+' LDoS Isosurface at '+str(fraction)+' of Maximum Density for \n Energies from '
-		+str(EminRelative)+' eV to '+str(EmaxRelative)+' eV relative to the Fermi Level')
+		+str(Emin)+' eV to '+str(Emax)+' eV relative to the Fermi Level')
 	plt.title(title)
 
 	# Set axes

@@ -41,7 +41,7 @@ fermi = prsr.fermiLevels[conqFile]
 electrons = prsr.electrons[conqFile]
 
 # Create a 3D cell with dimensions 20 x 20 x 15 a0
-cell = Cell(conqFile+'_EXAMPLE', fermi, electrons, 20.0, 20.0, 15.0, gridSpacing=.5)
+cell = Cell(conqFile +'_EXAMPLE', fermi, electrons, 20.0, 20.0, 15.0, grid_spacing=.5)
 
 # Add the atoms to the cell
 for atomKey in atoms:
