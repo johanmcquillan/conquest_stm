@@ -208,6 +208,8 @@ class Cell(object):
 
 	def get_gamma_energies(self):
 		"""Return list of energies at gamma-point"""
+		if Vector.zero() not in self.bands:
+			raise ValueError('Simulation does not have gamma k-point')
 		return sorted(self.bands[Vector.zero()])
 
 	def fermi_dirac(self, energy, temperature):

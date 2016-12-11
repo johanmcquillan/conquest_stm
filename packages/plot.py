@@ -280,8 +280,7 @@ def plot_basis_2d(
 
 
 def plot_charge_density_gamma_2d(
-		cell, E, axis, minimum, maximum, step=None, planeValue=None, label='',
-		printStatus=False):
+		cell, E, axis, minimum, maximum, step=None, planeValue=None, label='', printStatus=False):
 	"""Plots cross-section of charge density evaluated at gamma-point to pdf.
 
 	All lengths measured in bohr radii (a0).
@@ -396,84 +395,38 @@ def plot_charge_density_gamma_3d(
 
 	# If plot limits not given, set to limits of cell
 	if x_range == (0.0, 0.0):
-		x_range = (0.0, cell.xLength)
+		x_range = (0.0, cell.vector.x)
 	if y_range == (0.0, 0.0):
-		y_range = (0.0, cell.yLength)
+		y_range = (0.0, cell.vector.y)
 	if z_range == (0.0, 0.0):
-		z_range = (0.0, cell.zLength)
+		z_range = (0.0, cell.vector.z)
 
 	# If step not given, set to cell.gridSpacing
 	if step == 0.0:
-		step = cell.gridSpacing
+		step = cell.grid_spacing
 
 	# Get nearest stored energy at gamma-point to requested energy
 	bandEnergy = sorted(cell.get_gamma_energies(), key=lambda t: abs(E - t))[0]
 
-	# Cartesian mesh
-	X, Y, Z = np.mgrid[x_range[0]:x_range[1]:step, y_range[0]:y_range[1]:step, z_range[0]:z_range[1]:step]
 
-	psi2 = np.zeros_like(X, dtype=float)
-	psi2max = 0.0
-
-	# Loop over all mesh points
-	for i in range(int((x_range[1] - x_range[0]) / step)):
-		for j in range(int((y_range[1] - y_range[0]) / step)):
-			for k in range(int((z_range[1] - z_range[0]) / step)):
-				# Get coordinates
-				x = X[i, j, k]
-				y = Y[i, j, k]
-				z = Z[i, j, k]
-				r = Vector(x, y, z)
-
-				# Calculate wavefunction
-				psi = cell.get_psi_gamma(bandEnergy, r)
-
-				# Get charge density
-				psi2[i, j, k] = abs(psi)**2
-
-				# Set max value
-				if psi2[i, j, k] > psi2max:
-					psi2max = psi2[i, j, k]
-
-	if psi2max == 0.0:
+	psi = cell.get_psi_grid(K0, bandEnergy, debug=debug)
+	psi2 = abs(psi)**2
+	max_psi2 = np.max(psi2)
+	if max_psi2 == 0.0:
 		raise ValueError("Wavefunction is zero at all points")
-	if debug:
-		print 'Isosurface value = '+str(fraction*psi2max)
-	# Make isosurface at psi2 = fraction * psi2max
-	mes = measure.marching_cubes(psi2, fraction*psi2max)
-	verts = mes[0]
-	faces = mes[1]
 
-	# Set up plot
-	fig, ax = plt.subplots(subplot_kw=dict(projection='3d'), figsize=(10, 10))
 	title = (
 		cell.name+' Charge Density Isosurface at '+str(fraction)+' of Maximum Density at \n Gamma Point and Energy '
 		+str(bandEnergy)+' eV relative to the Fermi Level')
-	plt.title(title)
-
-	# Set axes
-	ax.set_xlim3d(x_range[0]/step, x_range[1]/step)
-	ax.set_ylim3d(y_range[0]/step, y_range[1]/step)
-	ax.set_zlim3d(z_range[0]/step, z_range[1]/step)
-	ax.set_xlabel("x")
-	ax.set_ylabel("y")
-	ax.set_zlabel("z")
-
-	# Plot surface
-	if cmap:
-		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Spectral, lw=0.1)
-	else:
-		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], color=(1,0,0,alpha), lw=0.1)
 
 	# Save plot as png
 	if save:
 		timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
-		saveName = cell.name+"_ChargeDensity3D_"+str(fraction)+"_"+str(bandEnergy)+"_"+timeStamp
-		plt.savefig("figures3D/"+saveName+".png")
-	# Show plot
-	if show:
-		plt.show()
-	plt.close()
+		save_name = cell.name+"_ChargeDensity3D_"+str(fraction)+"_"+str(bandEnergy)+"_"+timeStamp
+	else:
+		save_name = None
+
+	plot_3d(title, psi2, fraction, x_range, y_range, z_range, step, save_name=save_name, show=show)
 
 
 def plot_ldos_2d(cell, min_E, max_E, T, axis, minimum, maximum, planeValue=None, step=None, interpolation='cubic', printStatus=False, debug=False):
@@ -566,7 +519,7 @@ def plot_ldos_2d(cell, min_E, max_E, T, axis, minimum, maximum, planeValue=None,
 
 def plot_ldos_3d(
 		cell, min_E, max_E, T, x_range=(0.0, 0.0), y_range=(0.0, 0.0), z_range=(0.0, 0.0), step=0.0, fraction=0.8, alpha=1.0,
-		cmap=True, show=True, save=False, debug=False, recalculate=False):
+		show=True, save=False, debug=False, recalculate=False):
 	"""Plots charge density isosurface.
 
 	All lengths measured in Bohr radii (a0).
@@ -581,7 +534,6 @@ def plot_ldos_3d(
 		step (float, opt.): Interval between Cartesian mgrid points; Default is cell.gridSpacing
 		fraction (float, opt.): Sets value of isosurface to this fraction of max charge density
 		alpha (float, opt.): Transparency of plot surfaces
-		cmap (bool, opt.): If true, colour surface opaquely (ignoring alpha) according to z-value
 		show (bool, opt.): If true, show plot
 		save (bool, opt.): If true, save plot
 		debug (bool, opt.): If true, print extra information during runtime
@@ -610,39 +562,43 @@ def plot_ldos_3d(
 	if max_ldos == 0.0:
 		raise ValueError("LDoS is zero at all points")
 
+	title = (
+		cell.name+' LDoS Isosurface at '+str(fraction)+' of Maximum Density for \n Energies from '
+		+str(min_E)+' eV to '+str(max_E)+' eV relative to the Fermi Level')
+
+	# Save plot as png
+	if save:
+		timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
+		save_name = cell.name+"_LDoS3D_"+str(fraction)+"_"+str(min_EAbsolute)+"_"+str(max_EAbsolute)+"_"+timeStamp
+	else:
+		save_name = None
+
+	plot_3d(title, ldos, fraction, x_range, y_range, z_range, step, save_name=save_name, show=show)
+
+
+def plot_3d(title, mesh, fraction, x_range, y_range, z_range, step, save_name=None, show=True):
 	# Make isosurface at psi2 = fraction * psi2max
-	mes = measure.marching_cubes(ldos, fraction*max_ldos)
+	mes = measure.marching_cubes(mesh, fraction*np.max(mesh))
 	verts = mes[0]
 	faces = mes[1]
 
 	# Set up plot
 	fig, ax = plt.subplots(subplot_kw=dict(projection='3d'), figsize=(10, 10))
-
-	title = (
-		cell.name+' LDoS Isosurface at '+str(fraction)+' of Maximum Density for \n Energies from '
-		+str(min_E)+' eV to '+str(max_E)+' eV relative to the Fermi Level')
 	plt.title(title)
 
+	# Plot surface
+	ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Spectral, lw=0.1)
+
 	# Set axes
-	ax.set_xlim3d(x_range[0]/step, x_range[1]/step)
-	ax.set_ylim3d(y_range[0]/step, y_range[1]/step)
-	ax.set_zlim3d(z_range[0]/step, z_range[1]/step)
+	ax.set_xlim3d(x_range[0] / step, x_range[1] / step)
+	ax.set_ylim3d(y_range[0] / step, y_range[1] / step)
+	ax.set_zlim3d(z_range[0] / step, z_range[1] / step)
 	ax.set_xlabel("x")
 	ax.set_ylabel("y")
 	ax.set_zlabel("z")
 
-	# Plot surface
-	if cmap:
-		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Spectral, lw=0.1)
-	else:
-		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], color=(1, 0, 0, alpha), lw=0.1)
-
-	# Save plot as png
-	if save:
-		timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
-		saveName = cell.name+"_LDoS3D_"+str(fraction)+"_"+str(min_EAbsolute)+"_"+str(max_EAbsolute)+"_"+timeStamp
-		plt.savefig("figures3D/"+saveName+".png")
-	# Show plot
+	if save_name:
+		plt.savefig("figures3D/"+save_name+".png")
 	if show:
 		plt.show()
 	plt.close()
