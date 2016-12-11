@@ -583,23 +583,19 @@ class Cell(object):
 			print "Calculating LDoS grid"
 		ldos_grid = np.zeros_like(self.xMesh, dtype=float)
 
-		#support_grid = self.get_support_grid(write=write, debug=debug, recalculate=recalculate)
 		totalK = len(self.bands)
 		w = 1.0 / totalK  # K-point weighting
 
 		for K in self.bands:
 			for E in self.bands[K]:
 				if Emin <= E <= Emax:
-					if os.path.isfile(MESH_FOLDER+PSI_FNAME+self.name+"_"+str(K.x)+"_"+str(K.y)+"_"+str(K.z)+"_"+str(E)+EXT):
-						psi_grid = self.read_psi_grid(K, E)
-						fd = self.fermi_dirac(E, T)
-						for i in range(self.xPoints):
-							for j in range(self.yPoints):
-								for k in range(self.zPoints):
-									psi = psi_grid[i, j, k]
-									ldos_grid[i, j, k] += w*fd*(abs(psi))**2
-					else:
-						raise IOError
+					psi_grid = self.get_psi_grid(K, E, recalculate=recalculate, write=write, debug=debug)
+					fd = self.fermi_dirac(E, T)
+					for i in range(self.xPoints):
+						for j in range(self.yPoints):
+							for k in range(self.zPoints):
+								psi = psi_grid[i, j, k]
+								ldos_grid[i, j, k] += w*fd*(abs(psi))**2
 				if debug:
 					print "Completed", K, E
 		return ldos_grid
