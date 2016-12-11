@@ -260,12 +260,12 @@ class Cell(object):
 			"""
 		return self.get_psi(Vector.zero(), E, position)
 
-	def get_ldos(self, Emin, Emax, T, position, interpolation='cubic', debug=False):
+	def get_ldos(self, min_E, max_E, T, position, interpolation='cubic', debug=False):
 		"""Evaluate local density of states (LDoS) within energy range at specific point.
 
 		Args:
-			Emin (float): Minimum energy
-			Emax (float): Maximum energy
+			min_E (float): Minimum energy
+			max_E (float): Maximum energy
 			T (float): Absolute temperature in K
 			position (Vector): 3D Cartesian real space vector
 			interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
@@ -281,7 +281,7 @@ class Cell(object):
 		# Loop over all k-points
 		for K in self.bands:
 			for E in self.bands[K]:
-				if Emin < E < Emax:
+				if min_E < E < max_E:
 					# Calculate LDoS
 					psi = self.get_psi(K, E, position, interpolation=interpolation)
 					I += w * self.fermi_dirac(E, T) * (abs(psi)) ** 2
@@ -519,10 +519,10 @@ class Cell(object):
 						psi_file.write(str(i)+" "+str(j)+" "+str(k)+" "+str(psi.real)+" "+str(psi.imag)+"\n")
 		psi_file.close()
 
-	def write_psi_range(self, Emin, Emax, recalculate=False, debug=False):
+	def write_psi_range(self, min_E, max_E, recalculate=False, debug=False):
 		for K in self.bands:
 			for E in self.bands[K]:
-				if Emin <= E <= Emax:
+				if min_E <= E <= max_E:
 					psi_grid = self.calculate_psi_grid(K, E, recalculate=recalculate, debug=debug)
 					self.write_psi_grid(psi_grid, K, E)
 
@@ -564,12 +564,12 @@ class Cell(object):
 				self.write_psi_grid(psi_grid, K, E)
 		return psi_grid
 
-	def calculate_ldos_grid(self, Emin, Emax, T, recalculate=False, write=True, debug=False):
+	def calculate_ldos_grid(self, min_E, max_E, T, recalculate=False, write=True, debug=False):
 		"""Calculate LDoS mesh.
 
 		Args:
-			Emin: Minimum energy
-			Emax: Maximum energy
+			min_E: Minimum energy
+			max_E: Maximum energy
 			T: Absolute temperature in Kelvin
 			recalculate (bool, opt.): Force recalculation, even if already stored
 			write (bool, opt.): Write calculated meshes to file
@@ -588,7 +588,7 @@ class Cell(object):
 
 		for K in self.bands:
 			for E in self.bands[K]:
-				if Emin <= E <= Emax:
+				if min_E <= E <= max_E:
 					psi_grid = self.get_psi_grid(K, E, recalculate=recalculate, write=write, debug=debug)
 					fd = self.fermi_dirac(E, T)
 					for i in range(self.xPoints):
@@ -600,22 +600,22 @@ class Cell(object):
 					print "Completed", K, E
 		return ldos_grid
 
-	def write_ldos(self, ldos_grid, Emin, Emax, T, debug=False):
+	def write_ldos(self, ldos_grid, min_E, max_E, T, debug=False):
 		"""Write LDoS mesh to file.
 
 		Args:
-			Emin: Minimum energy
-			Emax: Maximum energy
+			min_E: Minimum energy
+			max_E: Maximum energy
 			T: Absolute temperature in K
 			recalculate (bool, opt.): Force recalculation of mesh, even if stored
 			debug (bool, opt.): Print extra information during runtime
 		"""
-		filename = MESH_FOLDER+LDOS_FNAME+self.name+"_"+str(Emin)+"_"+str(Emax)+"_"+str(T)+EXT
+		filename = MESH_FOLDER+LDOS_FNAME+self.name+"_"+str(min_E)+"_"+str(max_E)+"_"+str(T)+EXT
 		# Get LDoS mesh
 		ldos_file = open(filename, 'w')
 		if debug:
 			print "Writing LDoS grid to "+filename
-		ldos_file.write(str(Emin)+" "+str(Emax)+" "+str(T)+"\n")
+		ldos_file.write(str(min_E)+" "+str(max_E)+" "+str(T)+"\n")
 		# Iterate over mesh points
 		for i in range(self.xPoints):
 			for j in range(self.yPoints):
@@ -625,9 +625,9 @@ class Cell(object):
 						ldos_file.write(str(i)+" "+str(j)+" "+str(k)+" "+str(ldos_grid[i, j, k])+"\n")
 		ldos_file.close()
 
-	def read_ldos_grid(self, Emin, Emax, T, debug=False):
+	def read_ldos_grid(self, min_E, max_E, T, debug=False):
 		"""Read LDoS mesh from file"""
-		filename = MESH_FOLDER+LDOS_FNAME+self.name+"_"+str(Emin)+"_"+str(Emax)+"_"+str(T)+EXT
+		filename = MESH_FOLDER+LDOS_FNAME+self.name+"_"+str(min_E)+"_"+str(max_E)+"_"+str(T)+EXT
 		ldos_file = open(filename, 'r')
 		ldos_grid = np.zeros_like(self.xMesh, dtype=float)
 
@@ -637,8 +637,8 @@ class Cell(object):
 		end_of_file = False
 		line = ldos_file.next()
 		line_split = line.split()
-		Emin = float(line_split[0])
-		Emax = float(line_split[1])
+		min_E = float(line_split[0])
+		max_E = float(line_split[1])
 		T = float(line_split[2])
 		line = ldos_file.next()
 		line_split = line.split()
@@ -661,12 +661,12 @@ class Cell(object):
 			print np.max(ldos_grid)
 		return ldos_grid
 
-	def get_ldos_grid(self, Emin, Emax, T, recalculate=False, write=True, debug=False):
+	def get_ldos_grid(self, min_E, max_E, T, recalculate=False, write=True, debug=False):
 		"""Get LDoS mesh.
 
 		Args:
-			Emin: Minimum energy
-			Emax: Maximum energy
+			min_E: Minimum energy
+			max_E: Maximum energy
 			T: Absolute temperature in Kelvin
 			recalculate (bool, opt.): Force recalculation of meshes, even if already stored
 			write (bool, opt.): Write calculated grids to file
@@ -676,15 +676,15 @@ class Cell(object):
 			3D np.array: LDoS mesh
 		"""
 		# Read ldos grid from file if not stored by cell
-		filename = MESH_FOLDER+LDOS_FNAME+self.name+"_"+str(Emin)+"_"+str(Emax)+"_"+str(T)+EXT
+		filename = MESH_FOLDER+LDOS_FNAME+self.name+"_"+str(min_E)+"_"+str(max_E)+"_"+str(T)+EXT
 		print filename
 		print os.path.isfile(filename)
 		if not recalculate and os.path.isfile(filename):
-			ldos_grid = self.read_ldos_grid(Emin, Emax, T, debug=debug)
+			ldos_grid = self.read_ldos_grid(min_E, max_E, T, debug=debug)
 		else:
 			# Calculate LDoS on mesh
-			ldos_grid = self.calculate_ldos_grid(Emin, Emax, T, recalculate=recalculate, write=write, debug=debug)
+			ldos_grid = self.calculate_ldos_grid(min_E, max_E, T, recalculate=recalculate, write=write, debug=debug)
 			if write:
-				self.write_ldos(ldos_grid, Emin, Emax, T, debug=debug)
+				self.write_ldos(ldos_grid, min_E, max_E, T, debug=debug)
 		return ldos_grid
 

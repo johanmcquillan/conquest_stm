@@ -476,15 +476,15 @@ def plot_charge_density_gamma_3d(
 	plt.close()
 
 
-def plot_ldos_2d(cell, Emin, Emax, T, axis, minimum, maximum, planeValue=None, step=None, interpolation='cubic', printStatus=False, debug=False):
+def plot_ldos_2d(cell, min_E, max_E, T, axis, minimum, maximum, planeValue=None, step=None, interpolation='cubic', printStatus=False, debug=False):
 	"""Plots cross-section of charge density to pdf.
 
 	All lengths measured in bohr radii (a0).
 
 	Args:
 		cell (Cell): Simulation cell to plot
-		Emin (float): Minimum energy
-		Emax (float): Maximum energy
+		min_E (float): Minimum energy
+		max_E (float): Maximum energy
 		T (float): Absolute temperature in K
 		axis (string): Cartesian axis ('x', 'y', or 'z') to set to constant value given by planeValue
 		minimum (int): Minimum value of coordinates
@@ -534,7 +534,7 @@ def plot_ldos_2d(cell, Emin, Emax, T, axis, minimum, maximum, planeValue=None, s
 				V = Vector(planeValue, space2[i, j], space1[i, j])
 				label1 = '$y$ / $a_0$'
 				label2 = '$z$ / $a_0$'
-			I[i, j] = cell.get_ldos(Emin, Emax, T, V, interpolation=interpolation, debug=debug)
+			I[i, j] = cell.get_ldos(min_E, max_E, T, V, interpolation=interpolation, debug=debug)
 			# Update maxpsi
 			if abs(I[i, j]) > maxI:
 				maxI = I[i, j]
@@ -565,7 +565,7 @@ def plot_ldos_2d(cell, Emin, Emax, T, axis, minimum, maximum, planeValue=None, s
 
 
 def plot_ldos_3d(
-		cell, Emin, Emax, T, xrange=(0.0, 0.0), yrange=(0.0, 0.0), zrange=(0.0, 0.0), step=0.0, fraction=0.8, alpha=1.0,
+		cell, min_E, max_E, T, xrange=(0.0, 0.0), yrange=(0.0, 0.0), zrange=(0.0, 0.0), step=0.0, fraction=0.8, alpha=1.0,
 		cmap=True, show=True, save=False, debug=False, recalculate=False):
 	"""Plots charge density isosurface.
 
@@ -573,8 +573,8 @@ def plot_ldos_3d(
 
 	Args:
 		cell (Cell): Simulation cell to plot
-		Emin (float): Minimum of energy range
-		Emax (float): Maximum of energy range
+		min_E (float): Minimum of energy range
+		max_E (float): Maximum of energy range
 		xrange((float), opt.): Limits of x axis
 		yrange((float), opt.): Limits of y axis
 		zrange((float), opt.): Limits of z axis
@@ -600,11 +600,11 @@ def plot_ldos_3d(
 		step = cell.grid_spacing
 
 	# Get energy relative to Fermi level
-	EminAbsolute = Emin + cell.fermiLevel
-	EmaxAbsolute = Emax + cell.fermiLevel
+	min_EAbsolute = min_E + cell.fermiLevel
+	max_EAbsolute = max_E + cell.fermiLevel
 
 	# Cartesian mesh
-	ldos = cell.get_ldos_grid(EminAbsolute, EmaxAbsolute, T, debug=debug, recalculate=recalculate)
+	ldos = cell.get_ldos_grid(min_EAbsolute, max_EAbsolute, T, debug=debug, recalculate=recalculate)
 	max_ldos = np.max(ldos)
 
 	if max_ldos == 0.0:
@@ -620,7 +620,7 @@ def plot_ldos_3d(
 
 	title = (
 		cell.name+' LDoS Isosurface at '+str(fraction)+' of Maximum Density for \n Energies from '
-		+str(Emin)+' eV to '+str(Emax)+' eV relative to the Fermi Level')
+		+str(min_E)+' eV to '+str(max_E)+' eV relative to the Fermi Level')
 	plt.title(title)
 
 	# Set axes
@@ -640,7 +640,7 @@ def plot_ldos_3d(
 	# Save plot as png
 	if save:
 		timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
-		saveName = cell.name+"_LDoS3D_"+str(fraction)+"_"+str(EminRelative)+"_"+str(EmaxRelative)+"_"+timeStamp
+		saveName = cell.name+"_LDoS3D_"+str(fraction)+"_"+str(min_EAbsolute)+"_"+str(max_EAbsolute)+"_"+timeStamp
 		plt.savefig("figures3D/"+saveName+".png")
 	# Show plot
 	if show:
