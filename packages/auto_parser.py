@@ -4,7 +4,7 @@ import sys
 import atomic
 from cell import Cell
 from smartDict import SmartDict
-from vector import Vector
+from vector import Vector, KVector
 
 HA_TO_EV = 0.03674932  # Factor to convert Hartrees to electron volts
 
@@ -142,7 +142,7 @@ class Parser(object):
 
 			# Open corresponding .dat file for basis coefficients
 			try:
-				conquest_dat_file = open(self.conquest_folder + conquest_out + '.dat')
+				conquest_dat_file = open(self.conquest_folder+conquest_out+'.dat')
 				line = conquest_dat_file.next()
 
 				# Loop over all lines
@@ -155,7 +155,8 @@ class Parser(object):
 						Kx = float(data[0])
 						Ky = float(data[1])
 						Kz = float(data[2])
-						K = Vector(Kx, Ky, Kz)
+						K_weight = float(data[3])
+						K = KVector(Kx, Ky, Kz, K_weight)
 						try:
 							line = conquest_dat_file.next()
 							while '#Kpoint' not in line:
@@ -197,12 +198,12 @@ class Parser(object):
 				data = line.split()
 				fermi_lvl = float(data[2]) * HA_TO_EV
 
-				C = Cell(conquest_out, fermi_lvl, cellLengthX, cellLengthY, cellLengthZ, grid_spacing=grid_spacing)
+				cell = Cell(conquest_out, fermi_lvl, cellLengthX, cellLengthY, cellLengthZ, grid_spacing=grid_spacing)
 
 				for atomKey in atoms:
 					atoms[atomKey].bands.lock()
-					C.add_atom(atoms[atomKey], atomKey)
-				return C
+					cell.add_atom(atoms[atomKey], atomKey)
+				return cell
 			except IOError:
 				print self.conquest_folder+conquest_out+'.dos does not exist'
 				sys.exit(1)

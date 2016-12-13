@@ -5,7 +5,7 @@ from copy import deepcopy
 
 from sph import sph
 from smartDict import SmartDict
-from vector import Vector
+from vector import Vector, KVector
 from safe_open import safe_open
 
 BOLTZMANN = 8.6173303E-5  # Boltzmann's Constant in eV/K
@@ -209,9 +209,9 @@ class Cell(object):
 
 	def get_gamma_energies(self):
 		"""Return list of energies at gamma-point"""
-		if Vector.zero() not in self.bands:
+		if KVector.gamma() not in self.bands:
 			raise ValueError('Simulation does not have gamma k-point')
-		return sorted(self.bands[Vector.zero()])
+		return sorted(self.bands[KVector.gamma()])
 
 	def fermi_dirac(self, energy, temperature):
 		"""Calculate Fermi-Dirac distribution value.
@@ -519,7 +519,7 @@ class Cell(object):
 		"""Get mesh of complex wavefunction values.
 
 		Args:
-			K (Vector): 3D Cartesian k-space vector
+			K (KVector): 3D Cartesian k-vector
 			E (float): Band energy
 			recalculate (bool, opt.): Force recalculation, even if already stored
 			write (bool, opt.): Write to file
@@ -554,9 +554,6 @@ class Cell(object):
 			print "Calculating LDoS grid"
 		ldos_grid = np.zeros_like(self.xMesh, dtype=float)
 
-		totalK = len(self.bands)
-		w = 1.0 / totalK  # K-point weighting
-
 		for K in self.bands:
 			for E in self.bands[K]:
 				if min_E <= E <= max_E:
@@ -566,7 +563,7 @@ class Cell(object):
 						for j in range(self.yPoints):
 							for k in range(self.zPoints):
 								psi = psi_grid[i, j, k]
-								ldos_grid[i, j, k] += w*fd*(abs(psi))**2
+								ldos_grid[i, j, k] += K.weight*fd*(abs(psi))**2
 				if debug:
 					print "Completed LDoS for ", K, E
 		return ldos_grid
