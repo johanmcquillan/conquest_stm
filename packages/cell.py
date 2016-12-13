@@ -569,7 +569,7 @@ class Cell(object):
 		return ldos_grid
 
 	def ldos_filename(self, min_E, max_E, T, V):
-		return MESH_FOLDER+LDOS_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(min_E)+"_"+str(max_E)+"_"+str(T)+"_"+str(V)+EXT
+		return MESH_FOLDER+LDOS_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(min_E)+"_"+str(max_E)+"_"+str(T)+EXT
 
 	def write_ldos(self, ldos_grid, min_E, max_E, T, debug=False):
 		"""Write LDoS mesh to file.
@@ -639,7 +639,7 @@ class Cell(object):
 			3D np.array: LDoS mesh
 		"""
 		# Read ldos grid from file if not stored by cell
-		filename = self.ldos_filename(min_E, max_E, T, V)
+		filename = self.ldos_filename(min_E, max_E, T)
 		if not recalculate and os.path.isfile(filename):
 			ldos_grid = self.read_ldos_grid(min_E, max_E, T, debug=debug)
 		else:
