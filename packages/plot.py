@@ -438,8 +438,7 @@ def plot_charge_density_gamma_3d(
 	# Get nearest stored energy at gamma-point to requested energy
 	bandEnergy = sorted(cell.get_gamma_energies(), key=lambda t: abs(E - t))[0]
 
-
-	psi = cell.get_psi_grid(K0, bandEnergy, debug=debug)
+	psi = cell.get_psi_grid(Vector.zero(), bandEnergy, debug=debug)
 	psi2 = abs(psi)**2
 	max_psi2 = np.max(psi2)
 	if max_psi2 == 0.0:
@@ -460,7 +459,7 @@ def plot_charge_density_gamma_3d(
 
 
 def plot_ldos_2d(
-		cell, min_E, max_E, T, axis, planeValue, minimum, maximum, bias=0.0, log=False, step=None, interpolation='cubic',
+		cell, min_E, max_E, T, axis, planeValue, minimum, maximum, step=None, interpolation='cubic',
 		printStatus=False, debug=False):
 	"""Plots cross-section of charge density to pdf.
 
@@ -489,7 +488,7 @@ def plot_ldos_2d(
 	if not step:
 		step = cell.grid_spacing
 
-	ldos_3d = cell.get_ldos_grid(min_E, max_E, T, V=bias, debug=debug)
+	ldos_3d = cell.get_ldos_grid(min_E, max_E, T, debug=debug)
 
 	if np.max(ldos_3d) == 0.0:
 		raise ValueError("LDoS is zero at all points")
@@ -541,7 +540,7 @@ def plot_2d(cell, mesh_3d, title, save_name, axis, plane_value, minimum, maximum
 
 
 def plot_ldos_3d(
-		cell, min_E, max_E, T, bias=0, x_range=(0.0, 0.0), y_range=(0.0, 0.0), z_range=(0.0, 0.0), step=0.0, fraction=0.8, alpha=1.0,
+		cell, min_E, max_E, T, x_range=(0.0, 0.0), y_range=(0.0, 0.0), z_range=(0.0, 0.0), step=0.0, fraction=0.8, alpha=1.0,
 		show=True, save=False, debug=False, recalculate=False):
 	"""Plots charge density isosurface.
 
@@ -579,7 +578,7 @@ def plot_ldos_3d(
 	max_EAbsolute = max_E + cell.fermiLevel
 
 	# Cartesian mesh
-	ldos = cell.get_ldos_grid(min_EAbsolute, max_EAbsolute, T, V=bias, debug=debug, recalculate=recalculate)
+	ldos = cell.get_ldos_grid(min_EAbsolute, max_EAbsolute, T, debug=debug, recalculate=recalculate)
 	max_ldos = np.max(ldos)
 
 	if max_ldos == 0.0:

@@ -213,7 +213,7 @@ class Cell(object):
 			raise ValueError('Simulation does not have gamma k-point')
 		return sorted(self.bands[Vector.zero()])
 
-	def fermi_dirac(self, energy, temperature, bias):
+	def fermi_dirac(self, energy, temperature):
 		"""Calculate Fermi-Dirac distribution value.
 
 		Args:
@@ -223,7 +223,7 @@ class Cell(object):
 		Returns:
 			float: Occupation value
 		"""
-		f = 1.0 / (np.exp((energy - bias - self.fermiLevel) / (BOLTZMANN * temperature)) + 1)
+		f = 1.0 / (np.exp((energy - self.fermiLevel) / (BOLTZMANN * temperature)) + 1)
 		return f
 
 	def get_ldos(self, min_E, max_E, T, position, interpolation='cubic', debug=False):
@@ -535,7 +535,7 @@ class Cell(object):
 				self.write_psi_grid(psi_grid, K, E)
 		return psi_grid
 
-	def calculate_ldos_grid(self, min_E, max_E, T, V=0.0, recalculate=False, write=True, debug=False):
+	def calculate_ldos_grid(self, min_E, max_E, T, recalculate=False, write=True, debug=False):
 		"""Calculate LDoS mesh.
 
 		Args:
@@ -561,7 +561,7 @@ class Cell(object):
 			for E in self.bands[K]:
 				if min_E <= E <= max_E:
 					psi_grid = self.get_psi_grid(K, E, recalculate=recalculate, write=write, debug=debug)
-					fd = self.fermi_dirac(E, T, bias=V)
+					fd = self.fermi_dirac(E, T)
 					for i in range(self.xPoints):
 						for j in range(self.yPoints):
 							for k in range(self.zPoints):
@@ -574,7 +574,7 @@ class Cell(object):
 	def ldos_filename(self, min_E, max_E, T, V):
 		return MESH_FOLDER+LDOS_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(min_E)+"_"+str(max_E)+"_"+str(T)+"_"+str(V)+EXT
 
-	def write_ldos(self, ldos_grid, min_E, max_E, T, V=0.0, debug=False):
+	def write_ldos(self, ldos_grid, min_E, max_E, T, debug=False):
 		"""Write LDoS mesh to file.
 
 		Args:
@@ -583,7 +583,7 @@ class Cell(object):
 			T: Absolute temperature in K
 			debug (bool, opt.): Print extra information during runtime
 		"""
-		filename = self.ldos_filename(min_E, max_E, T, V)
+		filename = self.ldos_filename(min_E, max_E, T)
 		# Get LDoS mesh
 		ldos_file = safe_open(filename, 'w')
 		if debug:
@@ -597,9 +597,9 @@ class Cell(object):
 						ldos_file.write(str(i)+" "+str(j)+" "+str(k)+" "+str(ldos_grid[i, j, k])+"\n")
 		ldos_file.close()
 
-	def read_ldos_grid(self, min_E, max_E, T, V=0.0, debug=False):
+	def read_ldos_grid(self, min_E, max_E, T, debug=False):
 		"""Read LDoS mesh from file"""
-		filename = self.ldos_filename(min_E, max_E, T, V)
+		filename = self.ldos_filename(min_E, max_E, T)
 		ldos_file = open(filename, 'r')
 		ldos_grid = np.zeros_like(self.xMesh, dtype=float)
 
@@ -627,7 +627,7 @@ class Cell(object):
 			print "LDoS grid successfully read"
 		return ldos_grid
 
-	def get_ldos_grid(self, min_E, max_E, T, V=0.0, recalculate=False, write=True, debug=False):
+	def get_ldos_grid(self, min_E, max_E, T, recalculate=False, write=True, debug=False):
 		"""Get LDoS mesh.
 
 		Args:
@@ -644,10 +644,10 @@ class Cell(object):
 		# Read ldos grid from file if not stored by cell
 		filename = self.ldos_filename(min_E, max_E, T, V)
 		if not recalculate and os.path.isfile(filename):
-			ldos_grid = self.read_ldos_grid(min_E, max_E, T, V=V, debug=debug)
+			ldos_grid = self.read_ldos_grid(min_E, max_E, T, debug=debug)
 		else:
 			# Calculate LDoS on mesh
-			ldos_grid = self.calculate_ldos_grid(min_E, max_E, T, V=V, recalculate=recalculate, write=write, debug=debug)
+			ldos_grid = self.calculate_ldos_grid(min_E, max_E, T, recalculate=recalculate, write=write, debug=debug)
 			if write:
-				self.write_ldos(ldos_grid, min_E, max_E, T, V=V, debug=debug)
+				self.write_ldos(ldos_grid, min_E, max_E, T, debug=debug)
 		return ldos_grid
