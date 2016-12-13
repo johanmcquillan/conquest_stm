@@ -2,13 +2,14 @@ import numpy as np
 
 
 class Vector(object):
-	"""3D cartesian vector class.
+	"""3D real space Cartesian vector.
 
 	Attributes:
 		x (float): Component value in x direction
 		y (float): Component value in y direction
 		z (float): Component value in z direction
-		magnitude (float): Vector magnitude. Initially null - only calculates if needed, saves computational cost
+		magnitude (float): Vector magnitude; Initially null - only calculates if needed, saves computational cost
+		hash (int): Hash value; Initially null - only calculates if needed, saves computational cost
 	"""
 
 	def __init__(self, x, y, z):
@@ -114,3 +115,20 @@ class Vector(object):
 	def zero():
 		"""Zero vector"""
 		return Vector(0.0, 0.0, 0.0)
+
+
+class KVector(Vector):
+	"""3D k-sapce Cartesian vector.
+
+	Attributes:
+		x (float): Component value in x direction
+		y (float): Component value in y direction
+		z (float): Component value in z direction
+		magnitude (float): Vector magnitude. Initially null - only calculates if needed, saves computational cost
+		hash (int): Hash value; Initially null - only calculates if needed, saves computational cost
+		weight (float): K-point weighting
+	"""
+
+	def __init__(self, x, y, z, weight):
+		Vector.__init__(self, x, y, z)
+		self.weight = weight
