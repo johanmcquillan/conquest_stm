@@ -132,3 +132,9 @@ class KVector(Vector):
 	def __init__(self, x, y, z, weight):
 		Vector.__init__(self, x, y, z)
 		self.weight = weight
+
+	@staticmethod
+	def gamma():
+		"""Gamma point vector"""
+		return KVector(0.0, 0.0, 0.0, 1.0)
+
