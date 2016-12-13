@@ -18,6 +18,36 @@ from vector import Vector
 SPECTRAL = {0: 's', 1: 'p', 2: 'd', 3: 'f', 4: 'g',
                5: 'h', 6: 'i', 7: 'j', 8: 'k'}
 
+AXES = ('x', 'y', 'z')
+
+
+def plot_3d(title, mesh, fraction, x_range, y_range, z_range, step, save_name=None, show=True):
+	# Make isosurface at psi2 = fraction * psi2max
+	mes = measure.marching_cubes(mesh, fraction*np.max(mesh))
+	verts = mes[0]
+	faces = mes[1]
+
+	# Set up plot
+	fig, ax = plt.subplots(subplot_kw=dict(projection='3d'), figsize=(10, 10))
+	plt.title(title)
+
+	# Plot surface
+	ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Spectral, lw=0.1)
+
+	# Set axes
+	ax.set_xlim3d(x_range[0] / step, x_range[1] / step)
+	ax.set_ylim3d(y_range[0] / step, y_range[1] / step)
+	ax.set_zlim3d(z_range[0] / step, z_range[1] / step)
+	ax.set_xlabel("x")
+	ax.set_ylabel("y")
+	ax.set_zlabel("z")
+
+	if save_name:
+		plt.savefig("figures3D/"+save_name+".png")
+	if show:
+		plt.show()
+	plt.close()
+
 
 def plot_radials(ions, points=500, printStatus=False, spectro=True):
 	"""Plot all radial functions from self.ions to pdf
@@ -429,7 +459,9 @@ def plot_charge_density_gamma_3d(
 	plot_3d(title, psi2, fraction, x_range, y_range, z_range, step, save_name=save_name, show=show)
 
 
-def plot_ldos_2d(cell, min_E, max_E, T, axis, minimum, maximum, planeValue=None, step=None, interpolation='cubic', printStatus=False, debug=False):
+def plot_ldos_2d(
+		cell, min_E, max_E, T, axis, planeValue, minimum, maximum, bias=0.0, log=False, step=None, interpolation='cubic',
+		printStatus=False, debug=False):
 	"""Plots cross-section of charge density to pdf.
 
 	All lengths measured in bohr radii (a0).
@@ -450,75 +482,66 @@ def plot_ldos_2d(cell, min_E, max_E, T, axis, minimum, maximum, planeValue=None,
 		debug (bool, opt.): If true, print extra information during runtime
 	"""
 
-	if axis not in ['x', 'y', 'z']:
+	if axis not in AXES:
 		raise ValueError("Axis must be x, y, or z")
 
 	# If no step given, set to gridSpacing
 	if not step:
-		step = cell.gridSpacing
+		step = cell.grid_spacing
 
-	# Initialise meshes
-	# 2D cartesian mesh (x, y, or z axis determined later)
-	space1, space2 = np.mgrid[minimum:maximum:step, minimum:maximum:step]
+	ldos_3d = cell.get_ldos_grid(min_E, max_E, T, V=bias, debug=debug)
 
-	I = np.zeros_like(space1, dtype=float)  # Wavefunction mesh (psi = R*Y)
-
-	maxI = 0.0  # Colour plot sets limits to -maxpsi to +maxpsi
-	# Loop over all mesh points
-	for i in range(0, int((maximum - minimum) / step)):
-		for j in range(0, int((maximum - minimum) / step)):
-			# Use axis variable to determine which axes space1 and space2 refer to
-			# Evaluate spherical harmonic at mesh point
-			if axis == 'z':
-				if not planeValue:
-					planeValue = cell.zLength / 2
-				V = Vector(space2[i, j], space1[i, j], planeValue)
-				label1 = '$x$ / $a_0$'
-				label2 = '$y$ / $a_0$'
-			if axis == 'y':
-				if not planeValue:
-					planeValue = cell.yLength / 2
-				V = Vector(space2[i, j], planeValue, space1[i, j])
-				label1 = '$x$ / $a_0$'
-				label2 = '$z$ / $a_0$'
-			if axis == 'x':
-				if not planeValue:
-					planeValue = cell.xLength / 2
-				V = Vector(planeValue, space2[i, j], space1[i, j])
-				label1 = '$y$ / $a_0$'
-				label2 = '$z$ / $a_0$'
-			I[i, j] = cell.get_ldos(min_E, max_E, T, V, interpolation=interpolation, debug=debug)
-			# Update maxpsi
-			if abs(I[i, j]) > maxI:
-				maxI = I[i, j]
-	if maxI == 0.0:
+	if np.max(ldos_3d) == 0.0:
 		raise ValueError("LDoS is zero at all points")
 
-	# Setup plot
+
 	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
-	plotName = cell.name + '_LDoS2D_' + axis + '_' + timeStamp
-	with PdfPages('pdfs/' + plotName + '.pdf') as pdf:
+	save_name = cell.name + '_LDoS2D_' + axis + '_' + timeStamp
+
+	axes = ['x', 'y', 'z']
+	axes.remove(axis)
+	title = cell.name+' LDoS in $'+axes[0]+'-'+axes[1]+'$ plane at $'+axis+'='+str(planeValue)+'a_0$'
+
+	plot_2d(cell, ldos_3d, title, save_name, axis, planeValue, minimum, maximum)
+
+	if printStatus:
+		print 'Finished ' + save_name + '.pdf'
+
+
+def plot_2d(cell, mesh_3d, title, save_name, axis, plane_value, minimum, maximum):
+
+	if axis == 'x':
+		index = np.where(cell.xMesh == plane_value)[0][0]
+		mesh_2d = mesh_3d[index, :, :]
+		label1 = 'z'
+		label2 = 'y'
+	elif axis == 'y':
+		index = np.where(cell.yMesh == plane_value)[1][0]
+		mesh_2d = mesh_3d[:, index, :]
+		label1 = 'z'
+		label2 = 'x'
+	elif axis == 'z':
+		index = np.where(cell.zMesh == plane_value)[2][0]
+		mesh_2d = mesh_3d[:, :, index]
+		label1 = 'y'
+		label2 = 'x'
+
+	with PdfPages('figures2D/'+save_name+'.pdf') as pdf:
 		plt.imshow(
-				I, interpolation='bilinear', origin='center', cmap=cm.copper,
+				mesh_2d, interpolation='bilinear', origin='center', cmap=cm.copper,
 				extent=(minimum, maximum, minimum, maximum))
-		clb = plt.colorbar()
-		clb.ax.set_title('$a_0^{-3/2}$')
+		plt.colorbar()
+		plt.title(title)
 		plt.xlabel(label1)
 		plt.ylabel(label2)
-		axes = ['x', 'y', 'z']
-		axes.remove(axis)
-		ttl = (cell.name+' LDoS in $'+axes[0]+'-'+axes[1]+'$ plane at $'+axis+'='+str(planeValue)+'a_0$')
-		plt.title(ttl)
 
 		# Save to pdf
 		pdf.savefig()
 		plt.close()
-		if printStatus:
-			print 'Finished ' + plotName + '.pdf'
 
 
 def plot_ldos_3d(
-		cell, min_E, max_E, T, x_range=(0.0, 0.0), y_range=(0.0, 0.0), z_range=(0.0, 0.0), step=0.0, fraction=0.8, alpha=1.0,
+		cell, min_E, max_E, T, bias=0, x_range=(0.0, 0.0), y_range=(0.0, 0.0), z_range=(0.0, 0.0), step=0.0, fraction=0.8, alpha=1.0,
 		show=True, save=False, debug=False, recalculate=False):
 	"""Plots charge density isosurface.
 
@@ -556,7 +579,7 @@ def plot_ldos_3d(
 	max_EAbsolute = max_E + cell.fermiLevel
 
 	# Cartesian mesh
-	ldos = cell.get_ldos_grid(min_EAbsolute, max_EAbsolute, T, debug=debug, recalculate=recalculate)
+	ldos = cell.get_ldos_grid(min_EAbsolute, max_EAbsolute, T, V=bias, debug=debug, recalculate=recalculate)
 	max_ldos = np.max(ldos)
 
 	if max_ldos == 0.0:
@@ -574,31 +597,3 @@ def plot_ldos_3d(
 		save_name = None
 
 	plot_3d(title, ldos, fraction, x_range, y_range, z_range, step, save_name=save_name, show=show)
-
-
-def plot_3d(title, mesh, fraction, x_range, y_range, z_range, step, save_name=None, show=True):
-	# Make isosurface at psi2 = fraction * psi2max
-	mes = measure.marching_cubes(mesh, fraction*np.max(mesh))
-	verts = mes[0]
-	faces = mes[1]
-
-	# Set up plot
-	fig, ax = plt.subplots(subplot_kw=dict(projection='3d'), figsize=(10, 10))
-	plt.title(title)
-
-	# Plot surface
-	ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Spectral, lw=0.1)
-
-	# Set axes
-	ax.set_xlim3d(x_range[0] / step, x_range[1] / step)
-	ax.set_ylim3d(y_range[0] / step, y_range[1] / step)
-	ax.set_zlim3d(z_range[0] / step, z_range[1] / step)
-	ax.set_xlabel("x")
-	ax.set_ylabel("y")
-	ax.set_zlabel("z")
-
-	if save_name:
-		plt.savefig("figures3D/"+save_name+".png")
-	if show:
-		plt.show()
-	plt.close()

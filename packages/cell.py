@@ -6,6 +6,7 @@ from copy import deepcopy
 from sph import sph
 from smartDict import SmartDict
 from vector import Vector
+from safe_open import safe_open
 
 BOLTZMANN = 8.6173303E-5  # Boltzmann's Constant in eV/K
 
@@ -212,7 +213,7 @@ class Cell(object):
 			raise ValueError('Simulation does not have gamma k-point')
 		return sorted(self.bands[Vector.zero()])
 
-	def fermi_dirac(self, energy, temperature):
+	def fermi_dirac(self, energy, temperature, bias):
 		"""Calculate Fermi-Dirac distribution value.
 
 		Args:
@@ -222,45 +223,8 @@ class Cell(object):
 		Returns:
 			float: Occupation value
 		"""
-		f = 1.0 / (np.exp((energy - self.fermiLevel) / (BOLTZMANN * temperature)) + 1)
+		f = 1.0 / (np.exp((energy - bias - self.fermiLevel) / (BOLTZMANN * temperature)) + 1)
 		return f
-
-	def get_psi(self, K, E, position, interpolation='cubic'):
-		"""Evaluate wavefunction at specific position, k-point, and energy.
-
-		Args:
-			K (Vector): 3D Cartesian k-space vector
-			E (float): Band energy
-			position (Vector): 3D Cartesian real space vector
-			interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
-
-		Returns:
-			complex: Wavefunction value
-		"""
-		psi = complex(0.0, 0.0)
-		# Loop over atoms
-		for atomKey in self.atoms:
-			# Check is basis function values have been calculated for this atom and point
-			if not self.has_basis_point(atomKey, position):
-				# Get and store basis function values
-				# Store values so they only need to be calculated once
-				self.set_basis_point(atomKey, position, interpolation=interpolation)
-			# Use basis function value to calculate psi
-			BP = self.basisPoints[atomKey][position]
-			psi += self.atoms[atomKey].get_psi(K, E, position, basisPoint=BP, local=True)
-		return psi
-
-	def get_psi_gamma(self, E, position):
-		"""Evaluate wavefunction at specific position and energy using only gamma-point.
-
-		Args:
-			E (float): Band energy
-			position (Vector): 3D Cartesian real space vector
-
-		Returns:
-			complex: Wavefunction value
-			"""
-		return self.get_psi(Vector.zero(), E, position)
 
 	def get_ldos(self, min_E, max_E, T, position, interpolation='cubic', debug=False):
 		"""Evaluate local density of states (LDoS) within energy range at specific point.
@@ -383,6 +347,9 @@ class Cell(object):
 				print "Calculated support grid for atom "+atom.ionName+" "+str(atomKey)
 		return support_grid
 
+	def support_filename(self):
+		return MESH_FOLDER+SUPPORT_FNAME+self.name+"_"+str(self.grid_spacing)+EXT
+
 	def write_support_grid(self, support_grid, debug=False):
 		"""Write support function mesh to file.
 
@@ -390,10 +357,10 @@ class Cell(object):
 			recalculate (bool, opt.): Force recalculation of meshes, even if already stored
 			debug (bool, opt.): Print extra information during runtime
 		"""
-		filename = MESH_FOLDER+SUPPORT_FNAME+self.name+EXT,
-		support_file = open(filename, 'w')
+		filename = self.support_filename()
+		support_file = safe_open(filename, 'w')
 		if debug:
-			print "Writing support grid to "+MESH_FOLDER+SUPPORT_FNAME+self.name+EXT
+			print "Writing support grid to "+filename
 
 		# Iterate over mesh points
 		for i in range(self.xPoints):
@@ -418,7 +385,7 @@ class Cell(object):
 
 	def read_support_grid(self, debug=False):
 		"""Read support function mesh from file"""
-		filename = MESH_FOLDER+SUPPORT_FNAME+self.name+EXT,
+		filename = self.support_filename()
 		support_file = open(filename, 'r')
 		support_grid = np.empty_like(self.xMesh, dtype=SmartDict)
 
@@ -480,7 +447,7 @@ class Cell(object):
 			3D np.array of SmartDict: Support function mesh, indexed by [x, y, z][atomKey][l][zeta][m]
 		"""
 		# Read support grid from file if not stored by cell
-		filename = MESH_FOLDER+SUPPORT_FNAME+self.name+EXT,
+		filename = self.support_filename()
 		if self.support_grid is None and not recalculate and os.path.isfile(filename):
 			self.support_grid = self.read_support_grid(debug=debug)
 		elif self.support_grid is None:
@@ -493,7 +460,7 @@ class Cell(object):
 
 	def calculate_psi_grid(self, K, E, recalculate=False, write=True, debug=False):
 		if debug:
-			print "Calculating Wavefunction "+str(K)+", "+str(E)
+			print "Building Wavefunction for "+str(K)+", "+str(E)
 		psi_grid = np.zeros_like(self.xMesh, dtype=complex)
 		support_grid = self.get_support_grid(recalculate=recalculate, write=write, debug=debug)
 		for atomKey in self.atoms:
@@ -510,9 +477,13 @@ class Cell(object):
 											psi_grid[i, j, k] += coeff * support_grid[i, j, k][atomKey][l][zeta][m]
 		return psi_grid
 
+	def psi_filename(self, K, E):
+		return (MESH_FOLDER+PSI_FNAME+self.name+"_"+str(self.grid_spacing)+"_"
+				+str(K.x)+"_"+str(K.y)+"_"+str(K.z)+"_"+str(E)+EXT)
+
 	def write_psi_grid(self, psi_grid, K, E):
-		filename = MESH_FOLDER+PSI_FNAME+self.name+"_"+str(K.x)+"_"+str(K.y)+"_"+str(K.z)+"_"+str(E)+EXT
-		psi_file = open(filename, "w")
+		filename = self.psi_filename(K, E)
+		psi_file = safe_open(filename, "w")
 		for i in range(self.xPoints):
 			for j in range(self.yPoints):
 				for k in range(self.zPoints):
@@ -529,10 +500,8 @@ class Cell(object):
 					self.write_psi_grid(psi_grid, K, E)
 
 	def read_psi_grid(self, K, E):
-		psi_file = open(
-			MESH_FOLDER + PSI_FNAME + self.name + "_" + str(K.x) + "_" + str(K.y) + "_" + str(K.z) + "_" + str(E) +
-			EXT,
-			"r")
+		filename = self.psi_filename(K, E)
+		psi_file = open(filename, "r")
 		psi_grid = np.zeros_like(self.xMesh, dtype=complex)
 
 		for line in psi_file:
@@ -556,7 +525,7 @@ class Cell(object):
 			write (bool, opt.): Write to file
 			debug (bool, opt.): Print extra information during runtime
 		"""
-		filename = MESH_FOLDER+PSI_FNAME+self.name+"_"+str(K.x)+"_"+str(K.y)+"_"+str(K.z)+"_"+str(E)+EXT
+		filename = self.psi_filename(K, E)
 		if not recalculate and os.path.isfile(filename):
 			# Read data from file
 			psi_grid = self.read_psi_grid(K, E)
@@ -566,7 +535,7 @@ class Cell(object):
 				self.write_psi_grid(psi_grid, K, E)
 		return psi_grid
 
-	def calculate_ldos_grid(self, min_E, max_E, T, recalculate=False, write=True, debug=False):
+	def calculate_ldos_grid(self, min_E, max_E, T, V=0.0, recalculate=False, write=True, debug=False):
 		"""Calculate LDoS mesh.
 
 		Args:
@@ -592,32 +561,33 @@ class Cell(object):
 			for E in self.bands[K]:
 				if min_E <= E <= max_E:
 					psi_grid = self.get_psi_grid(K, E, recalculate=recalculate, write=write, debug=debug)
-					fd = self.fermi_dirac(E, T)
+					fd = self.fermi_dirac(E, T, bias=V)
 					for i in range(self.xPoints):
 						for j in range(self.yPoints):
 							for k in range(self.zPoints):
 								psi = psi_grid[i, j, k]
 								ldos_grid[i, j, k] += w*fd*(abs(psi))**2
 				if debug:
-					print "Completed", K, E
+					print "Completed LDoS for ", K, E
 		return ldos_grid
 
-	def write_ldos(self, ldos_grid, min_E, max_E, T, debug=False):
+	def ldos_filename(self, min_E, max_E, T, V):
+		return MESH_FOLDER+LDOS_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(min_E)+"_"+str(max_E)+"_"+str(T)+"_"+str(V)+EXT
+
+	def write_ldos(self, ldos_grid, min_E, max_E, T, V=0.0, debug=False):
 		"""Write LDoS mesh to file.
 
 		Args:
 			min_E: Minimum energy
 			max_E: Maximum energy
 			T: Absolute temperature in K
-			recalculate (bool, opt.): Force recalculation of mesh, even if stored
 			debug (bool, opt.): Print extra information during runtime
 		"""
-		filename = MESH_FOLDER+LDOS_FNAME+self.name+"_"+str(min_E)+"_"+str(max_E)+"_"+str(T)+EXT
+		filename = self.ldos_filename(min_E, max_E, T, V)
 		# Get LDoS mesh
-		ldos_file = open(filename, 'w')
+		ldos_file = safe_open(filename, 'w')
 		if debug:
 			print "Writing LDoS grid to "+filename
-		ldos_file.write(str(min_E)+" "+str(max_E)+" "+str(T)+"\n")
 		# Iterate over mesh points
 		for i in range(self.xPoints):
 			for j in range(self.yPoints):
@@ -627,9 +597,9 @@ class Cell(object):
 						ldos_file.write(str(i)+" "+str(j)+" "+str(k)+" "+str(ldos_grid[i, j, k])+"\n")
 		ldos_file.close()
 
-	def read_ldos_grid(self, min_E, max_E, T, debug=False):
+	def read_ldos_grid(self, min_E, max_E, T, V=0.0, debug=False):
 		"""Read LDoS mesh from file"""
-		filename = MESH_FOLDER+LDOS_FNAME+self.name+"_"+str(min_E)+"_"+str(max_E)+"_"+str(T)+EXT
+		filename = self.ldos_filename(min_E, max_E, T, V)
 		ldos_file = open(filename, 'r')
 		ldos_grid = np.zeros_like(self.xMesh, dtype=float)
 
@@ -637,15 +607,10 @@ class Cell(object):
 			print "Reading LDoS grid from "+filename
 
 		end_of_file = False
-		line = ldos_file.next()
-		line_split = line.split()
-		min_E = float(line_split[0])
-		max_E = float(line_split[1])
-		T = float(line_split[2])
-		line = ldos_file.next()
-		line_split = line.split()
 		while not end_of_file:
 			try:
+				line = ldos_file.next()
+				line_split = line.split()
 				# Get mesh indices
 				i = int(line_split[0])
 				j = int(line_split[1])
@@ -660,16 +625,15 @@ class Cell(object):
 
 		if debug:
 			print "LDoS grid successfully read"
-			print np.max(ldos_grid)
 		return ldos_grid
 
-	def get_ldos_grid(self, min_E, max_E, T, recalculate=False, write=True, debug=False):
+	def get_ldos_grid(self, min_E, max_E, T, V=0.0, recalculate=False, write=True, debug=False):
 		"""Get LDoS mesh.
 
 		Args:
 			min_E: Minimum energy
 			max_E: Maximum energy
-			T: Absolute temperature in Kelvin
+			T: Absolute temperature in K
 			recalculate (bool, opt.): Force recalculation of meshes, even if already stored
 			write (bool, opt.): Write calculated grids to file
 			debug (bool, opt.): Print extra information during runtime
@@ -678,15 +642,12 @@ class Cell(object):
 			3D np.array: LDoS mesh
 		"""
 		# Read ldos grid from file if not stored by cell
-		filename = MESH_FOLDER+LDOS_FNAME+self.name+"_"+str(min_E)+"_"+str(max_E)+"_"+str(T)+EXT
-		print filename
-		print os.path.isfile(filename)
+		filename = self.ldos_filename(min_E, max_E, T, V)
 		if not recalculate and os.path.isfile(filename):
-			ldos_grid = self.read_ldos_grid(min_E, max_E, T, debug=debug)
+			ldos_grid = self.read_ldos_grid(min_E, max_E, T, V=V, debug=debug)
 		else:
 			# Calculate LDoS on mesh
-			ldos_grid = self.calculate_ldos_grid(min_E, max_E, T, recalculate=recalculate, write=write, debug=debug)
+			ldos_grid = self.calculate_ldos_grid(min_E, max_E, T, V=V, recalculate=recalculate, write=write, debug=debug)
 			if write:
-				self.write_ldos(ldos_grid, min_E, max_E, T, debug=debug)
+				self.write_ldos(ldos_grid, min_E, max_E, T, V=V, debug=debug)
 		return ldos_grid
-
