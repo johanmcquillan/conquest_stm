@@ -615,8 +615,6 @@ class Cell(object):
 				# Get LDoS value
 				value = float(line_split[3])
 				ldos_grid[i, j, k] = value
-				line = ldos_file.next()
-				line_split = line.split()
 			except StopIteration:
 				end_of_file = True
 
