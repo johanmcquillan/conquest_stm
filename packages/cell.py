@@ -76,7 +76,7 @@ class Cell(object):
 		# Initialise atoms and bands
 		self.atoms = {}
 		self.bands = {}
-		self.support_grid = None
+		self.support_grid = False
 
 	def has_band(self, K, E):
 		"""Check if cell stores specified band.
@@ -169,12 +169,6 @@ class Cell(object):
 					self.bands[K].append(E)
 			# Sort energy list
 			self.bands[K] = sorted(self.bands[K])
-
-	def get_gamma_energies(self):
-		"""Return list of energies at gamma-point"""
-		if KVector.gamma() not in self.bands:
-			raise ValueError('Simulation does not have gamma k-point')
-		return sorted(self.bands[KVector.gamma()])
 
 	def fermi_dirac(self, energy, temperature):
 		"""Calculate Fermi-Dirac distribution value.
@@ -313,11 +307,22 @@ class Cell(object):
 	def support_filename(self):
 		return MESH_FOLDER+SUPPORT_FNAME+self.name+"_"+str(self.grid_spacing)+EXT
 
-	def write_support_grid(self, support_grid, debug=False):
+	def has_support_file(self, debug=False):
+		output = False
+		filename = self.support_filename()
+		if os.path.isfile(filename):
+			support_file = open(filename, 'r')
+			line = support_file.next()
+			spacing_string = line.split()[0]
+			if spacing_string.isdigit() and float(spacing_string) == self.grid_spacing:
+				output = True
+			support_file.close()
+		return output
+
+	def write_support_grid(self, debug=False):
 		"""Write support function mesh to file.
 
 		Args:
-			recalculate (bool, opt.): Force recalculation of meshes, even if already stored
 			debug (bool, opt.): Print extra information during runtime
 		"""
 		filename = self.support_filename()
@@ -325,24 +330,25 @@ class Cell(object):
 		if debug:
 			print "Writing support grid to "+filename
 
+		support_file.write(str(self.grid_spacing+"\n"))
 		# Iterate over mesh points
 		for i in range(self.x_points):
 			for j in range(self.y_points):
 				for k in range(self.z_points):
 					# If support function values exist at mesh point
-					if support_grid[i, j, k]:
+					if self.support_grid[i, j, k]:
 						support_file.write(str(i)+" "+str(j)+" "+str(k)+"\n")
 						# Iterate over atoms
-						for atomKey in support_grid[i, j, k]:
+						for atom_key in self.support_grid[i, j, k]:
 							# Write atom index
-							support_file.write(str(atomKey)+"\n")
+							support_file.write(str(atom_key)+"\n")
 							# Iterate over orbitals
-							for l in support_grid[i, j, k][atomKey]:
-								for zeta in support_grid[i, j, k][atomKey][l]:
-									for m in support_grid[i, j, k][atomKey][l][zeta]:
+							for l in self.support_grid[i, j, k][atom_key]:
+								for zeta in self.support_grid[i, j, k][atom_key][l]:
+									for m in self.support_grid[i, j, k][atom_key][l][zeta]:
 										# Write orbital data
 										line = (str(l)+" "+str(zeta)+" "+str(m)+" "
-												+str(support_grid[i, j, k][atomKey][l][zeta][m]))
+												+str(self.support_grid[i, j, k][atom_key][l][zeta][m]))
 										support_file.write(line+"\n")
 		support_file.close()
 
@@ -357,6 +363,7 @@ class Cell(object):
 
 		# Iterate over file lines
 		end_of_file = False
+		support_file.next()
 		line = support_file.next()
 		line_split = line.split()
 		while not end_of_file:
@@ -372,7 +379,7 @@ class Cell(object):
 				while reading_atoms:
 					if len(line_split) == 1:
 						# Get atom index
-						atomKey = int(line)
+						atom_key = int(line)
 						# Read orbital data
 						reading_orbitals = True
 						while reading_orbitals:
@@ -389,7 +396,7 @@ class Cell(object):
 								value = float(line_split[3])
 								if not support_grid[i, j, k]:
 									support_grid[i, j, k] = SmartDict()
-								support_grid[i, j, k][atomKey][l][zeta][m] = value
+								support_grid[i, j, k][atom_key][l][zeta][m] = value
 					else:
 						reading_atoms = False
 			except StopIteration:
@@ -409,16 +416,16 @@ class Cell(object):
 		Returns:
 			3D np.array of SmartDict: Support function mesh, indexed by [x, y, z][atomKey][l][zeta][m]
 		"""
-		# Read support grid from file if not stored by cell
-		filename = self.support_filename()
-		if self.support_grid is None and not recalculate and os.path.isfile(filename):
-			self.support_grid = self.read_support_grid(debug=debug)
-		elif self.support_grid is None:
-			# Recalculate support grid
-			self.support_grid = self.calculate_support_grid(debug=debug)
-			# Write to file
-			if write:
-				self.write_support_grid(self.support_grid, debug=False)
+		if not self.support_grid:
+			if not recalculate and self.has_support_file(debug=debug):
+				# Read support grid from file
+				self.support_grid = self.read_support_grid(debug=debug)
+			else:
+				# Recalculate support grid
+				self.support_grid = self.calculate_support_grid(debug=debug)
+				# Write to file
+				if write:
+					self.write_support_grid(debug=debug)
 		return self.support_grid
 
 	def calculate_psi_grid(self, K, E, recalculate=False, write=True, debug=False):
@@ -426,27 +433,40 @@ class Cell(object):
 			print "Building Wavefunction for "+str(K)+", "+str(E)
 		psi_grid = np.zeros_like(self.x_mesh, dtype=complex)
 		support_grid = self.get_support_grid(recalculate=recalculate, write=write, debug=debug)
-		for atomKey in self.atoms:
-			atom = self.atoms[atomKey]
+		for atom_key in self.atoms:
+			atom = self.atoms[atom_key]
 			for l in atom.bands[K][E]:
 				for zeta in atom.bands[K][E][l]:
 					for m in atom.bands[K][E][l][zeta]:
-						coeff = atom.get_coefficient(K, E, l, zeta, m)
+						coefficient = atom.get_coefficient(K, E, l, zeta, m)
 						for i in range(self.x_points):
 							for j in range(self.y_points):
 								for k in range(self.z_points):
 									if support_grid[i, j, k]:
-										if atomKey in support_grid[i, j, k]:
-											psi_grid[i, j, k] += coeff * support_grid[i, j, k][atomKey][l][zeta][m]
+										if atom_key in support_grid[i, j, k]:
+											psi_grid[i, j, k] += coefficient*support_grid[i, j, k][atom_key][l][zeta][m]
 		return psi_grid
 
 	def psi_filename(self, K, E):
 		return (MESH_FOLDER+PSI_FNAME+self.name+"_"+str(self.grid_spacing)+"_"
 				+str(K.x)+"_"+str(K.y)+"_"+str(K.z)+"_"+str(E)+EXT)
 
+	def has_psi_file(self, K, E):
+		output = False
+		filename = self.psi_filename(K, E)
+		if os.path.isfile(filename):
+			psi_file = file(filename, "r")
+			line = psi_file.next()
+			spacing_string = line.split()[0]
+			if spacing_string.isdigit() and float(spacing_string) == self.grid_spacing:
+				output = True
+			psi_file.close()
+		return output
+
 	def write_psi_grid(self, psi_grid, K, E):
 		filename = self.psi_filename(K, E)
 		psi_file = safe_open(filename, "w")
+		psi_file.write(str(self.grid_spacing)+"\n")
 		for i in range(self.x_points):
 			for j in range(self.y_points):
 				for k in range(self.z_points):
@@ -465,6 +485,7 @@ class Cell(object):
 	def read_psi_grid(self, K, E):
 		filename = self.psi_filename(K, E)
 		psi_file = open(filename, "r")
+		psi_file.next()  # Skip grid spacing
 		psi_grid = np.zeros_like(self.x_mesh, dtype=complex)
 
 		for line in psi_file:
@@ -488,8 +509,7 @@ class Cell(object):
 			write (bool, opt.): Write to file
 			debug (bool, opt.): Print extra information during runtime
 		"""
-		filename = self.psi_filename(K, E)
-		if not recalculate and os.path.isfile(filename):
+		if not recalculate and self.has_psi_file(K, E):
 			# Read data from file
 			psi_grid = self.read_psi_grid(K, E)
 		else:
@@ -534,6 +554,17 @@ class Cell(object):
 	def ldos_filename(self, min_E, max_E, T):
 		return MESH_FOLDER+LDOS_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(min_E)+"_"+str(max_E)+"_"+str(T)+EXT
 
+	def has_ldos_file(self, min_E, max_E, T):
+		output = False
+		filename = self.ldos_filename(min_E, max_E, T)
+		if os.path.isfile(filename):
+			ldos_file = file(filename, "r")
+			line = ldos_file.next()
+			spacing_string = line.split()[0]
+			if spacing_string.isdigit() and float(spacing_string) == self.grid_spacing:
+				output = True
+		return output
+
 	def write_ldos(self, ldos_grid, min_E, max_E, T, debug=False):
 		"""Write LDoS mesh to file.
 
@@ -545,9 +576,10 @@ class Cell(object):
 		"""
 		filename = self.ldos_filename(min_E, max_E, T)
 		# Get LDoS mesh
-		ldos_file = safe_open(filename, 'w')
+		ldos_file = safe_open(filename, "w")
 		if debug:
 			print "Writing LDoS grid to "+filename
+		ldos_file.write(str(self.grid_spacing+"\n"))
 		# Iterate over mesh points
 		for i in range(self.x_points):
 			for j in range(self.y_points):
@@ -561,6 +593,7 @@ class Cell(object):
 		"""Read LDoS mesh from file"""
 		filename = self.ldos_filename(min_E, max_E, T)
 		ldos_file = open(filename, 'r')
+		ldos_file.next()  # Skip grid spacing
 		ldos_grid = np.zeros_like(self.x_mesh, dtype=float)
 
 		if debug:
@@ -600,8 +633,7 @@ class Cell(object):
 			3D np.array: LDoS mesh
 		"""
 		# Read ldos grid from file if not stored by cell
-		filename = self.ldos_filename(min_E, max_E, T)
-		if not recalculate and os.path.isfile(filename):
+		if not recalculate and self.has_ldos_file(min_E, max_E, T):
 			ldos_grid = self.read_ldos_grid(min_E, max_E, T, debug=debug)
 		else:
 			# Calculate LDoS on mesh

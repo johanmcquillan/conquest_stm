@@ -3,7 +3,7 @@ import packages.plot as plot
 from packages.auto_parser import Parser
 
 prsr = Parser()
-C = prsr.make_cell('Si_SZP_K4', grid_spacing=0.5, debug=True)
+C = prsr.make_cell('Si_SZP_K4', grid_spacing=0.2, debug=True)
 del prsr
 
 #C.write_ldos(-2, 0, 0.01, debug=True)
