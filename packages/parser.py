@@ -2,7 +2,7 @@ import math
 
 import atomic
 from cell import Cell
-from smartDict import SmartDict
+from smart_dict import SmartDict
 from vector import Vector
 
 HA_TO_EV = 0.03674932  # Factor to convert Hartrees to electron volts

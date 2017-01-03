@@ -49,7 +49,7 @@ def plot_3d(title, mesh, fraction, x_range, y_range, z_range, step, save_name=No
 	plt.close()
 
 
-def plot_radials(ions, points=500, printStatus=False, spectro=True):
+def plot_radials(ions, points=500, printStatus=False, spectro=True, interpolation='cubic'):
 	"""Plot all radial functions from self.ions to pdf
 
 	Args:
@@ -63,12 +63,12 @@ def plot_radials(ions, points=500, printStatus=False, spectro=True):
 	with PdfPages('pdfs/radials'+timeStamp+'.pdf') as pdf:
 
 		# Plot all functions for the same ion on one graph
-		ionNames = sorted(ions.keys())
-		for ionName in ionNames:
-			ion = ions[ionName]
+		ion_names = sorted(ions.keys())
+		for ion_name in ion_names:
+			ion = ions[ion_name]
 
 			# Setup plot
-			plt.title('PAOs for '+ionName+'.ion')
+			plt.title('PAOs for '+ion_name+'.ion')
 			plt.xlabel('Radial Distance, $r$ / $a_0$')
 			plt.ylabel('$R_{nl}(r)$')
 			plt.minorticks_on()
@@ -86,7 +86,7 @@ def plot_radials(ions, points=500, printStatus=False, spectro=True):
 					r = np.arange(0.0, radial.cutoff, step)
 					R = np.empty_like(r)
 					for i in range(0, len(r)):
-						R[i] = radial.getValueCubic(r[i])
+						R[i] = radial.get_value(r[i], interpolation=interpolation)
 
 					# Add radial info to legend and add to plot
 					# If spectro, use spectroscopic notation for legend
@@ -97,7 +97,7 @@ def plot_radials(ions, points=500, printStatus=False, spectro=True):
 					plt.plot(r, R, label=label)
 
 					if printStatus:
-						print "Finished Radial "+ion.ionName+"_"+str(zeta)+"_"+str(n)+"_"+str(l)
+						print "Finished Radial "+ion.ion_name+"_"+str(zeta)+"_"+str(n)+"_"+str(l)
 
 			# Add plot to pdf and reset plt
 			plt.legend()
@@ -105,7 +105,7 @@ def plot_radials(ions, points=500, printStatus=False, spectro=True):
 			plt.close()
 
 
-def plot_sph_2d(l, m, axis, minimum=-8.0, maximum=8.0, planeValue=0.0, step=0.1, printStatus=False):
+def plot_sph_2d(l, m, axis, minimum=-8.0, maximum=8.0, planeValue=0.0, step=0.1, print_status=False):
 	"""Plots cross-section of spherical harmonic to pdf.
 	All lengths measured in bohr radii (a0).
 
@@ -117,7 +117,7 @@ def plot_sph_2d(l, m, axis, minimum=-8.0, maximum=8.0, planeValue=0.0, step=0.1,
 		maximum (int, opt.): Maximum value of coordinates measured in a0; Default is +8
 		planeValue (float, opt.): Constant value assigned to Cartesian coordinate given by axis; Default is 0.00001
 		step (float, opt.): Interval between Cartesian mgrid points, measured in a0; Default is 0.1
-		printStatus (bool, opt.): If true, print update when plot is finished
+		print_status (bool, opt.): If true, print update when plot is finished
 	"""
 
 	if axis not in ['x', 'y', 'z']:
@@ -134,25 +134,26 @@ def plot_sph_2d(l, m, axis, minimum=-8.0, maximum=8.0, planeValue=0.0, step=0.1,
 			# Use axis variable to determine which axes space1 and space2 refer to
 			# Evaluate spherical harmonic at mesh point
 			if axis == 'z':
-				Y[i, j] = sph(l, m, space2[i, j], space1[i, j], planeValue)
+				r = Vector(space2[i, j], space1[i, j], planeValue)
 				plt.xlabel('$x$ / $a_0$')
 				plt.ylabel('$y$ / $a_0$')
 			if axis == 'y':
-				Y[i, j] = sph(l, m, space2[i, j], planeValue, space1[i, j])
+				r = Vector(space2[i, j], planeValue, space1[i, j])
 				plt.xlabel('$x$ / $a_0$')
 				plt.ylabel('$z$ / $a_0$')
 			if axis == 'x':
-				Y[i, j] = sph(l, m, planeValue, space2[i, j], space1[i, j])
+				r = Vector(planeValue, space2[i, j], space1[i, j])
 				plt.xlabel('$y$ / $a_0$')
 				plt.ylabel('$z$ / $a_0$')
 
+			Y[i, j] = sph(l, m, r)
 			# Update maxY
 			if abs(Y[i, j]) > maxY:
 				maxY = abs(Y[i, j])
 
 	# Setup plot
-	plotName = 'SPH_'+str(l)+'_'+str(m)+'_'+axis
-	with PdfPages('pdfs/'+plotName+'.pdf') as pdf:
+	plot_name = 'SPH_'+str(l)+'_'+str(m)+'_'+axis
+	with PdfPages('pdfs/'+plot_name+'.pdf') as pdf:
 		plt.imshow(
 			Y, interpolation='bilinear', origin='center', cmap=cm.bwr, extent=(minimum, maximum, minimum, maximum),
 			vmin=-maxY, vmax=maxY)
@@ -166,8 +167,8 @@ def plot_sph_2d(l, m, axis, minimum=-8.0, maximum=8.0, planeValue=0.0, step=0.1,
 		# Save to pdf
 		pdf.savefig()
 		plt.close()
-		if printStatus:
-			print 'Finished '+plotName+'.pdf'
+		if print_status:
+			print 'Finished '+plot_name+'.pdf'
 
 
 def plot_sph_3d(l, m):
@@ -214,13 +215,13 @@ def plot_sph_3d(l, m):
 
 
 def plot_basis_2d(
-		ionName, ion, zeta, n, l, m, axis, minimum=-8, maximum=8, planeValue=0.0, step=0.1, printStatus=False,
+		ion_name, ion, zeta, n, l, m, axis, minimum=-8, maximum=8, planeValue=0.0, step=0.1, print_status=False,
 		spectro=False):
 	"""Plots cross-section of basis function of ion to pdf.
 	All lengths measured in bohr radii (a0).
 
 	Args:
-		ionName (string): Name of ion file (excluding .ion)
+		ion_name (string): Name of ion file (excluding .ion)
 		ion (Ion): Ion object to be plotted
 		zeta (int):	Zeta index of Radial
 		n (int): Principal quantum number for Radial
@@ -231,7 +232,7 @@ def plot_basis_2d(
 		maximum (int, opt.): Maximum value of coordinates measured in a0; Default is +8
 		planeValue (double, opt.): Constant value assigned to Cartesian coordinate given by axis; Default is 0.00001
 		step (int, opt.): Interval between Cartesian mgrid points, measured in a0; Default is 0.1
-		printStatus (boolean, opt.): If true, print notification when finishing a plot
+		print_status (boolean, opt.): If true, print notification when finishing a plot
 		spectro (boolean, opt.): If true, use spectroscopic notation
 	"""
 
@@ -282,7 +283,7 @@ def plot_basis_2d(
 	# Setup plot
 	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
 	plotName = (
-		'Basis_' + ionName + '_' + str(zeta) + '_' + str(n) + '_' + str(l) + '_' + str(m) + '_' + axis + timeStamp)
+		'Basis_' + ion_name + '_' + str(zeta) + '_' + str(n) + '_' + str(l) + '_' + str(m) + '_' + axis + timeStamp)
 	with PdfPages('pdfs/' + plotName + '.pdf') as pdf:
 		plt.imshow(
 			psi, interpolation='bilinear', origin='center', cmap=cm.bwr, extent=(minimum, maximum, minimum, maximum),
@@ -293,19 +294,19 @@ def plot_basis_2d(
 		axes.remove(axis)
 		if spectro:
 			ttl = (
-				ionName+' Basis Function for \n \n $\zeta='+str(zeta)+'$, $'+str(n)+SPECTRAL[l]+'$, $m_l='+str(m)
-				+'$ in $'+axes[0]+'-'+axes[1]+'$ plane')
+				ion_name + ' Basis Function for \n \n $\zeta=' + str(zeta) + '$, $' + str(n) + SPECTRAL[l] + '$, $m_l=' + str(m)
+				+'$ in $' + axes[0] +'-' + axes[1] +'$ plane')
 		else:
 			ttl = (
-				ionName+' Basis Function for \n \n $\zeta='+str(zeta)+'$, $n='+str(n)+'$, $l='+str(l)+'$, $m_l='+str(m)
-				+'$ in $'+axes[0]+'-'+axes[1]+'$ plane')
+				ion_name + ' Basis Function for \n \n $\zeta=' + str(zeta) + '$, $n=' + str(n) + '$, $l=' + str(l) + '$, $m_l=' + str(m)
+				+'$ in $' + axes[0] +'-' + axes[1] +'$ plane')
 		plt.title(ttl)
 
 		# Save to pdf
 		pdf.savefig()
 		plt.close()
 
-		if printStatus:
+		if print_status:
 			print 'Finished '+plotName+'.pdf'
 
 
@@ -493,7 +494,6 @@ def plot_ldos_2d(
 	if np.max(ldos_3d) == 0.0:
 		raise ValueError("LDoS is zero at all points")
 
-
 	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
 	save_name = cell.name + '_LDoS2D_' + axis + '_' + timeStamp
 
@@ -524,6 +524,8 @@ def plot_2d(cell, mesh_3d, title, save_name, axis, plane_value, minimum, maximum
 		mesh_2d = mesh_3d[:, :, index]
 		label1 = 'y'
 		label2 = 'x'
+	else:
+		raise ValueError("Axis must be x, y, or z")
 
 	with PdfPages('figures2D/'+save_name+'.pdf') as pdf:
 		plt.imshow(
@@ -573,12 +575,12 @@ def plot_ldos_3d(
 	if step == 0.0:
 		step = cell.grid_spacing
 
-	# Get energy relative to Fermi level
-	min_EAbsolute = min_E + cell.fermiLevel
-	max_EAbsolute = max_E + cell.fermiLevel
+	# Get absolute energy
+	min_E_abs = min_E + cell.fermiLevel
+	max_E_abs = max_E + cell.fermiLevel
 
 	# Cartesian mesh
-	ldos = cell.get_ldos_grid(min_EAbsolute, max_EAbsolute, T, debug=debug, recalculate=recalculate)
+	ldos = cell.get_ldos_grid(min_E_abs, max_E_abs, T, debug=debug, recalculate=recalculate)
 	max_ldos = np.max(ldos)
 
 	if max_ldos == 0.0:
@@ -591,7 +593,7 @@ def plot_ldos_3d(
 	# Save plot as png
 	if save:
 		timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
-		save_name = cell.name+"_LDoS3D_"+str(fraction)+"_"+str(min_EAbsolute)+"_"+str(max_EAbsolute)+"_"+timeStamp
+		save_name = cell.name+"_LDoS3D_"+str(fraction)+"_"+str(min_E_abs)+"_"+str(max_E_abs)+"_"+timeStamp
 	else:
 		save_name = None
 

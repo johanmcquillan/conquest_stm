@@ -3,7 +3,7 @@ import sys
 
 import atomic
 from cell import Cell
-from smartDict import SmartDict
+from smart_dict import SmartDict
 from vector import Vector, KVector
 
 HA_TO_EV = 0.03674932  # Factor to convert Hartrees to electron volts
@@ -30,7 +30,7 @@ class Parser(object):
 				ion_file.next()
 
 			# Create empty dict of radial objects
-			radialDict = SmartDict()
+			radial_dict = SmartDict()
 			line = ion_file.next()
 			while line.split()[0] != '#':
 				# Read quantum numbers and zeta index
@@ -58,11 +58,11 @@ class Parser(object):
 					R.append(y)
 
 				# Create Radial object and store in dict
-				radialDict[l][zeta] = atomic.Radial(n, l, zeta, r, R, cutoff)
+				radial_dict[l][zeta] = atomic.Radial(n, l, zeta, r, R, cutoff)
 				line = ion_file.next()
 			ion_file.close()
 			# Create Ion with radials
-			return atomic.Ion(ion_name, radialDict)
+			return atomic.Ion(ion_name, radial_dict)
 		except IOError:
 			print self.ion_folder+ion_name+'.ion does not exist'
 			sys.exit(1)
@@ -80,17 +80,17 @@ class Parser(object):
 				line = conquest_out_file.next()
 
 			# Read atomic positions
-			atomData = {}
+			atom_data = {}
 			while len(line.split()) == 8 and line.split()[0].isdigit():
-				rawData = line.split()
+				raw_data = line.split()
 
-				atomIndex = int(rawData[0])
-				x = float(rawData[1])
-				y = float(rawData[2])
-				z = float(rawData[3])
-				ionType = int(rawData[4])
+				atom_index = int(raw_data[0])
+				x = float(raw_data[1])
+				y = float(raw_data[2])
+				z = float(raw_data[3])
+				ion_type = int(raw_data[4])
 
-				atomData[atomIndex] = [x, y, z, ionType]
+				atom_data[atom_index] = [x, y, z, ion_type]
 
 				line = conquest_out_file.next()
 
@@ -100,10 +100,10 @@ class Parser(object):
 			line = conquest_out_file.next()
 
 			# Get cell dimensions
-			rawData = line.split()
-			cellLengthX = float(rawData[2])
-			cellLengthY = float(rawData[5])
-			cellLengthZ = float(rawData[8])
+			raw_data = line.split()
+			cell_length_x = float(raw_data[2])
+			cell_length_y = float(raw_data[5])
+			cell_length_z = float(raw_data[8])
 
 			# Skip lines until ion data
 			while '------------------------------------------------------------------' not in line:
@@ -114,28 +114,28 @@ class Parser(object):
 
 			# Get ion species
 			while '------------------------------------------------------------------' not in line:
-				rawData = line.split()
+				raw_data = line.split()
 
 				# Get ion data
-				ion_type = int(rawData[0])
-				ion_name = rawData[1]
+				ion_type = int(raw_data[0])
+				ion_name = raw_data[1]
 
 				# Parse ion file and get Io object
 				ions[ion_name] = self.get_ion(ion_name)
 
 				# Check for atoms of this ion type
-				for atomKey in atomData:
-					atomDataList = atomData[atomKey]
-					if atomDataList[3] == ion_type:
+				for atom_key in atom_data:
+					atom_data_list = atom_data[atom_key]
+					if atom_data_list[3] == ion_type:
 						# Get atom position
-						x, y, z = atomDataList[:3]
+						x, y, z = atom_data_list[:3]
 						r = Vector(x, y, z)
 
 						# Create Atom object
-						atoms[atomKey] = atomic.Atom(ion_name, r)
+						atoms[atom_key] = atomic.Atom(ion_name, r)
 
 						# Apply Ion type to Atom
-						atoms[atomKey].set_ion(ions[ion_name])
+						atoms[atom_key].set_ion(ions[ion_name])
 				conquest_out_file.next()
 				line = conquest_out_file.next()
 			conquest_out_file.close()
@@ -146,8 +146,8 @@ class Parser(object):
 				line = conquest_dat_file.next()
 
 				# Loop over all lines
-				endOfFile = False
-				while not endOfFile:
+				end_of_file = False
+				while not end_of_file:
 					if '#Kpoint' in line:
 						# Get k-point data
 						line = conquest_dat_file.next()
@@ -171,21 +171,21 @@ class Parser(object):
 									data = line.split()
 									a = int(data[0])
 									PAO = int(data[1])
-									coeffString = data[2]
-									coeffString = coeffString.replace('(', '')
-									coeffString = coeffString.replace(')', '')
-									complexString = coeffString.split(',')
-									complexCoeff = complex(float(complexString[0]), float(complexString[1]))
-									atoms[a].add_coefficient(K, bandE, PAO, complexCoeff)
+									coeff_string = data[2]
+									coeff_string = coeff_string.replace('(', '')
+									coeff_string = coeff_string.replace(')', '')
+									complex_string = coeff_string.split(',')
+									complex_coeff = complex(float(complex_string[0]), float(complex_string[1]))
+									atoms[a].add_coefficient(K, bandE, PAO, complex_coeff)
 									line = conquest_dat_file.next()
 						except StopIteration:
-							endOfFile = True
+							end_of_file = True
 					else:
 						# Check if end of file
 						try:
 							line = conquest_dat_file.next()
 						except StopIteration:
-							endOfFile = True
+							end_of_file = True
 				conquest_dat_file.close()
 			except IOError:
 				print self.conquest_folder+conquest_out+'.dat does not exist'
@@ -198,11 +198,11 @@ class Parser(object):
 				data = line.split()
 				fermi_lvl = float(data[2]) * HA_TO_EV
 
-				cell = Cell(conquest_out, fermi_lvl, cellLengthX, cellLengthY, cellLengthZ, grid_spacing=grid_spacing)
+				cell = Cell(conquest_out, fermi_lvl, cell_length_x, cell_length_y, cell_length_z, grid_spacing=grid_spacing)
 
-				for atomKey in atoms:
-					atoms[atomKey].bands.lock()
-					cell.add_atom(atoms[atomKey], atomKey)
+				for atom_key in atoms:
+					atoms[atom_key].bands.lock()
+					cell.add_atom(atoms[atom_key], atom_key)
 				return cell
 			except IOError:
 				print self.conquest_folder+conquest_out+'.dos does not exist'

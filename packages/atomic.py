@@ -4,7 +4,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 
 from sph import sph
-from smartDict import SmartDict
+from smart_dict import SmartDict
 from vector import Vector
 
 
@@ -17,7 +17,7 @@ class Radial(object):
 
 	interpolators = ['linear', 'quadratic', 'cubic']
 
-	def __init__(self, n, l, zeta, radii, radialFuncValues, cutoff):
+	def __init__(self, n, l, zeta, radii, radial_function_values, cutoff):
 		"""Constructs radial part of a basis function.
 
 		Args:
@@ -25,16 +25,16 @@ class Radial(object):
 			n (int): Principal quantum number
 			l (int): Orbital angular momentum quantum number
 			radii (float[]): List of radial distance values
-			radialFuncValues (float[]): List of radial function values for each value of radii
+			radial_function_values (float[]): List of radial function values for each value of radii
 			cutoff (float): Range of radial function, beyond which value of R is 0.0
 		"""
 		self.zeta = zeta
 		self.n = n
 		self.l = l
 		self.radii = radii
-		self.radialFuncValues = radialFuncValues
-		self.interpolator_quadratic = interp1d(radii, radialFuncValues, kind='quadratic')
-		self.interpolator_cubic = interp1d(radii, radialFuncValues, kind='cubic')
+		self.radial_function_values = radial_function_values
+		self.interpolator_quadratic = interp1d(radii, radial_function_values, kind='quadratic')
+		self.interpolator_cubic = interp1d(radii, radial_function_values, kind='cubic')
 		self.cutoff = cutoff
 
 	def interpolator_linear(self, distance):
@@ -47,8 +47,8 @@ class Radial(object):
 		# Get nearest stored values
 		x1 = self.radii[i - 1]
 		x2 = self.radii[i]
-		y1 = self.radialFuncValues[i - 1]
-		y2 = self.radialFuncValues[i]
+		y1 = self.radial_function_values[i - 1]
+		y2 = self.radial_function_values[i]
 
 		# Calculate via interpolation
 		return y1 + (distance - x1) * (y2 - y1) / (x2 - x1)
@@ -89,40 +89,40 @@ class Ion(object):
 	All lengths measured in Bohr radii (a0).
 
 	Attributes:
-		ionName (string): Name of ion (usually from name of .ion file)
+		ion_name (string): Name of ion (usually from name of .ion file)
 		radials (SmartDict): Radial objects accessed by radials[zeta][n][l], where all indices are int
 	"""
 
-	def __init__(self, ionName, radialDict=SmartDict()):
+	def __init__(self, ion_name, radial_dict=SmartDict()):
 		"""Construct ion represented using given basis functions.
 		
 		Args:
-			ionName (string): Name of ion (usually from name of .ion file)
-			radialDict (SmartDict, optional): Radial objects, indexed by radialDict[zeta][n][l],
+			ion_name (string): Name of ion (usually from name of .ion file)
+			radial_dict (SmartDict, optional): Radial objects, indexed by radialDict[zeta][n][l],
 												where all indices are int. Default is empty, radials
 												may be added after instantiation
 		"""
-		self.ionName = ionName
-		self.radials = radialDict  # Radial objects; accessed by self.radials[zeta][n][l]
+		self.ion_name = ion_name
+		self.radials = radial_dict  # Radial objects; accessed by self.radials[zeta][n][l]
 
-	def sortPAOs(self):
+	def sorted_pao(self):
 		"""Sort pseudo-atomic orbitals into order according to .dat files.
 		
 		Returns:
 			list: Ordered list of PAO data;
 					Each element is a list containing [l, zeta, m] for the PAO
 		"""
-		sortedPAOs = []
+		pao_list = []
 
 		# Dict keys not necessarily in order
 		# Order key list by lowest to highest for each index
-		lList = sorted(self.radials.keys())
-		for l in lList:
-			zetaList = sorted(self.radials[l])
-			for zeta in zetaList:
+		l_list = sorted(self.radials.keys())
+		for l in l_list:
+			zeta_list = sorted(self.radials[l])
+			for zeta in zeta_list:
 				for m in range(-l, l + 1):
-					sortedPAOs.append([l, zeta, m])
-		return sortedPAOs
+					pao_list.append([l, zeta, m])
+		return pao_list
 
 	def has_radial(self, l, zeta):
 		"""Check if Ion has radial object for specified object without creating
@@ -157,7 +157,7 @@ class Ion(object):
 
 		# Add Radial
 		self.radials[l][zeta] = radial
-		self.sortPAOs()
+		self.sorted_pao()
 
 	def get_radial(self, l, zeta):
 		"""Return Radial object for specified orbital.
@@ -175,7 +175,7 @@ class Ion(object):
 		if self.has_radial(l, zeta):
 			return self.radials[l][zeta]
 		else:
-			raise ValueError("No radial data for "+self.ionName+", l="+str(l)+", zeta="+str(zeta))
+			raise ValueError("No radial data for " + self.ion_name + ", l=" + str(l) + ", zeta=" + str(zeta))
 
 	def get_radial_value(self, l, zeta, distance, interpolation='cubic'):
 		"""Use linear interpolation to evaluate radial function at distance r.
@@ -198,12 +198,12 @@ class Ion(object):
 
 		Beyond the cutoff the radial part of the wavefunction is defined to be 0.		
 		"""
-		maxCut = 0.0
+		max_cutoff = 0.0
 		for l in self.radials:
 			for zeta in self.radials[l]:
-				if maxCut < self.radials[l][zeta].cutoff:
-					maxCut = self.radials[l][zeta].cutoff
-		return maxCut
+				if max_cutoff < self.radials[l][zeta].cutoff:
+					max_cutoff = self.radials[l][zeta].cutoff
+		return max_cutoff
 
 
 class Atom(Ion):
@@ -213,25 +213,25 @@ class Atom(Ion):
 	All energies measured in electron volts (eV).
 
 	Attributes:
-		ionName (string): Name of ion (usually from name of .ion file)
+		ion_name (string): Name of ion (usually from name of .ion file)
 		radials (SmartDict): Radial objects accessed by radials[l][zeta], where all indices are int
 		atom_pos (Vector): 3D Cartesian real space vector for atom position
 		bands (SmartDict): Nested dict of complex basis coefficients;
 							Accessed by bands[bandEnergy][l][zeta][m]
 	"""
 
-	def __init__(self, ionName, atomPos, radials=SmartDict()):
+	def __init__(self, ion_name, atom_position, radials=SmartDict()):
 		"""Constructor for atom.
 
 		Args:
-			ionName (string): Name of ion (usually from name of .ion file)
+			ion_name (string): Name of ion (usually from name of .ion file)
 			radials (SmartDict, optional): Radial objects, indexed by radialDict[zeta][n][l],
 											where all indices are int. Default is empty, radials
 											may be added after instantiation
-			atomPos (Vector): 3D Cartesian real space vector for atom position
+			atom_position (Vector): 3D Cartesian real space vector for atom position
 		"""
-		Ion.__init__(self, ionName, radials)
-		self.atom_pos = atomPos
+		Ion.__init__(self, ion_name, radials)
+		self.atom_pos = atom_position
 		self.bands = SmartDict()
 
 	def set_ion(self, I):
@@ -240,9 +240,9 @@ class Atom(Ion):
 		Args:
 			I (Ion): Ion object from which to copy attributes
 		"""
-		self.ionName = I.ionName
+		self.ion_name = I.ion_name
 		self.radials = I.radials
-		self.sortPAOs()
+		self.sorted_pao()
 
 	def within_cutoff_relative(self, relative_position, l=None, zeta=None):
 		"""Return true if within cutoff region.
@@ -315,7 +315,7 @@ class Atom(Ion):
 			PAO (int): index of PAO as given in .dat file
 			coefficient (complex): Coefficient of PAO
 		"""
-		PAOdata = self.sortPAOs()[PAO - 1]
+		PAOdata = self.sorted_pao()[PAO - 1]
 		l = PAOdata[0]
 		zeta = PAOdata[1]
 		m = PAOdata[2]

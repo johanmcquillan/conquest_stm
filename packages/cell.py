@@ -4,7 +4,7 @@ import numpy as np
 from copy import deepcopy
 
 from sph import sph
-from smartDict import SmartDict
+from smart_dict import SmartDict
 from vector import Vector, KVector
 from safe_open import safe_open
 
@@ -30,14 +30,14 @@ class Cell(object):
 			yLength (float): Length of cell along y
 			zLength (float): Length of cell along z
 			gridSpacing (float): Resolution of mesh points
-			xPoints (float): Number of points on x mesh
-			yPoints (float): Number of points on y mesh
-			zPoints (float): Number of points on z mesh
-			xMesh (3D mgrid): Mesh of x values
-			yMesh (3D mgrid): Mesh of y values
-			zMesh (3D mgrid): Mesh of z values
+			x_points (float): Number of points on x mesh
+			y_points (float): Number of points on y mesh
+			z_points (float): Number of points on z mesh
+			x_mesh (3D mgrid): Mesh of x values
+			y_mesh (3D mgrid): Mesh of y values
+			z_mesh (3D mgrid): Mesh of z values
 			atoms (int : Atom): Atom objects of simulation indexed by atom number
-			basisPoints (SmartDict): Basis function values, indexed by [atomKey][x][y][z][l][zeta][m]
+			basis_points (SmartDict): Basis function values, indexed by [atomKey][x][y][z][l][zeta][m]
 			bands (Vector : [float]): Energies of bands indexed by k-point vector
 	"""
 
@@ -66,16 +66,16 @@ class Cell(object):
 		self.vector = Vector(vector_x, vector_y, vector_z)
 
 		# Calculator number of points
-		self.xPoints = int(self.vector.x / grid_spacing)
-		self.yPoints = int(self.vector.y / grid_spacing)
-		self.zPoints = int(self.vector.z / grid_spacing)
+		self.x_points = int(self.vector.x / grid_spacing)
+		self.y_points = int(self.vector.y / grid_spacing)
+		self.z_points = int(self.vector.z / grid_spacing)
 
 		# Form Cartesian meshes
-		self.xMesh, self.yMesh, self.zMesh = np.mgrid[0: xLength: grid_spacing, 0: yLength: grid_spacing, 0: zLength: grid_spacing]
+		self.x_mesh, self.y_mesh, self.z_mesh = np.mgrid[0: xLength: grid_spacing, 0: yLength: grid_spacing, 0: zLength: grid_spacing]
 
 		# Initialise atoms and bands
 		self.atoms = {}
-		self.basisPoints = SmartDict()
+		self.basis_points = SmartDict()
 		self.bands = {}
 		self.support_grid = None
 
@@ -169,9 +169,9 @@ class Cell(object):
 					for m in range(-l, l+1):
 						if R != 0:
 							Y = sph(l, m, relative_position)
-						self.basisPoints[atomKey][position][l][zeta][m] = R*Y
+						self.basis_points[atomKey][position][l][zeta][m] = R * Y
 		else:
-			self.basisPoints[atomKey][position] = SmartDict()
+			self.basis_points[atomKey][position] = SmartDict()
 
 	def has_basis_point(self, atomKey, position):
 		"""Check if basis point has already been calculated
@@ -181,8 +181,8 @@ class Cell(object):
 			position (Vector): 3D Cartesian real space vector
 		"""
 		output = False
-		if atomKey in self.basisPoints:
-			if position in self.basisPoints[atomKey]:
+		if atomKey in self.basis_points:
+			if position in self.basis_points[atomKey]:
 				output = True
 		return output
 
@@ -241,8 +241,8 @@ class Cell(object):
 			float: LDoS value
 		"""
 		I = 0.0
-		totalK = len(self.bands)
-		w = 1.0/totalK  # K-point weighting
+		total_kpoints = len(self.bands)
+		w = 1.0/total_kpoints  # K-point weighting
 
 		# Loop over all k-points
 		for K in self.bands:
@@ -289,11 +289,11 @@ class Cell(object):
 		if debug:
 			print "Calculating support grid"
 		# Initialise support grid
-		support_grid = np.empty_like(self.xMesh, dtype=SmartDict)
+		support_grid = np.empty_like(self.x_mesh, dtype=SmartDict)
 
 		# Iterate over all atoms
-		for atomKey in self.atoms:
-			atom = self.atoms[atomKey]
+		for atom_key in self.atoms:
+			atom = self.atoms[atom_key]
 
 			# Get atom cutoff radius
 			cut = atom.get_max_cutoff()
@@ -323,9 +323,9 @@ class Cell(object):
 						constrained = self.constrain_vector_to_cell(r)
 
 						# Get indices of cell mesh corresponding to this point
-						i = np.where(self.xMesh == constrained.x)[0][0]
-						j = np.where(self.yMesh == constrained.y)[1][0]
-						k = np.where(self.zMesh == constrained.z)[2][0]
+						i = np.where(self.x_mesh == constrained.x)[0][0]
+						j = np.where(self.y_mesh == constrained.y)[1][0]
+						k = np.where(self.z_mesh == constrained.z)[2][0]
 
 						relative_position = self.constrain_relative_vector(r - atom_pos_on_mesh)
 						# Iterate over orbitals
@@ -342,9 +342,9 @@ class Cell(object):
 										if not support_grid[i, j, k]:
 											support_grid[i, j, k] = SmartDict()
 										# Store support value
-										support_grid[i, j, k][atomKey][l][zeta][m] = R * Y
+										support_grid[i, j, k][atom_key][l][zeta][m] = R * Y
 			if debug:
-				print "Calculated support grid for atom "+atom.ionName+" "+str(atomKey)
+				print "Calculated support grid for atom "+atom.ion_name+" "+str(atom_key)
 		return support_grid
 
 	def support_filename(self):
@@ -363,9 +363,9 @@ class Cell(object):
 			print "Writing support grid to "+filename
 
 		# Iterate over mesh points
-		for i in range(self.xPoints):
-			for j in range(self.yPoints):
-				for k in range(self.zPoints):
+		for i in range(self.x_points):
+			for j in range(self.y_points):
+				for k in range(self.z_points):
 					# If support function values exist at mesh point
 					if support_grid[i, j, k]:
 						support_file.write(str(i)+" "+str(j)+" "+str(k)+"\n")
@@ -387,7 +387,7 @@ class Cell(object):
 		"""Read support function mesh from file"""
 		filename = self.support_filename()
 		support_file = open(filename, 'r')
-		support_grid = np.empty_like(self.xMesh, dtype=SmartDict)
+		support_grid = np.empty_like(self.x_mesh, dtype=SmartDict)
 
 		if debug:
 			print "Reading support grid from "+filename
@@ -461,7 +461,7 @@ class Cell(object):
 	def calculate_psi_grid(self, K, E, recalculate=False, write=True, debug=False):
 		if debug:
 			print "Building Wavefunction for "+str(K)+", "+str(E)
-		psi_grid = np.zeros_like(self.xMesh, dtype=complex)
+		psi_grid = np.zeros_like(self.x_mesh, dtype=complex)
 		support_grid = self.get_support_grid(recalculate=recalculate, write=write, debug=debug)
 		for atomKey in self.atoms:
 			atom = self.atoms[atomKey]
@@ -469,9 +469,9 @@ class Cell(object):
 				for zeta in atom.bands[K][E][l]:
 					for m in atom.bands[K][E][l][zeta]:
 						coeff = atom.get_coefficient(K, E, l, zeta, m)
-						for i in range(self.xPoints):
-							for j in range(self.yPoints):
-								for k in range(self.zPoints):
+						for i in range(self.x_points):
+							for j in range(self.y_points):
+								for k in range(self.z_points):
 									if support_grid[i, j, k]:
 										if atomKey in support_grid[i, j, k]:
 											psi_grid[i, j, k] += coeff * support_grid[i, j, k][atomKey][l][zeta][m]
@@ -484,9 +484,9 @@ class Cell(object):
 	def write_psi_grid(self, psi_grid, K, E):
 		filename = self.psi_filename(K, E)
 		psi_file = safe_open(filename, "w")
-		for i in range(self.xPoints):
-			for j in range(self.yPoints):
-				for k in range(self.zPoints):
+		for i in range(self.x_points):
+			for j in range(self.y_points):
+				for k in range(self.z_points):
 					if psi_grid[i, j, k] != 0:
 						psi = psi_grid[i, j, k]
 						psi_file.write(str(i)+" "+str(j)+" "+str(k)+" "+str(psi.real)+" "+str(psi.imag)+"\n")
@@ -502,7 +502,7 @@ class Cell(object):
 	def read_psi_grid(self, K, E):
 		filename = self.psi_filename(K, E)
 		psi_file = open(filename, "r")
-		psi_grid = np.zeros_like(self.xMesh, dtype=complex)
+		psi_grid = np.zeros_like(self.x_mesh, dtype=complex)
 
 		for line in psi_file:
 			line_split = line.split()
@@ -552,23 +552,23 @@ class Cell(object):
 
 		if debug:
 			print "Calculating LDoS grid"
-		ldos_grid = np.zeros_like(self.xMesh, dtype=float)
+		ldos_grid = np.zeros_like(self.x_mesh, dtype=float)
 
 		for K in self.bands:
 			for E in self.bands[K]:
 				if min_E <= E <= max_E:
 					psi_grid = self.get_psi_grid(K, E, recalculate=recalculate, write=write, debug=debug)
 					fd = self.fermi_dirac(E, T)
-					for i in range(self.xPoints):
-						for j in range(self.yPoints):
-							for k in range(self.zPoints):
+					for i in range(self.x_points):
+						for j in range(self.y_points):
+							for k in range(self.z_points):
 								psi = psi_grid[i, j, k]
 								ldos_grid[i, j, k] += K.weight*fd*(abs(psi))**2
 				if debug:
 					print "Completed LDoS for ", K, E
 		return ldos_grid
 
-	def ldos_filename(self, min_E, max_E, T, V):
+	def ldos_filename(self, min_E, max_E, T):
 		return MESH_FOLDER+LDOS_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(min_E)+"_"+str(max_E)+"_"+str(T)+EXT
 
 	def write_ldos(self, ldos_grid, min_E, max_E, T, debug=False):
@@ -586,9 +586,9 @@ class Cell(object):
 		if debug:
 			print "Writing LDoS grid to "+filename
 		# Iterate over mesh points
-		for i in range(self.xPoints):
-			for j in range(self.yPoints):
-				for k in range(self.zPoints):
+		for i in range(self.x_points):
+			for j in range(self.y_points):
+				for k in range(self.z_points):
 					# If LDoS is non-zero at mesh point, write data to file
 					if ldos_grid[i, j, k]:
 						ldos_file.write(str(i)+" "+str(j)+" "+str(k)+" "+str(ldos_grid[i, j, k])+"\n")
@@ -598,7 +598,7 @@ class Cell(object):
 		"""Read LDoS mesh from file"""
 		filename = self.ldos_filename(min_E, max_E, T)
 		ldos_file = open(filename, 'r')
-		ldos_grid = np.zeros_like(self.xMesh, dtype=float)
+		ldos_grid = np.zeros_like(self.x_mesh, dtype=float)
 
 		if debug:
 			print "Reading LDoS grid from "+filename

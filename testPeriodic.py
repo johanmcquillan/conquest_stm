@@ -2,7 +2,7 @@
 import numpy as np
 from packages.vector import Vector
 from packages.atomic import Atom, Radial
-from packages.smartDict import SmartDict
+from packages.smart_dict import SmartDict
 from copy import deepcopy
 
 import matplotlib.pyplot as plt
