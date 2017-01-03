@@ -75,7 +75,6 @@ class Cell(object):
 
 		# Initialise atoms and bands
 		self.atoms = {}
-		self.basis_points = SmartDict()
 		self.bands = {}
 		self.support_grid = None
 
@@ -149,42 +148,6 @@ class Cell(object):
 			return new_vector
 		else:
 			return self.constrain_vector_to_cell(new_vector)
-
-	def set_basis_point(self, atomKey, position, interpolation='cubic'):
-		"""Calculate and save basis function values for all points within cutoff region.
-
-		Args:
-			atomKey (int): Atom number, as given in Conquest_out
-			position (Vector): 3D Cartesian real space vector
-			interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
-		"""
-		atom = self.atoms[atomKey]
-		Y = 0.0
-		# Check if atom is in range
-		relative_position = self.constrain_relative_vector(position - atom.atom_pos)
-		if abs(relative_position) < self.atoms[atomKey].get_max_cutoff():
-			for l in atom.radials:
-				for zeta in atom.radials[l]:
-					R = atom.get_radial_value_relative(l, zeta, relative_position, interpolation=interpolation)
-					for m in range(-l, l+1):
-						if R != 0:
-							Y = sph(l, m, relative_position)
-						self.basis_points[atomKey][position][l][zeta][m] = R * Y
-		else:
-			self.basis_points[atomKey][position] = SmartDict()
-
-	def has_basis_point(self, atomKey, position):
-		"""Check if basis point has already been calculated
-
-		Args:
-			atomKey (int): Atom number, as given in Conquest_out
-			position (Vector): 3D Cartesian real space vector
-		"""
-		output = False
-		if atomKey in self.basis_points:
-			if position in self.basis_points[atomKey]:
-				output = True
-		return output
 
 	def add_atom(self, atom, atomKey):
 		"""Add atom to self.atoms, indexed by atomKey
