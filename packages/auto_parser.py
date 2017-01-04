@@ -155,7 +155,9 @@ class Parser(object):
 						Kx = float(data[0])
 						Ky = float(data[1])
 						Kz = float(data[2])
-						K_weight = float(data[3])
+						line = conquest_dat_file.next()
+						data = line.split()
+						K_weight = float(data[0])
 						K = KVector(Kx, Ky, Kz, K_weight)
 						try:
 							line = conquest_dat_file.next()

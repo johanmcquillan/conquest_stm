@@ -25,7 +25,7 @@ class Vector(object):
 
 	def __hash__(self):
 		"""Return hash of tuple of components"""
-		if not self.hash:
+		if self.hash is None:
 			self.hash = hash((self.x, self.y, self.z))
 		return self.hash
 
@@ -45,7 +45,7 @@ class Vector(object):
 		"""
 		if self == self.zero():
 			self.magnitude = 0
-		elif not self.magnitude:
+		elif self.magnitude is None:
 			self.magnitude = np.sqrt(self.x**2 + self.y**2 + self.z**2)
 		return self.magnitude
 
@@ -110,6 +110,54 @@ class Vector(object):
 			return True
 		else:
 			return False
+
+	def reset_hash_mag(self):
+		self.hash = None
+		self.magnitude = None
+
+	def constrain_vector_relative(self, cell_vector):
+		"""Constrain vector to lie within simulation cell"""
+
+		# Check if vector components are greater than half of cell sides
+		# If greater, add or subtract cell length
+		while self.x > cell_vector.x/2:
+			self.x -= cell_vector.x
+		while self.x <= -cell_vector.x/2:
+			self.x += cell_vector.x
+
+		while self.y > cell_vector.y/2:
+			self.y -= cell_vector.y
+		while self.y <= -cell_vector.y/2:
+			self.y += cell_vector.y
+
+		while self.z > cell_vector.z/2:
+			self.z -= cell_vector.z
+		while self.z <= -cell_vector.z/2:
+			self.z += cell_vector.z
+
+		self.reset_hash_mag()
+
+	def constrain_vector_to_cell(self, cell_vector):
+		"""Constrain vector to lie within simulation cell"""
+
+		# Check if vector components are greater than half of cell sides
+		# If greater, add or subtract cell length
+		while self.x >= cell_vector.x:
+			self.x -= cell_vector.x
+		while self.x < 0:
+			self.x += cell_vector.x
+
+		while self.y >= cell_vector.y:
+			self.y -= cell_vector.y
+		while self.y < 0:
+			self.y += cell_vector.y
+
+		while self.z >= cell_vector.z:
+			self.z -= cell_vector.z
+		while self.z < 0:
+			self.z += cell_vector.z
+
+		self.reset_hash_mag()
 
 	@staticmethod
 	def zero():

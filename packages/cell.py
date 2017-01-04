@@ -76,7 +76,7 @@ class Cell(object):
 		# Initialise atoms and bands
 		self.atoms = {}
 		self.bands = {}
-		self.support_grid = False
+		self.support_grid = None
 
 	def has_band(self, K, E):
 		"""Check if cell stores specified band.
@@ -91,63 +91,63 @@ class Cell(object):
 				output = True
 		return output
 
-	def constrain_relative_vector(self, vector):
-		"""Return a vector that is constrained within simulation cell"""
-		new_vector = deepcopy(vector)
-
-		# Check if vector components are greater than half of cell sides
-		# If greater, add or subtract cell length
-
-		if vector.x > self.vector.x/2:
-			new_vector -= self.vector.project_x()
-		elif vector.x <= -self.vector.x/2:
-			new_vector += self.vector.project_x()
-
-		if vector.y > self.vector.y/2:
-			new_vector -= self.vector.project_y()
-		elif vector.y <= -self.vector.y/2:
-			new_vector += self.vector.project_y()
-
-		if vector.z > self.vector.z/2:
-			new_vector -= self.vector.project_z()
-		elif vector.z <= -self.vector.z/2:
-			new_vector += self.vector.project_z()
-
-		# If vector is unchanged return
-		# If vector has changed, constrain
-		if new_vector == vector:
-			return new_vector
-		else:
-			return self.constrain_relative_vector(new_vector)
-
-	def constrain_vector_to_cell(self, vector):
-		"""Return a vector that is constrained within simulation cell"""
-		new_vector = deepcopy(vector)
-
-		# Check if vector components are greater than half of cell sides
-		# If greater, add or subtract cell length
-
-		if vector.x >= self.vector.x:
-			new_vector -= self.vector.project_x()
-		elif vector.x < 0:
-			new_vector += self.vector.project_x()
-
-		if vector.y >= self.vector.y:
-			new_vector -= self.vector.project_y()
-		elif vector.y < 0:
-			new_vector += self.vector.project_y()
-
-		if vector.z >= self.vector.z:
-			new_vector -= self.vector.project_z()
-		elif vector.z < 0:
-			new_vector += self.vector.project_z()
-
-		# If vector is unchanged return
-		# If vector has changed, constrain
-		if new_vector == vector:
-			return new_vector
-		else:
-			return self.constrain_vector_to_cell(new_vector)
+	# def constrain_relative_vector(self, vector):
+	# 	"""Return a vector that is constrained within simulation cell"""
+	# 	new_vector = deepcopy(vector)
+	#
+	# 	# Check if vector components are greater than half of cell sides
+	# 	# If greater, add or subtract cell length
+	#
+	# 	if vector.x > self.vector.x/2:
+	# 		new_vector -= self.vector.project_x()
+	# 	elif vector.x <= -self.vector.x/2:
+	# 		new_vector += self.vector.project_x()
+	#
+	# 	if vector.y > self.vector.y/2:
+	# 		new_vector -= self.vector.project_y()
+	# 	elif vector.y <= -self.vector.y/2:
+	# 		new_vector += self.vector.project_y()
+	#
+	# 	if vector.z > self.vector.z/2:
+	# 		new_vector -= self.vector.project_z()
+	# 	elif vector.z <= -self.vector.z/2:
+	# 		new_vector += self.vector.project_z()
+	#
+	# 	# If vector is unchanged return
+	# 	# If vector has changed, constrain
+	# 	if new_vector == vector:
+	# 		return new_vector
+	# 	else:
+	# 		return self.constrain_relative_vector(new_vector)
+	#
+	# def constrain_vector_to_cell(self, vector):
+	# 	"""Return a vector that is constrained within simulation cell"""
+	# 	new_vector = deepcopy(vector)
+	#
+	# 	# Check if vector components are greater than half of cell sides
+	# 	# If greater, add or subtract cell length
+	#
+	# 	if vector.x >= self.vector.x:
+	# 		new_vector -= self.vector.project_x()
+	# 	elif vector.x < 0:
+	# 		new_vector += self.vector.project_x()
+	#
+	# 	if vector.y >= self.vector.y:
+	# 		new_vector -= self.vector.project_y()
+	# 	elif vector.y < 0:
+	# 		new_vector += self.vector.project_y()
+	#
+	# 	if vector.z >= self.vector.z:
+	# 		new_vector -= self.vector.project_z()
+	# 	elif vector.z < 0:
+	# 		new_vector += self.vector.project_z()
+	#
+	# 	# If vector is unchanged return
+	# 	# If vector has changed, constrain
+	# 	if new_vector == vector:
+	# 		return new_vector
+	# 	else:
+	# 		return self.constrain_vector_to_cell(new_vector)
 
 	def add_atom(self, atom, atomKey):
 		"""Add atom to self.atoms, indexed by atomKey
@@ -182,35 +182,6 @@ class Cell(object):
 		"""
 		f = 1.0 / (np.exp((energy - self.fermiLevel) / (BOLTZMANN * temperature)) + 1)
 		return f
-
-	def get_ldos(self, min_E, max_E, T, position, interpolation='cubic', debug=False):
-		"""Evaluate local density of states (LDoS) within energy range at specific point.
-
-		Args:
-			min_E (float): Minimum energy
-			max_E (float): Maximum energy
-			T (float): Absolute temperature in K
-			position (Vector): 3D Cartesian real space vector
-			interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
-			debug (bool, opt.): Print extra information during runtime
-
-		Returns:
-			float: LDoS value
-		"""
-		I = 0.0
-		total_kpoints = len(self.bands)
-		w = 1.0/total_kpoints  # K-point weighting
-
-		# Loop over all k-points
-		for K in self.bands:
-			for E in self.bands[K]:
-				if min_E < E < max_E:
-					# Calculate LDoS
-					psi = self.get_psi(K, E, position, interpolation=interpolation)
-					I += w * self.fermi_dirac(E, T) * (abs(psi)) ** 2
-		if debug:
-			print "Finished LDoS = "+str(I)+", at r = "+str(position)
-		return I
 
 	def get_nearest_mesh_value(self, x):
 		"""Return nearest mesh point to x.
@@ -260,41 +231,46 @@ class Cell(object):
 
 			# Get mesh points of maximum range of atoms orbitals in each direction
 			x_lower_lim = self.get_nearest_mesh_value(atom.atom_pos.x - cut)
-			x_upper_lim = self.get_nearest_mesh_value(atom.atom_pos.x + cut)
+			x_upper_lim = self.get_nearest_mesh_value(atom.atom_pos.x + cut) + self.grid_spacing
 			y_lower_lim = self.get_nearest_mesh_value(atom.atom_pos.y - cut)
-			y_upper_lim = self.get_nearest_mesh_value(atom.atom_pos.y + cut)
+			y_upper_lim = self.get_nearest_mesh_value(atom.atom_pos.y + cut) + self.grid_spacing
 			z_lower_lim = self.get_nearest_mesh_value(atom.atom_pos.z - cut)
-			z_upper_lim = self.get_nearest_mesh_value(atom.atom_pos.z + cut)
+			z_upper_lim = self.get_nearest_mesh_value(atom.atom_pos.z + cut) + self.grid_spacing
 
-			# Get array of mesh points within cutoff
-			x_points = np.arange(x_lower_lim, x_upper_lim, self.grid_spacing)
-			y_points = np.arange(y_lower_lim, y_upper_lim, self.grid_spacing)
-			z_points = np.arange(z_lower_lim, z_upper_lim, self.grid_spacing)
+			# Get mesh of local points
+			local_mesh_x, local_mesh_y, local_mesh_z = np.mgrid[x_lower_lim:x_upper_lim:self.grid_spacing,
+			                                                    y_lower_lim:y_upper_lim:self.grid_spacing,
+			                                                    z_lower_lim:z_upper_lim:self.grid_spacing]
 
-			# Iterate over mesh points within cutoff
-			for x in x_points:
-				for y in y_points:
-					for z in z_points:
-						r = Vector(x, y, z)
-						# Constrain vector using periodic boundary conditions
-						constrained = self.constrain_vector_to_cell(r)
+			# Iterate over local points
+			for i_local in range(local_mesh_x.shape[0]):
+				for j_local in range(local_mesh_y.shape[1]):
+					for k_local in range(local_mesh_z.shape[2]):
+						# Get local coordinates
+						x = local_mesh_x[i_local, j_local, k_local]
+						y = local_mesh_y[i_local, j_local, k_local]
+						z = local_mesh_z[i_local, j_local, k_local]
 
-						# Get indices of cell mesh corresponding to this point
-						i = np.where(self.x_mesh == constrained.x)[0][0]
-						j = np.where(self.y_mesh == constrained.y)[1][0]
-						k = np.where(self.z_mesh == constrained.z)[2][0]
+						relative_vector = Vector(x, y, z)
 
-						relative_position = self.constrain_relative_vector(r - atom_pos_on_mesh)
+						absolute_vector = Vector(x, y, z)
+						absolute_vector.constrain_vector_to_cell(self.vector)
+
+						# Get indices of periodic cell mesh corresponding to this local point
+						i = np.where(self.x_mesh == absolute_vector.x)[0][0]
+						j = np.where(self.y_mesh == absolute_vector.y)[1][0]
+						k = np.where(self.z_mesh == absolute_vector.z)[2][0]
+
 						# Iterate over orbitals
 						for l in atom.radials:
 							for zeta in atom.radials[l]:
 								# Get radial part of wavefunction
-								R = atom.get_radial_value_relative(l, zeta, relative_position)
+								R = atom.get_radial_value_relative(l, zeta, relative_vector)
 								for m in range(-l, l + 1):
 									# If R == 0, do not store
 									if R != 0.0:
 										# Get spherical harmonic
-										Y = sph(l, m, relative_position)
+										Y = sph(l, m, relative_vector)
 										# Initialise support grid entry
 										if not support_grid[i, j, k]:
 											support_grid[i, j, k] = SmartDict()
@@ -416,7 +392,7 @@ class Cell(object):
 		Returns:
 			3D np.array of SmartDict: Support function mesh, indexed by [x, y, z][atomKey][l][zeta][m]
 		"""
-		if not self.support_grid:
+		if self.support_grid is None:
 			if not recalculate and self.has_support_file(debug=debug):
 				# Read support grid from file
 				self.support_grid = self.read_support_grid(debug=debug)
