@@ -205,6 +205,10 @@ class Cell(object):
 		z = self.get_nearest_mesh_value(position.z)
 		return Vector(x, y, z)
 
+	@staticmethod
+	def update_progress(progress):
+		print '\r[{0}] {1}%'.format('#' * (progress / 10), progress)
+
 	def calculate_support_grid(self, debug=False):
 		"""Evaluate support function for each PAO on mesh.
 
@@ -227,7 +231,7 @@ class Cell(object):
 			cut = atom.get_max_cutoff()
 
 			# Get nearest mesh point to atom position
-			atom_pos_on_mesh = self.get_nearest_mesh_vector(atom.atom_pos)
+			#atom_pos_on_mesh = self.get_nearest_mesh_vector(atom.atom_pos)
 
 			# Get mesh points of maximum range of atoms orbitals in each direction
 			x_lower_lim = self.get_nearest_mesh_value(atom.atom_pos.x - cut)
