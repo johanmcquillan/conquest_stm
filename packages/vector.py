@@ -73,6 +73,9 @@ class Vector(object):
 		"""Subtract two vectors"""
 		return self + (-other)
 
+	def components(self):
+		return self.x, self.y, self.z
+
 	def project_x(self):
 		"""Project vector onto x-axis"""
 		return Vector(self.x, 0, 0)

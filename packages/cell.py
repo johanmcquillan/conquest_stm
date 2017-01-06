@@ -1,7 +1,8 @@
 
 import os
 import numpy as np
-from copy import deepcopy
+import math
+from skimage import measure
 
 from sph import sph
 from smart_dict import SmartDict
@@ -9,6 +10,8 @@ from vector import Vector, KVector
 from safe_open import safe_open
 
 BOLTZMANN = 8.6173303E-5  # Boltzmann's Constant in eV/K
+ELECTRON_MASS = 9.10938E-31  # Electron Mass in kg
+H_BAR = 4.135667662E-15  # Reduced Planck's Constant in eV.s
 
 MESH_FOLDER = "temp/"
 SUPPORT_FNAME = "supp_"
@@ -30,9 +33,6 @@ class Cell(object):
 			yLength (float): Length of cell along y
 			zLength (float): Length of cell along z
 			gridSpacing (float): Resolution of mesh points
-			x_points (float): Number of points on x mesh
-			y_points (float): Number of points on y mesh
-			z_points (float): Number of points on z mesh
 			x_mesh (3D mgrid): Mesh of x values
 			y_mesh (3D mgrid): Mesh of y values
 			z_mesh (3D mgrid): Mesh of z values
@@ -64,11 +64,6 @@ class Cell(object):
 		vector_y = int(yLength/grid_spacing)*grid_spacing
 		vector_z = int(zLength/grid_spacing)*grid_spacing
 		self.vector = Vector(vector_x, vector_y, vector_z)
-
-		# Calculator number of points
-		self.x_points = int(self.vector.x / grid_spacing)
-		self.y_points = int(self.vector.y / grid_spacing)
-		self.z_points = int(self.vector.z / grid_spacing)
 
 		# Form Cartesian meshes
 		self.x_mesh, self.y_mesh, self.z_mesh = np.mgrid[0: xLength: grid_spacing, 0: yLength: grid_spacing, 0: zLength: grid_spacing]
@@ -205,9 +200,53 @@ class Cell(object):
 		z = self.get_nearest_mesh_value(position.z)
 		return Vector(x, y, z)
 
-	@staticmethod
-	def update_progress(progress):
-		print '\r[{0}] {1}%'.format('#' * (progress / 10), progress)
+	def constrain_relative_vector(self, vector):
+		"""Return a vector that is constrained within simulation cell"""
+		x, y, z = vector.components()
+
+		# Check if vector components are greater than half of cell sides
+		# If greater, add or subtract cell length
+
+		while x > self.vector.x / 2:
+			x -= self.vector.x
+		while x <= -self.vector.x / 2:
+			x += self.vector.x
+
+		while y > self.vector.y / 2:
+			y -= self.vector.y
+		while y <= -self.vector.y / 2:
+			y += self.vector.y
+
+		while z > self.vector.z / 2:
+			z -= self.vector.z
+		while z <= -self.vector.z / 2:
+			z += self.vector.z
+
+		return Vector(x, y, z)
+
+	def constrain_vector_to_cell(self, vector):
+		"""Return a vector that is constrained within simulation cell"""
+		x, y, z = vector.components()
+
+		# Check if vector components are greater than half of cell sides
+		# If greater, add or subtract cell length
+
+		while x >= self.vector.x:
+			x -= self.vector.x
+		while x < 0:
+			x += self.vector.x
+
+		while y >= self.vector.y:
+			y -= self.vector.y
+		while y < 0:
+			y += self.vector.y
+
+		while z >= self.vector.z:
+			z -= self.vector.z
+		while z < 0:
+			z += self.vector.z
+
+		return Vector(x, y, z)
 
 	def calculate_support_grid(self, debug=False):
 		"""Evaluate support function for each PAO on mesh.
@@ -216,7 +255,7 @@ class Cell(object):
 			debug (bool, opt.): If true, print extra information during runtime
 
 		Returns:
-			3D np array of SmartDict: Support function mesh, indexed by [x, y, z][atomKey][l][zeta][m]
+			3D np array of SmartDict: Support function mesh, indexed by [x, y, z][atom_key][l][zeta][m]
 		"""
 		if debug:
 			print "Calculating support grid"
@@ -231,7 +270,7 @@ class Cell(object):
 			cut = atom.get_max_cutoff()
 
 			# Get nearest mesh point to atom position
-			#atom_pos_on_mesh = self.get_nearest_mesh_vector(atom.atom_pos)
+			atom_pos_on_mesh = self.get_nearest_mesh_vector(atom.atom_pos)
 
 			# Get mesh points of maximum range of atoms orbitals in each direction
 			x_lower_lim = self.get_nearest_mesh_value(atom.atom_pos.x - cut)
@@ -241,61 +280,61 @@ class Cell(object):
 			z_lower_lim = self.get_nearest_mesh_value(atom.atom_pos.z - cut)
 			z_upper_lim = self.get_nearest_mesh_value(atom.atom_pos.z + cut) + self.grid_spacing
 
-			# Get mesh of local points
-			local_mesh_x, local_mesh_y, local_mesh_z = np.mgrid[x_lower_lim:x_upper_lim:self.grid_spacing,
-			                                                    y_lower_lim:y_upper_lim:self.grid_spacing,
-			                                                    z_lower_lim:z_upper_lim:self.grid_spacing]
+			# Get array of mesh points within cutoff
+			x_points = np.arange(x_lower_lim, x_upper_lim, self.grid_spacing)
+			y_points = np.arange(y_lower_lim, y_upper_lim, self.grid_spacing)
+			z_points = np.arange(z_lower_lim, z_upper_lim, self.grid_spacing)
 
-			# Iterate over local points
-			for i_local in range(local_mesh_x.shape[0]):
-				for j_local in range(local_mesh_y.shape[1]):
-					for k_local in range(local_mesh_z.shape[2]):
-						# Get local coordinates
-						x = local_mesh_x[i_local, j_local, k_local]
-						y = local_mesh_y[i_local, j_local, k_local]
-						z = local_mesh_z[i_local, j_local, k_local]
+			# Iterate over mesh points within cutoff
+			for x in x_points:
+				for y in y_points:
+					for z in z_points:
+						r = Vector(x, y, z)
+						# Constrain vector using periodic boundary conditions
+						constrained = self.constrain_vector_to_cell(r)
 
-						relative_vector = Vector(x, y, z)
+						# Get indices of cell mesh corresponding to this point
+						i = np.where(self.x_mesh == constrained.x)[0][0]
+						j = np.where(self.y_mesh == constrained.y)[1][0]
+						k = np.where(self.z_mesh == constrained.z)[2][0]
 
-						absolute_vector = Vector(x, y, z)
-						absolute_vector.constrain_vector_to_cell(self.vector)
-
-						# Get indices of periodic cell mesh corresponding to this local point
-						i = np.where(self.x_mesh == absolute_vector.x)[0][0]
-						j = np.where(self.y_mesh == absolute_vector.y)[1][0]
-						k = np.where(self.z_mesh == absolute_vector.z)[2][0]
-
+						relative_position = self.constrain_relative_vector(r - atom_pos_on_mesh)
 						# Iterate over orbitals
 						for l in atom.radials:
 							for zeta in atom.radials[l]:
 								# Get radial part of wavefunction
-								R = atom.get_radial_value_relative(l, zeta, relative_vector)
-								for m in range(-l, l + 1):
-									# If R == 0, do not store
-									if R != 0.0:
+								R = atom.get_radial_value_relative(l, zeta, relative_position)
+								# If R == 0, do not store
+								if R != 0.0:
+									for m in range(-l, l + 1):
 										# Get spherical harmonic
-										Y = sph(l, m, relative_vector)
+										Y = sph(l, m, relative_position)
 										# Initialise support grid entry
 										if not support_grid[i, j, k]:
 											support_grid[i, j, k] = SmartDict()
 										# Store support value
 										support_grid[i, j, k][atom_key][l][zeta][m] = R * Y
 			if debug:
-				print "Calculated support grid for atom "+atom.ion_name+" "+str(atom_key)
+				print "Calculated support grid for atom " + atom.ion_name + " " + str(atom_key)
 		return support_grid
 
 	def support_filename(self):
 		return MESH_FOLDER+SUPPORT_FNAME+self.name+"_"+str(self.grid_spacing)+EXT
 
-	def has_support_file(self, debug=False):
+	def has_support_file(self):
 		output = False
 		filename = self.support_filename()
 		if os.path.isfile(filename):
 			support_file = open(filename, 'r')
-			line = support_file.next()
-			spacing_string = line.split()[0]
-			if spacing_string.isdigit() and float(spacing_string) == self.grid_spacing:
-				output = True
+			try:
+				line = support_file.next()
+				spacing_string = line.split()[0]
+				if float(spacing_string) == self.grid_spacing:
+					output = True
+			except StopIteration:
+				pass
+			except ValueError:
+				pass
 			support_file.close()
 		return output
 
@@ -310,11 +349,10 @@ class Cell(object):
 		if debug:
 			print "Writing support grid to "+filename
 
-		support_file.write(str(self.grid_spacing+"\n"))
 		# Iterate over mesh points
-		for i in range(self.x_points):
-			for j in range(self.y_points):
-				for k in range(self.z_points):
+		for i in range(self.x_mesh.shape[0]):
+			for j in range(self.y_mesh.shape[1]):
+				for k in range(self.z_mesh.shape[2]):
 					# If support function values exist at mesh point
 					if self.support_grid[i, j, k]:
 						support_file.write(str(i)+" "+str(j)+" "+str(k)+"\n")
@@ -343,7 +381,6 @@ class Cell(object):
 
 		# Iterate over file lines
 		end_of_file = False
-		support_file.next()
 		line = support_file.next()
 		line_split = line.split()
 		while not end_of_file:
@@ -397,7 +434,7 @@ class Cell(object):
 			3D np.array of SmartDict: Support function mesh, indexed by [x, y, z][atomKey][l][zeta][m]
 		"""
 		if self.support_grid is None:
-			if not recalculate and self.has_support_file(debug=debug):
+			if not recalculate and os.path.isfile(self.support_filename()):
 				# Read support grid from file
 				self.support_grid = self.read_support_grid(debug=debug)
 			else:
@@ -419,9 +456,9 @@ class Cell(object):
 				for zeta in atom.bands[K][E][l]:
 					for m in atom.bands[K][E][l][zeta]:
 						coefficient = atom.get_coefficient(K, E, l, zeta, m)
-						for i in range(self.x_points):
-							for j in range(self.y_points):
-								for k in range(self.z_points):
+						for i in range(self.x_mesh.shape[0]):
+							for j in range(self.y_mesh.shape[1]):
+								for k in range(self.z_mesh.shape[2]):
 									if support_grid[i, j, k]:
 										if atom_key in support_grid[i, j, k]:
 											psi_grid[i, j, k] += coefficient*support_grid[i, j, k][atom_key][l][zeta][m]
@@ -431,25 +468,12 @@ class Cell(object):
 		return (MESH_FOLDER+PSI_FNAME+self.name+"_"+str(self.grid_spacing)+"_"
 				+str(K.x)+"_"+str(K.y)+"_"+str(K.z)+"_"+str(E)+EXT)
 
-	def has_psi_file(self, K, E):
-		output = False
-		filename = self.psi_filename(K, E)
-		if os.path.isfile(filename):
-			psi_file = file(filename, "r")
-			line = psi_file.next()
-			spacing_string = line.split()[0]
-			if spacing_string.isdigit() and float(spacing_string) == self.grid_spacing:
-				output = True
-			psi_file.close()
-		return output
-
 	def write_psi_grid(self, psi_grid, K, E):
 		filename = self.psi_filename(K, E)
 		psi_file = safe_open(filename, "w")
-		psi_file.write(str(self.grid_spacing)+"\n")
-		for i in range(self.x_points):
-			for j in range(self.y_points):
-				for k in range(self.z_points):
+		for i in range(self.x_mesh.shape[0]):
+			for j in range(self.y_mesh.shape[1]):
+				for k in range(self.z_mesh.shape[2]):
 					if psi_grid[i, j, k] != 0:
 						psi = psi_grid[i, j, k]
 						psi_file.write(str(i)+" "+str(j)+" "+str(k)+" "+str(psi.real)+" "+str(psi.imag)+"\n")
@@ -465,7 +489,6 @@ class Cell(object):
 	def read_psi_grid(self, K, E):
 		filename = self.psi_filename(K, E)
 		psi_file = open(filename, "r")
-		psi_file.next()  # Skip grid spacing
 		psi_grid = np.zeros_like(self.x_mesh, dtype=complex)
 
 		for line in psi_file:
@@ -489,7 +512,7 @@ class Cell(object):
 			write (bool, opt.): Write to file
 			debug (bool, opt.): Print extra information during runtime
 		"""
-		if not recalculate and self.has_psi_file(K, E):
+		if not recalculate and os.path.isfile(self.psi_filename(K, E)):
 			# Read data from file
 			psi_grid = self.read_psi_grid(K, E)
 		else:
@@ -522,9 +545,9 @@ class Cell(object):
 				if min_E <= E <= max_E:
 					psi_grid = self.get_psi_grid(K, E, recalculate=recalculate, write=write, debug=debug)
 					fd = self.fermi_dirac(E, T)
-					for i in range(self.x_points):
-						for j in range(self.y_points):
-							for k in range(self.z_points):
+					for i in range(self.x_mesh.shape[0]):
+						for j in range(self.y_mesh.shape[1]):
+							for k in range(self.z_mesh.shape[2]):
 								psi = psi_grid[i, j, k]
 								ldos_grid[i, j, k] += K.weight*fd*(abs(psi))**2
 				if debug:
@@ -534,18 +557,7 @@ class Cell(object):
 	def ldos_filename(self, min_E, max_E, T):
 		return MESH_FOLDER+LDOS_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(min_E)+"_"+str(max_E)+"_"+str(T)+EXT
 
-	def has_ldos_file(self, min_E, max_E, T):
-		output = False
-		filename = self.ldos_filename(min_E, max_E, T)
-		if os.path.isfile(filename):
-			ldos_file = file(filename, "r")
-			line = ldos_file.next()
-			spacing_string = line.split()[0]
-			if spacing_string.isdigit() and float(spacing_string) == self.grid_spacing:
-				output = True
-		return output
-
-	def write_ldos(self, ldos_grid, min_E, max_E, T, debug=False):
+	def write_ldos_grid(self, ldos_grid, min_E, max_E, T, debug=False):
 		"""Write LDoS mesh to file.
 
 		Args:
@@ -559,11 +571,10 @@ class Cell(object):
 		ldos_file = safe_open(filename, "w")
 		if debug:
 			print "Writing LDoS grid to "+filename
-		ldos_file.write(str(self.grid_spacing+"\n"))
 		# Iterate over mesh points
-		for i in range(self.x_points):
-			for j in range(self.y_points):
-				for k in range(self.z_points):
+		for i in range(self.x_mesh.shape[0]):
+			for j in range(self.y_mesh.shape[1]):
+				for k in range(self.z_mesh.shape[2]):
 					# If LDoS is non-zero at mesh point, write data to file
 					if ldos_grid[i, j, k]:
 						ldos_file.write(str(i)+" "+str(j)+" "+str(k)+" "+str(ldos_grid[i, j, k])+"\n")
@@ -573,26 +584,20 @@ class Cell(object):
 		"""Read LDoS mesh from file"""
 		filename = self.ldos_filename(min_E, max_E, T)
 		ldos_file = open(filename, 'r')
-		ldos_file.next()  # Skip grid spacing
-		ldos_grid = np.zeros_like(self.x_mesh, dtype=float)
+		ldos_grid = np.zeros_like(self.x_mesh)
 
 		if debug:
 			print "Reading LDoS grid from "+filename
 
-		end_of_file = False
-		while not end_of_file:
-			try:
-				line = ldos_file.next()
-				line_split = line.split()
-				# Get mesh indices
-				i = int(line_split[0])
-				j = int(line_split[1])
-				k = int(line_split[2])
-				# Get LDoS value
-				value = float(line_split[3])
-				ldos_grid[i, j, k] = value
-			except StopIteration:
-				end_of_file = True
+		for line in ldos_file:
+			line_split = line.split()
+			# Get mesh indices
+			i = int(line_split[0])
+			j = int(line_split[1])
+			k = int(line_split[2])
+			# Get LDoS value
+			value = float(line_split[3])
+			ldos_grid[i, j, k] = value
 
 		if debug:
 			print "LDoS grid successfully read"
@@ -613,11 +618,39 @@ class Cell(object):
 			3D np.array: LDoS mesh
 		"""
 		# Read ldos grid from file if not stored by cell
-		if not recalculate and self.has_ldos_file(min_E, max_E, T):
+		print self.ldos_filename(min_E, max_E, T)
+		if not recalculate and os.path.isfile(self.ldos_filename(min_E, max_E, T)):
 			ldos_grid = self.read_ldos_grid(min_E, max_E, T, debug=debug)
 		else:
 			# Calculate LDoS on mesh
 			ldos_grid = self.calculate_ldos_grid(min_E, max_E, T, recalculate=recalculate, write=write, debug=debug)
 			if write:
-				self.write_ldos(ldos_grid, min_E, max_E, T, debug=debug)
+				self.write_ldos_grid(ldos_grid, min_E, max_E, T, debug=debug)
 		return ldos_grid
+
+	def kappa_squared(self, tip_work_func, tip_energy):
+		return 2*ELECTRON_MASS/(H_BAR**2)*(tip_work_func - tip_energy)
+
+	def greens_function(self, position, tip_position, tip_work_func, tip_energy):
+		distance = abs(position - tip_position)
+		kappa2 = self.kappa_squared(tip_work_func, tip_energy)
+		return np.exp(- kappa2 * distance) / (4*np.pi*distance)
+
+	def filtered_greens_function(self, position, tip_position, alpha, tip_work_func, tip_energy):
+		distance = abs(position - tip_position)
+		kappa2 = self.kappa_squared(tip_work_func, tip_energy)
+		kappa = np.sqrt(kappa2)
+		u = np.sqrt(2*np.pi)/(4*distance)*np.exp(alpha**2*kappa2)
+		v = np.exp(np.sqrt(kappa)*distance)*math.erf(alpha*kappa + distance/(2*alpha))
+		w = np.exp(- kappa * distance)*math.erf(alpha*kappa - distance/(2*alpha))
+		x = 2*np.sinh(kappa * distance)
+		return u*(v - w - x)
+
+	def isosurface_condition(self, ldos, reference):
+		return np.log(ldos / reference)
+
+	def broadened_volume_integrand(self, mesh, width, fraction):
+		masked_mesh = np.ma.masked_array(mesh, mask=np.where(mesh == 0, 1, 0))
+		log_mesh = self.isosurface_condition(masked_mesh, fraction*np.max(mesh))
+		broad_mesh = np.where(log_mesh < width, 15/(16*width)*(1-(log_mesh/width)**2)**2, 0)
+		return broad_mesh

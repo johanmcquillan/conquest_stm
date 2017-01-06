@@ -32,7 +32,7 @@ def plot_3d(title, mesh, fraction, x_range, y_range, z_range, step, save_name=No
 	plt.title(title)
 
 	# Plot surface
-	ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Spectral, lw=0.1)
+	ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Greys, lw=0.1)
 
 	# Set axes
 	ax.set_xlim3d(x_range[0] / step, x_range[1] / step)
@@ -310,98 +310,6 @@ def plot_basis_2d(
 			print 'Finished '+plot_name+'.pdf'
 
 
-def plot_charge_density_gamma_2d(
-		cell, E, axis, minimum, maximum, step=None, plane_value=None, label='', print_status=False):
-	"""Plots cross-section of charge density evaluated at gamma-point to pdf.
-
-	All lengths measured in bohr radii (a0).
-
-	Args:
-		cell (Cell): Simulation cell to plot
-		E (float): Band energy, nearest band energy will be used
-		axis (string): Cartesian axis ('x', 'y', or 'z') to set to constant value given by plane_value
-		minimum (int): Minimum value of coordinates
-		maximum (int): Maximum value of coordinates
-		plane_value (float, opt.): Constant value assigned to Cartesian coordinate given by axis; Default is 0.0
-		step (float, opt.): Interval between Cartesian mgrid points, measured in a0;
-							Default is cell.gridSpacing
-		label (string, opt.): Optional string to append to end of filename
-		print_status (bool, opt.): If true, print update when file is saved
-	"""
-
-	if axis not in ['x', 'y', 'z']:
-		raise ValueError("Axis must be x, y, or z")
-
-	# If no step given, set to gridSpacing
-	if not step:
-		step = cell.grid_spacing
-
-	# Initialise meshes
-	# 2D cartesian mesh (x, y, or z axis determined later)
-	space1, space2 = np.mgrid[minimum:maximum:step, minimum:maximum:step]
-
-	psi2 = np.zeros_like(space1, dtype=float)
-	max_psi2 = 0.0  # Colour plot sets limits to 0 to +max_psi2
-
-	# Get nearest stored energy at gamma-point to requested energy
-	bandEnergy = sorted(cell.get_gamma_energies(), key=lambda t: abs(E - t))[0]
-
-	# Loop over all mesh points
-	for i in range(0, int((maximum - minimum) / step)):
-		for j in range(0, int((maximum - minimum) / step)):
-			# Use axis variable to determine which axes space1 and space2 refer to
-			# Evaluate spherical harmonic at mesh point
-			if axis == 'z':
-				if not plane_value:
-					plane_value = cell.zLength / 2
-				r = Vector(space2[i, j], space1[i, j], plane_value)
-				label1 = '$x$ / $a_0$'
-				label2 = '$y$ / $a_0$'
-			if axis == 'y':
-				if not plane_value:
-					plane_value = cell.yLength / 2
-				r = Vector(space2[i, j], plane_value, space1[i, j])
-				label1 = '$x$ / $a_0$'
-				label2 = '$z$ / $a_0$'
-			if axis == 'x':
-				if not plane_value:
-					plane_value = cell.xLength / 2
-				r = Vector(plane_value, space2[i, j], space1[i, j])
-				label1 = '$y$ / $a_0$'
-				label2 = '$z$ / $a_0$'
-
-			psi = cell.get_psi_gamma(bandEnergy, r)
-			psi2[i, j] += abs(psi)**2
-
-			# Update maxpsi
-			if abs(psi2[i, j]) > max_psi2:
-				max_psi2 = psi2[i, j]
-
-	if max_psi2 == 0:
-		raise ValueError("Wavefunction is zero at all points")
-
-	# Setup plot
-	time_stamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
-	plot_name = cell.name+'_ChargeDensityGamma_'+axis+'_'+label+time_stamp
-	with PdfPages('pdfs/' + plot_name + '.pdf') as pdf:
-		plt.imshow(
-			psi2, interpolation='bilinear', origin='center', cmap=cm.copper,
-			extent=(minimum, maximum, minimum, maximum), vmin=0.0, vmax=max_psi2)
-		plt.colorbar()
-		plt.xlabel(label1)
-		plt.ylabel(label2)
-		axes = ['x', 'y', 'z']
-		axes.remove(axis)
-		ttl = (cell.name +' Charge Density in $' + axes[0] +'-' + axes[1] +'$ plane at $' + axis +'=' + str(plane_value) + '$')
-		plt.title(ttl)
-
-		# Save to pdf
-		pdf.savefig()
-		plt.close()
-		if print_status:
-			print 'Finished '+plot_name+'.pdf'
-
-
 def plot_ldos_2d(
 		cell, min_E, max_E, T, axis, planeValue, minimum, maximum, step=None, interpolation='cubic',
 		printStatus=False, debug=False):
@@ -432,10 +340,19 @@ def plot_ldos_2d(
 	if not step:
 		step = cell.grid_spacing
 
-	ldos_3d = cell.get_ldos_grid(min_E, max_E, T, debug=debug)
+	# Get absolute energy
+	min_E_abs = min_E + cell.fermiLevel
+	max_E_abs = max_E + cell.fermiLevel
+
+	ldos_3d = cell.get_ldos_grid(min_E_abs, max_E_abs, T, debug=debug)
 
 	if np.max(ldos_3d) == 0.0:
 		raise ValueError("LDoS is zero at all points")
+	else:
+		index = np.where(ldos_3d == 16.9705557301)
+		i = index[0]
+		j = index[1]
+		k = index[2]
 
 	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
 	save_name = cell.name + '_LDoS2D_' + axis + '_' + timeStamp
@@ -453,17 +370,17 @@ def plot_ldos_2d(
 def plot_2d(cell, mesh_3d, title, save_name, axis, plane_value, minimum, maximum):
 
 	if axis == 'x':
-		index = np.where(cell.xMesh == plane_value)[0][0]
+		index = np.where(cell.x_mesh == plane_value)[0][0]
 		mesh_2d = mesh_3d[index, :, :]
 		label1 = 'z'
 		label2 = 'y'
 	elif axis == 'y':
-		index = np.where(cell.yMesh == plane_value)[1][0]
+		index = np.where(cell.y_mesh == plane_value)[1][0]
 		mesh_2d = mesh_3d[:, index, :]
 		label1 = 'z'
 		label2 = 'x'
 	elif axis == 'z':
-		index = np.where(cell.zMesh == plane_value)[2][0]
+		index = np.where(cell.z_mesh == plane_value)[2][0]
 		mesh_2d = mesh_3d[:, :, index]
 		label1 = 'y'
 		label2 = 'x'
