@@ -28,20 +28,18 @@ class Cell(object):
 	
 	Attributes:
 		name (string): Name of simulation; used for plot titles
-			fermiLevel (float): Fermi Level of simulation
-			xLength (float): Length of cell along x
-			yLength (float): Length of cell along y
-			zLength (float): Length of cell along z
-			gridSpacing (float): Resolution of mesh points
-			x_mesh (3D mgrid): Mesh of x values
-			y_mesh (3D mgrid): Mesh of y values
-			z_mesh (3D mgrid): Mesh of z values
-			atoms (int : Atom): Atom objects of simulation indexed by atom number
-			basis_points (SmartDict): Basis function values, indexed by [atomKey][x][y][z][l][zeta][m]
-			bands (Vector : [float]): Energies of bands indexed by k-point vector
+		fermi_level (float): Fermi Level of simulation
+		vector (Vector): Vector from origin to far corner of cell; components are maximum lengths of cell
+		grid_spacing (float): Resolution of mesh points
+		x_mesh (3D mgrid): Mesh of x values
+		y_mesh (3D mgrid): Mesh of y values
+		z_mesh (3D mgrid): Mesh of z values
+		atoms (int : Atom): Atom objects of simulation indexed by atom number
+		bands (Vector : [float]): Energies of bands indexed by k-point vector
+		support_grid (array(SmartDict)): Mesh of support function values, indexed by [x, y, z][atom_key][l][zeta][m]
 	"""
 
-	def __init__(self, name, fermiLevel, xLength, yLength, zLength, grid_spacing=0.5):
+	def __init__(self, name, fermi_level, x_length, y_length, z_length, grid_spacing=0.5):
 		"""Constructs 3D cell with given dimensional.
 
 		All lengths measured in Bohr radii (a0);
@@ -49,24 +47,24 @@ class Cell(object):
 
 		Args:
 			name (string): Name of simulation; used for plot titles
-			fermiLevel (float): Fermi Level of simulation
-			xLength (float): Length of cell along x
-			yLength (float): Length of cell along y
-			zLength (float): Length of cell along z
+			fermi_level (float): Fermi Level of simulation
+			x_length (float): Length of cell along x
+			y_length (float): Length of cell along y
+			z_length (float): Length of cell along z
 			grid_spacing (float, opt.): Resolution of mesh points
 		"""
 
 		self.name = name
-		self.fermiLevel = fermiLevel
+		self.fermi_level = fermi_level
 		self.grid_spacing = grid_spacing
 
-		vector_x = int(xLength/grid_spacing)*grid_spacing
-		vector_y = int(yLength/grid_spacing)*grid_spacing
-		vector_z = int(zLength/grid_spacing)*grid_spacing
+		vector_x = int(x_length / grid_spacing) * grid_spacing
+		vector_y = int(y_length / grid_spacing) * grid_spacing
+		vector_z = int(z_length / grid_spacing) * grid_spacing
 		self.vector = Vector(vector_x, vector_y, vector_z)
 
 		# Form Cartesian meshes
-		self.x_mesh, self.y_mesh, self.z_mesh = np.mgrid[0: xLength: grid_spacing, 0: yLength: grid_spacing, 0: zLength: grid_spacing]
+		self.x_mesh, self.y_mesh, self.z_mesh = np.mgrid[0: x_length: grid_spacing, 0: y_length: grid_spacing, 0: z_length: grid_spacing]
 
 		# Initialise atoms and bands
 		self.atoms = {}
@@ -85,64 +83,6 @@ class Cell(object):
 			if E in self.bands[K]:
 				output = True
 		return output
-
-	# def constrain_relative_vector(self, vector):
-	# 	"""Return a vector that is constrained within simulation cell"""
-	# 	new_vector = deepcopy(vector)
-	#
-	# 	# Check if vector components are greater than half of cell sides
-	# 	# If greater, add or subtract cell length
-	#
-	# 	if vector.x > self.vector.x/2:
-	# 		new_vector -= self.vector.project_x()
-	# 	elif vector.x <= -self.vector.x/2:
-	# 		new_vector += self.vector.project_x()
-	#
-	# 	if vector.y > self.vector.y/2:
-	# 		new_vector -= self.vector.project_y()
-	# 	elif vector.y <= -self.vector.y/2:
-	# 		new_vector += self.vector.project_y()
-	#
-	# 	if vector.z > self.vector.z/2:
-	# 		new_vector -= self.vector.project_z()
-	# 	elif vector.z <= -self.vector.z/2:
-	# 		new_vector += self.vector.project_z()
-	#
-	# 	# If vector is unchanged return
-	# 	# If vector has changed, constrain
-	# 	if new_vector == vector:
-	# 		return new_vector
-	# 	else:
-	# 		return self.constrain_relative_vector(new_vector)
-	#
-	# def constrain_vector_to_cell(self, vector):
-	# 	"""Return a vector that is constrained within simulation cell"""
-	# 	new_vector = deepcopy(vector)
-	#
-	# 	# Check if vector components are greater than half of cell sides
-	# 	# If greater, add or subtract cell length
-	#
-	# 	if vector.x >= self.vector.x:
-	# 		new_vector -= self.vector.project_x()
-	# 	elif vector.x < 0:
-	# 		new_vector += self.vector.project_x()
-	#
-	# 	if vector.y >= self.vector.y:
-	# 		new_vector -= self.vector.project_y()
-	# 	elif vector.y < 0:
-	# 		new_vector += self.vector.project_y()
-	#
-	# 	if vector.z >= self.vector.z:
-	# 		new_vector -= self.vector.project_z()
-	# 	elif vector.z < 0:
-	# 		new_vector += self.vector.project_z()
-	#
-	# 	# If vector is unchanged return
-	# 	# If vector has changed, constrain
-	# 	if new_vector == vector:
-	# 		return new_vector
-	# 	else:
-	# 		return self.constrain_vector_to_cell(new_vector)
 
 	def add_atom(self, atom, atomKey):
 		"""Add atom to self.atoms, indexed by atomKey
@@ -175,7 +115,7 @@ class Cell(object):
 		Returns:
 			float: Occupation value
 		"""
-		f = 1.0 / (np.exp((energy - self.fermiLevel) / (BOLTZMANN * temperature)) + 1)
+		f = 1.0 / (np.exp((energy - self.fermi_level) / (BOLTZMANN * temperature)) + 1)
 		return f
 
 	def get_nearest_mesh_value(self, x):
@@ -255,7 +195,7 @@ class Cell(object):
 			debug (bool, opt.): If true, print extra information during runtime
 
 		Returns:
-			3D np array of SmartDict: Support function mesh, indexed by [x, y, z][atom_key][l][zeta][m]
+			array(SmartDict): Mesh of support function values, indexed by [x, y, z][atom_key][l][zeta][m]
 		"""
 		if debug:
 			print "Calculating support grid"
@@ -319,31 +259,11 @@ class Cell(object):
 		return support_grid
 
 	def support_filename(self):
+		"""Return standardised filename for relevant support function file"""
 		return MESH_FOLDER+SUPPORT_FNAME+self.name+"_"+str(self.grid_spacing)+EXT
 
-	def has_support_file(self):
-		output = False
-		filename = self.support_filename()
-		if os.path.isfile(filename):
-			support_file = open(filename, 'r')
-			try:
-				line = support_file.next()
-				spacing_string = line.split()[0]
-				if float(spacing_string) == self.grid_spacing:
-					output = True
-			except StopIteration:
-				pass
-			except ValueError:
-				pass
-			support_file.close()
-		return output
-
 	def write_support_grid(self, debug=False):
-		"""Write support function mesh to file.
-
-		Args:
-			debug (bool, opt.): Print extra information during runtime
-		"""
+		"""Write support function mesh to file"""
 		filename = self.support_filename()
 		support_file = safe_open(filename, 'w')
 		if debug:
@@ -431,7 +351,7 @@ class Cell(object):
 			debug (bool, opt.): Print extra information during runtime
 
 		Returns:
-			3D np.array of SmartDict: Support function mesh, indexed by [x, y, z][atomKey][l][zeta][m]
+			array(SmartDict): Mesh of support function values, indexed by [x, y, z][atom_key][l][zeta][m]
 		"""
 		if self.support_grid is None:
 			if not recalculate and os.path.isfile(self.support_filename()):
@@ -446,15 +366,33 @@ class Cell(object):
 		return self.support_grid
 
 	def calculate_psi_grid(self, K, E, recalculate=False, write=True, debug=False):
+		"""Evaluate wavefunction on mesh.
+
+		Args:
+			K (KVector): K-point
+			E (float): Band energy
+			recalculate (bool, opt.): Force recalculation, even if already stored
+			write (bool, opt.): Write to file
+			debug (bool, opt.): Print extra information during runtime
+
+		Returns:
+			array(complex): Mesh of complex wavefunction values
+		"""
 		if debug:
 			print "Building Wavefunction for "+str(K)+", "+str(E)
+
+		# Initialise mesh
 		psi_grid = np.zeros_like(self.x_mesh, dtype=complex)
+		# Get basis functions
 		support_grid = self.get_support_grid(recalculate=recalculate, write=write, debug=debug)
+
 		for atom_key in self.atoms:
 			atom = self.atoms[atom_key]
+			# Iterate over orbitals
 			for l in atom.bands[K][E]:
 				for zeta in atom.bands[K][E][l]:
 					for m in atom.bands[K][E][l][zeta]:
+						# Evaluate wavefunction contribution over mesh
 						coefficient = atom.get_coefficient(K, E, l, zeta, m)
 						for i in range(self.x_mesh.shape[0]):
 							for j in range(self.y_mesh.shape[1]):
@@ -465,10 +403,12 @@ class Cell(object):
 		return psi_grid
 
 	def psi_filename(self, K, E):
+		"""Return standardised filename for relevant wavefunction file"""
 		return (MESH_FOLDER+PSI_FNAME+self.name+"_"+str(self.grid_spacing)+"_"
 				+str(K.x)+"_"+str(K.y)+"_"+str(K.z)+"_"+str(E)+EXT)
 
 	def write_psi_grid(self, psi_grid, K, E):
+		"""Write wavefunction function mesh to file"""
 		filename = self.psi_filename(K, E)
 		psi_file = safe_open(filename, "w")
 		for i in range(self.x_mesh.shape[0]):
@@ -480,6 +420,7 @@ class Cell(object):
 		psi_file.close()
 
 	def write_psi_range(self, min_E, max_E, recalculate=False, debug=False):
+		"""Write wavefunction meshes to file for bands within energy range"""
 		for K in self.bands:
 			for E in self.bands[K]:
 				if min_E <= E <= max_E:
@@ -487,6 +428,7 @@ class Cell(object):
 					self.write_psi_grid(psi_grid, K, E)
 
 	def read_psi_grid(self, K, E):
+		"""Read wavefunction mesh from file"""
 		filename = self.psi_filename(K, E)
 		psi_file = open(filename, "r")
 		psi_grid = np.zeros_like(self.x_mesh, dtype=complex)
@@ -511,6 +453,9 @@ class Cell(object):
 			recalculate (bool, opt.): Force recalculation, even if already stored
 			write (bool, opt.): Write to file
 			debug (bool, opt.): Print extra information during runtime
+
+		Returns:
+			array(complex): Mesh of complex wavefunction values
 		"""
 		if not recalculate and os.path.isfile(self.psi_filename(K, E)):
 			# Read data from file
@@ -555,6 +500,7 @@ class Cell(object):
 		return ldos_grid
 
 	def ldos_filename(self, min_E, max_E, T):
+		"""Return standardised filename for relevant LDOS file"""
 		return MESH_FOLDER+LDOS_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(min_E)+"_"+str(max_E)+"_"+str(T)+EXT
 
 	def write_ldos_grid(self, ldos_grid, min_E, max_E, T, debug=False):
@@ -615,10 +561,9 @@ class Cell(object):
 			debug (bool, opt.): Print extra information during runtime
 
 		Returns:
-			3D np.array: LDoS mesh
+			array(float): Mesh of LDOS values
 		"""
 		# Read ldos grid from file if not stored by cell
-		print self.ldos_filename(min_E, max_E, T)
 		if not recalculate and os.path.isfile(self.ldos_filename(min_E, max_E, T)):
 			ldos_grid = self.read_ldos_grid(min_E, max_E, T, debug=debug)
 		else:
