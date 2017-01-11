@@ -21,7 +21,7 @@ SPECTRAL = {0: 's', 1: 'p', 2: 'd', 3: 'f', 4: 'g',
 AXES = ('x', 'y', 'z')
 
 
-def plot_3d(title, mesh, fraction, x_range, y_range, z_range, step, save_name=None, show=True):
+def plot_3d(title, mesh, fraction, x_range, y_range, z_range, step, save_name=None, show=True, top_down=False):
 	# Make isosurface at psi2 = fraction * psi2max
 	mes = measure.marching_cubes(mesh, fraction*np.max(mesh))
 	verts = mes[0]
@@ -32,15 +32,19 @@ def plot_3d(title, mesh, fraction, x_range, y_range, z_range, step, save_name=No
 	plt.title(title)
 
 	# Plot surface
-	ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Greys, lw=0.1)
+	ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Greys_r, antialiased=False, lw=0.0, vmin=55)
 
-	# Set axes
 	ax.set_xlim3d(x_range[0] / step, x_range[1] / step)
 	ax.set_ylim3d(y_range[0] / step, y_range[1] / step)
 	ax.set_zlim3d(z_range[0] / step, z_range[1] / step)
-	ax.set_xlabel("x")
-	ax.set_ylabel("y")
-	ax.set_zlabel("z")
+
+	if top_down:
+		ax.view_init(elev=90, azim=-90)
+	else:
+		# Set axes
+		ax.set_xlabel("x")
+		ax.set_ylabel("y")
+		ax.set_zlabel("z")
 
 	if save_name:
 		plt.savefig("figures3D/"+save_name+".png")
@@ -68,19 +72,25 @@ def plot_radials(ions, points=500, print_status=False, spectro=True, interpolati
 			ion = ions[ion_name]
 
 			# Setup plot
-			plt.title('PAOs for '+ion_name+'.ion')
-			plt.xlabel('Radial Distance, $r$ / $a_0$')
-			plt.ylabel('$R_{nl}(r)$')
+			fig, ax = plt.subplots(figsize=(10, 5))
+
+			plt.title('Radial Functions for '+ion_name+'.ion')
+			ax.set_xlabel('Radial Distance, $r$ / $a_0$')
+			ax.set_ylabel('$R_{\zeta l}(r)$')
 			plt.minorticks_on()
-			plt.grid(b=True, which='major', alpha=0.45, linestyle='-')
-			plt.grid(b=True, which='minor', alpha=0.10, linestyle='-')
+			plt.grid(b=True, which='major', alpha=0.25, linestyle='-')
+			plt.grid(b=True, which='minor', alpha=0.05, linestyle='-')
 
 			# Loop over all radial functions
-
+			maxy = 0
+			my = 0
 			for l in ion.radials:
 				for zeta in ion.radials[l]:
 					# Get Radial and data from ion
 					radial = ion.get_radial(l, zeta)
+					my = max(radial.radial_function_values)
+					if my > maxy:
+						maxy = my
 					n = radial.n
 					step = radial.cutoff / points
 					r = np.arange(0.0, radial.cutoff, step)
@@ -91,13 +101,15 @@ def plot_radials(ions, points=500, print_status=False, spectro=True, interpolati
 					# Add radial info to legend and add to plot
 					# If spectro, use spectroscopic notation for legend
 					if spectro:
-						label = '$\zeta ='+str(zeta)+'$, $'+str(n)+SPECTRAL[l]+'$'
+						label = '$\zeta ='+str(zeta)+'$; $'+str(n)+SPECTRAL[l]+'$'
 					else:
-						label = '$\zeta ='+str(zeta)+'$, $n='+str(n)+'$, $l='+str(l)+'$'
-					plt.plot(r, R, label=label)
+						label = '$\zeta ='+str(zeta)+'$; $n='+str(n)+'$, $l='+str(l)+'$'
+					ax.plot(r, R, label=label)
 
 					if print_status:
 						print "Finished Radial "+ion.ion_name+"_"+str(zeta)+"_"+str(n)+"_"+str(l)
+			ymax = 0.2 * int(maxy / 0.2 + 2)
+			ax.set_ylim(ymin=0, ymax=ymax)
 
 			# Add plot to pdf and reset plt
 			plt.legend()
@@ -403,7 +415,7 @@ def plot_2d(cell, mesh_3d, title, save_name, axis, plane_value, minimum, maximum
 
 def plot_ldos_3d(
 		cell, min_E, max_E, T, x_range=(0.0, 0.0), y_range=(0.0, 0.0), z_range=(0.0, 0.0), step=0.0, fraction=0.8, alpha=1.0,
-		show=True, save=False, debug=False, recalculate=False):
+		show=True, save=False, debug=False, recalculate=False, top_down=False):
 	"""Plots charge density isosurface.
 
 	All lengths measured in Bohr radii (a0).
@@ -457,4 +469,4 @@ def plot_ldos_3d(
 	else:
 		save_name = None
 
-	plot_3d(title, ldos, fraction, x_range, y_range, z_range, step, save_name=save_name, show=show)
+	plot_3d(title, ldos, fraction, x_range, y_range, z_range, step, save_name=save_name, show=show, top_down=top_down)
