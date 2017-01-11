@@ -4,6 +4,8 @@ IO.FractionalCoordinates T
 IO.Iprint 2
 IO.writeDOS T
 IO.output_STM T
+IO.max_DOS_E -0.20047
+IO.min_DOS_E -0.273969
 
 ## General Parameters
 General.NumberOfSpecies 1

@@ -64,12 +64,12 @@
          with a maximum core radius of      1.83678294
         WARNING ! S range greater than L !
 
-          This job was run on 2016/11/16 at 17:15
+          This job was run on 2017/01/08 at 16:26
 
 
-          Code compiled on: Wed Nov 2 13:55:34 GMT 2016
+          Code compiled on: Tue Dec 13 14:12:29 GMT 2016
           Version comment: 
-          Git Branch: STMOutput; tag, hash: v0.50-37-g12d2427
+          Git Branch: STMOutput; tag, hash: v0.50-38-g10f14c6
 
           Job title: 
           C6H6_DZDP                                                                       
@@ -449,4 +449,4 @@
   Max mem use for area   12 is      1.236 MB
   Max mem use for area   13 is      0.000 MB
   Max total mem use is    120.970 MB
-  Total run time was:               35.975 seconds
+  Total run time was:               38.491 seconds
