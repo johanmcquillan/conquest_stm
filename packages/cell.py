@@ -485,6 +485,10 @@ class Cell(object):
 			print "Calculating LDoS grid"
 		ldos_grid = np.zeros_like(self.x_mesh, dtype=float)
 
+		total_k_weight = 0
+		for K in self.bands:
+			total_k_weight += K.weight
+
 		for K in self.bands:
 			for E in self.bands[K]:
 				if min_E <= E <= max_E:
@@ -494,7 +498,7 @@ class Cell(object):
 						for j in range(self.y_mesh.shape[1]):
 							for k in range(self.z_mesh.shape[2]):
 								psi = psi_grid[i, j, k]
-								ldos_grid[i, j, k] += K.weight*fd*(abs(psi))**2
+								ldos_grid[i, j, k] += (K.weight/total_k_weight)*fd*(abs(psi))**2
 				if debug:
 					print "Completed LDoS for ", K, E
 		return ldos_grid

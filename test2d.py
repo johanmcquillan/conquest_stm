@@ -12,7 +12,7 @@ del prsr
 
 #plot.plot_charge_density_gamma_3d(C, 0)
 
-fl = C.fermiLevel
+fl = C.fermi_level
 plot.plot_ldos_3d(C, -2, 0, 0.005, fraction=0.025, debug=True, top_down=True)
 #C.broadened_volume_integrand(C.get_ldos_grid(-2+fl, fl, 0.005, debug=True), 1, 0.05)
 

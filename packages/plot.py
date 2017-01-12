@@ -2,10 +2,9 @@
 import numpy as np
 import datetime as dt
 
-# Import matplotlib packages
 import matplotlib.pyplot as plt
-import mpl_toolkits.mplot3d as mp3d
-from mpl_toolkits.mplot3d import Axes3D
+#import mpl_toolkits.mplot3d as mp3d
+#from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib import cm, colors
 
@@ -22,7 +21,15 @@ AXES = ('x', 'y', 'z')
 
 
 def plot_3d(title, mesh, fraction, x_range, y_range, z_range, step, save_name=None, show=True, top_down=False):
-	# Make isosurface at psi2 = fraction * psi2max
+	"""Plot isosurface of 3D mesh.
+
+	Args:
+		fraction (float, opt.): Sets value of isosurface to this fraction of max charge density
+		show (bool, opt.): If true, show plot
+		save (bool, opt.): If true, save plot
+		debug (bool, opt.): If true, print extra information during runtime
+	"""
+
 	mes = measure.marching_cubes(mesh, fraction*np.max(mesh))
 	verts = mes[0]
 	faces = mes[1]
@@ -31,20 +38,22 @@ def plot_3d(title, mesh, fraction, x_range, y_range, z_range, step, save_name=No
 	fig, ax = plt.subplots(subplot_kw=dict(projection='3d'), figsize=(10, 10))
 	plt.title(title)
 
-	# Plot surface
-	ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Greys_r, antialiased=False, lw=0.0, vmin=55)
-
 	ax.set_xlim3d(x_range[0] / step, x_range[1] / step)
 	ax.set_ylim3d(y_range[0] / step, y_range[1] / step)
 	ax.set_zlim3d(z_range[0] / step, z_range[1] / step)
 
 	if top_down:
 		ax.view_init(elev=90, azim=-90)
+		cmap = cm.Greys_r
 	else:
 		# Set axes
 		ax.set_xlabel("x")
 		ax.set_ylabel("y")
 		ax.set_zlabel("z")
+		cmap = cm.Spectral
+
+	# Plot surface
+	ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cmap, antialiased=False, lw=0.0, vmin=55)
 
 	if save_name:
 		plt.savefig("figures3D/"+save_name+".png")
@@ -414,7 +423,7 @@ def plot_2d(cell, mesh_3d, title, save_name, axis, plane_value, minimum, maximum
 
 
 def plot_ldos_3d(
-		cell, min_E, max_E, T, x_range=(0.0, 0.0), y_range=(0.0, 0.0), z_range=(0.0, 0.0), step=0.0, fraction=0.8, alpha=1.0,
+		cell, min_E, max_E, T, x_range=(0.0, 0.0), y_range=(0.0, 0.0), z_range=(0.0, 0.0), step=0.0, fraction=0.8,
 		show=True, save=False, debug=False, recalculate=False, top_down=False):
 	"""Plots charge density isosurface.
 
