@@ -13,7 +13,11 @@ del prsr
 #plot.plot_charge_density_gamma_3d(C, 0)
 
 fl = C.fermi_level
-plot.plot_ldos_3d(C, -2, 0, 0.005, fraction=0.025, debug=True, top_down=True)
+#plot.plot_ldos_3d(C, -2, 0, 0.005, fraction=0.025, debug=True, top_down=True)
+
+C.bardeen_element(C.c(C.get_psi_range(-2, 0, 0.005, debug=True), 0.0005, 0.001), )
+plot.plot_vector_field(C, C.c(C.get_ldos_grid(-2, 0, 0.005, debug=True), 0.0005, 0.001))
+
 #C.broadened_volume_integrand(C.get_ldos_grid(-2+fl, fl, 0.005, debug=True), 1, 0.05)
 
 #plot.plot_ldos_2d(C, -2, 0, 0.005, 'z', 30.5, 0, 14, debug=True)

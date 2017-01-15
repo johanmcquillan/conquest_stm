@@ -1,7 +1,6 @@
 
 import packages.plot as plot
 from packages.auto_parser import Parser
-from packages.vector import KVector
 
 molecule = 'Si_SZP_K4'
 molecule = 'C6H6_DZDP'

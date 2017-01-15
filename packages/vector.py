@@ -74,7 +74,36 @@ class Vector(object):
 		return self + (-other)
 
 	def components(self):
-		return self.x, self.y, self.z
+		return np.array([self.x, self.y, self.z])
+
+	@staticmethod
+	def get_x(vector):
+		return vector.x
+
+	@staticmethod
+	def get_y(vector):
+		return vector.y
+
+	@staticmethod
+	def get_z(vector):
+		return vector.z
+
+	@staticmethod
+	def elementwise_multiplication(vectorA, vectorB):
+		x = vectorA.x * vectorB.x
+		y = vectorA.y * vectorB.y
+		z = vectorA.z * vectorB.z
+		return Vector(x, y, z)
+
+	def invalid_component(self):
+		if (self.x == np.inf) or (self.y == np.inf) or (self.z == np.nan) or (self.x == np.inf) or (self.y == np.nan) or (self.z == np.nan):
+			return True
+		else:
+			return False
+
+	@staticmethod
+	def static_invalid_component(vector):
+		return vector.invalid_component()
 
 	def project_x(self):
 		"""Project vector onto x-axis"""

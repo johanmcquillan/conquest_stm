@@ -2,7 +2,6 @@
 import os
 import numpy as np
 import math
-from skimage import measure
 
 from sph import sph
 from smart_dict import SmartDict
@@ -17,6 +16,7 @@ MESH_FOLDER = "temp/"
 SUPPORT_FNAME = "supp_"
 LDOS_FNAME = "ldos_"
 PSI_FNAME = "psi_"
+PSI_RANGE_FNAME = "psi_range_"
 EXT = ".dat"
 
 
@@ -419,14 +419,6 @@ class Cell(object):
 						psi_file.write(str(i)+" "+str(j)+" "+str(k)+" "+str(psi.real)+" "+str(psi.imag)+"\n")
 		psi_file.close()
 
-	def write_psi_range(self, min_E, max_E, recalculate=False, debug=False):
-		"""Write wavefunction meshes to file for bands within energy range"""
-		for K in self.bands:
-			for E in self.bands[K]:
-				if min_E <= E <= max_E:
-					psi_grid = self.calculate_psi_grid(K, E, recalculate=recalculate, debug=debug)
-					self.write_psi_grid(psi_grid, K, E)
-
 	def read_psi_grid(self, K, E):
 		"""Read wavefunction mesh from file"""
 		filename = self.psi_filename(K, E)
@@ -466,7 +458,137 @@ class Cell(object):
 				self.write_psi_grid(psi_grid, K, E)
 		return psi_grid
 
+	def calculate_psi_range(self, min_E, max_E, T, recalculate=False, write=True, debug=False):
+		"""Calculate LDoS mesh.
+
+		Args:
+			min_E: Minimum energy
+			max_E: Maximum energy
+			T: Absolute temperature in Kelvin
+			recalculate (bool, opt.): Force recalculation, even if already stored
+			write (bool, opt.): Write calculated meshes to file
+			debug (bool, opt.): Print extra information during runtime
+
+		Returns:
+			3D np.array: LDoS mesh
+		"""
+
+		if debug:
+			print "Calculating psi range grid"
+		total_psi_grid = np.zeros_like(self.x_mesh, dtype=float)
+
+		total_k_weight = 0
+		for K in self.bands:
+			total_k_weight += K.weight
+
+		for K in self.bands:
+			for E in self.bands[K]:
+				if min_E <= E <= max_E:
+					psi_grid = self.get_psi_grid(K, E, recalculate=recalculate, write=write, debug=debug)
+					fd = self.fermi_dirac(E, T)
+					for i in range(self.x_mesh.shape[0]):
+						for j in range(self.y_mesh.shape[1]):
+							for k in range(self.z_mesh.shape[2]):
+								psi = psi_grid[i, j, k]
+								total_psi_grid[i, j, k] += np.sqrt(fd * K.weight / total_k_weight) * psi
+				if debug:
+					print "Completed psi range for ", K, E
+		return total_psi_grid
+
+	def psi_range_filename(self, min_E, max_E, T):
+		"""Return standardised filename for relevant psi range file"""
+		return MESH_FOLDER+PSI_RANGE_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(min_E)+"_"+str(max_E)+"_"+str(T)+EXT
+
+	def write_psi_range(self, ldos_grid, min_E, max_E, T, debug=False):
+		"""Write LDoS mesh to file.
+
+		Args:
+			min_E: Minimum energy
+			max_E: Maximum energy
+			T: Absolute temperature in K
+			debug (bool, opt.): Print extra information during runtime
+		"""
+		filename = self.psi_range_filename(min_E, max_E, T)
+		# Get LDoS mesh
+		psi_range_file = safe_open(filename, "w")
+		if debug:
+			print "Writing partial wavefunction grid to "+filename
+		# Iterate over mesh points
+		for i in range(self.x_mesh.shape[0]):
+			for j in range(self.y_mesh.shape[1]):
+				for k in range(self.z_mesh.shape[2]):
+					# If LDoS is non-zero at mesh point, write data to file
+					if ldos_grid[i, j, k]:
+						psi_range_file.write(str(i)+" "+str(j)+" "+str(k)+" "+str(ldos_grid[i, j, k])+"\n")
+		psi_range_file.close()
+
+	def read_psi_range(self, min_E, max_E, T, debug=False):
+		"""Read psi mesh from file"""
+		filename = self.psi_range_filename(min_E, max_E, T)
+		psi_range_file = open(filename, 'r')
+		psi_range_grid = np.zeros_like(self.x_mesh)
+
+		if debug:
+			print "Reading psi range from "+filename
+
+		for line in psi_range_file:
+			line_split = line.split()
+			# Get mesh indices
+			i = int(line_split[0])
+			j = int(line_split[1])
+			k = int(line_split[2])
+			# Get LDoS value
+			value = float(line_split[3])
+			psi_range_grid[i, j, k] = value
+
+		if debug:
+			print "Psi range successfully read"
+		return psi_range_grid
+
+	def get_psi_range(self, min_E, max_E, T, recalculate=False, write=True, debug=False):
+		"""Get LDoS mesh.
+
+		Args:
+			min_E: Minimum energy
+			max_E: Maximum energy
+			T: Absolute temperature in K
+			recalculate (bool, opt.): Force recalculation of meshes, even if already stored
+			write (bool, opt.): Write calculated grids to file
+			debug (bool, opt.): Print extra information during runtime
+
+		Returns:
+			array(float): Mesh of LDOS values
+		"""
+		# Read ldos grid from file if not stored by cell
+		if not recalculate and os.path.isfile(self.ldos_filename(min_E, max_E, T)):
+			psi_range_grid = self.read_psi_range(min_E, max_E, T, debug=debug)
+		else:
+			# Calculate LDoS on mesh
+			psi_range_grid = self.calculate_psi_range(min_E, max_E, T, recalculate=recalculate, write=write, debug=debug)
+			if write:
+				self.write_psi_range(psi_range_grid, min_E, max_E, T, debug=debug)
+		return psi_range_grid
+
 	def calculate_ldos_grid(self, min_E, max_E, T, recalculate=False, write=True, debug=False):
+		"""Calculate LDoS mesh.
+
+		Args:
+			min_E: Minimum energy
+			max_E: Maximum energy
+			T: Absolute temperature in Kelvin
+			recalculate (bool, opt.): Force recalculation, even if already stored
+			write (bool, opt.): Write calculated meshes to file
+			debug (bool, opt.): Print extra information during runtime
+
+		Returns:
+			3D np.array: LDoS mesh
+		"""
+		if debug:
+			print "Calculaing LDoS grid"
+		psi_range_grid = self.get_psi_range(min_E, max_E, T, recalculate=recalculate, write=write, debug=debug)
+		return abs(psi_range_grid)**2
+
+	def calculate_ldos_grid_old(self, min_E, max_E, T, recalculate=False, write=True, debug=False):
 		"""Calculate LDoS mesh.
 
 		Args:
@@ -577,6 +699,18 @@ class Cell(object):
 				self.write_ldos_grid(ldos_grid, min_E, max_E, T, debug=debug)
 		return ldos_grid
 
+	def get_vector_mesh(self):
+		vector_mesh = np.empty_like(self.x_mesh, dtype=Vector)
+		for i in range(self.x_mesh.shape[0]):
+			for j in range(self.y_mesh.shape[1]):
+				for k in range(self.z_mesh.shape[2]):
+					x = self.x_mesh[i, j, k]
+					y = self.y_mesh[i, j, k]
+					z = self.z_mesh[i, j, k]
+					r = Vector(x, y, z)
+					vector_mesh[i, j, k] = r
+		return vector_mesh
+
 	def kappa_squared(self, tip_work_func, tip_energy):
 		return 2*ELECTRON_MASS/(H_BAR**2)*(tip_work_func - tip_energy)
 
@@ -585,7 +719,7 @@ class Cell(object):
 		kappa2 = self.kappa_squared(tip_work_func, tip_energy)
 		return np.exp(- kappa2 * distance) / (4*np.pi*distance)
 
-	def filtered_greens_function(self, position, tip_position, alpha, tip_work_func, tip_energy):
+	def filtered_greens_function(self, position, tip_position, tip_work_func, tip_energy, alpha):
 		distance = abs(position - tip_position)
 		kappa2 = self.kappa_squared(tip_work_func, tip_energy)
 		kappa = np.sqrt(kappa2)
@@ -595,11 +729,80 @@ class Cell(object):
 		x = 2*np.sinh(kappa * distance)
 		return u*(v - w - x)
 
-	def isosurface_condition(self, ldos, reference):
-		return np.log(ldos / reference)
+	def isosurface_condition(self, charge_density, reference_value):
+		with np.errstate(divide='ignore'):
+			result = np.log(charge_density / reference_value)
+		return result
 
-	def broadened_volume_integrand(self, mesh, width, fraction):
-		masked_mesh = np.ma.masked_array(mesh, mask=np.where(mesh == 0, 1, 0))
-		log_mesh = self.isosurface_condition(masked_mesh, fraction*np.max(mesh))
-		broad_mesh = np.where(log_mesh < width, 15/(16*width)*(1-(log_mesh/width)**2)**2, 0)
-		return broad_mesh
+	def broadened_surface(self, surface, delta_s):
+		if abs(surface) < delta_s:
+			return 15/(16*delta_s)*(1 - (surface/delta_s)**2)**2
+		else:
+			return 0.
+
+	def vector_gradient(self, scalar_field):
+		grad = np.array(np.gradient(scalar_field))
+		vector_grad = np.vectorize(Vector)(grad[0], grad[1], grad[2])
+		return vector_grad
+
+	def get_c(self, charge_density_mesh, fraction, delta_s):
+		max_density = np.max(charge_density_mesh)
+		isovalue = fraction * max_density
+
+		# Remove 0 elements from array such that logarithm does not raise errors
+		log_mesh = self.isosurface_condition(charge_density_mesh, isovalue)
+		log_mesh[abs(log_mesh) == np.inf] = delta_s + 1
+		log_mesh[log_mesh == np.nan] = delta_s + 1
+
+		varargs = (self.grid_spacing,)*3
+		broadened_mesh = np.vectorize(self.broadened_surface)(log_mesh, delta_s)
+		unit_vector_surface = np.array(np.gradient(charge_density_mesh, varargs))
+		vector_surface = broadened_mesh*unit_vector_surface
+
+		return vector_surface
+
+	def get_A_mesh(self, c, wavefunction_mesh):
+		varargs = (self.grid_spacing,) * 3
+		grad_wavefunction = np.array(np.gradient(wavefunction_mesh), varargs)
+		return c*grad_wavefunction
+
+	@staticmethod
+	def mesh_dot_product(vector_mesh_A, vector_mesh_B):
+		scalar_mesh = np.zeros_like(vector_mesh_A[0], dtype=float)
+		for i in range(vector_mesh_A.shape[0]):
+			scalar_mesh += vector_mesh_A[i]*vector_mesh_B[i]
+		return scalar_mesh
+
+	def get_B_mesh(self, c, wavefunction_mesh):
+		return c*wavefunction_mesh
+
+	def bardeen_element_mesh(self, R, wavefunction_mesh, c, tip_work_func, tip_energy, filtered=False, alpha=None):
+		A = self.get_A_mesh(c, wavefunction_mesh)
+		B = self.get_B_mesh(c, wavefunction_mesh)
+
+		if not filtered or alpha is None:
+			G_conjugate = np.conjugate(self.filtered_greens_function(self.get_vector_mesh(), R, alpha, tip_work_func, tip_energy))
+		else:
+			G_conjugate = np.conjugate(self.greens_function(self.get_vector_mesh(), R, tip_work_func, tip_energy))
+		G_conjugate_gradient = np.array(np.gradient(G_conjugate))
+
+		M = G_conjugate * A - B * G_conjugate_gradient
+		return M
+
+	def bardeen_element_k(self, r, wavefunction_mesh, charge_density_mesh, fraction, delta_s, alpha, tip_work_func, tip_energy):
+		c = self.get_c(charge_density_mesh, fraction, delta_s)
+		A_fft = np.fft.fftn(self.get_A_mesh(c, wavefunction_mesh))
+		B_fft = np.fft.fftn(self.get_B_mesh(c, wavefunction_mesh))
+		g_fft = np.fft.fftn(self.filtered_greens_function(self.get_vector_mesh(), r, alpha, tip_work_func, tip_energy))
+
+		x_lim = 2*np.pi/self.vector.x
+		y_lim = 2*np.pi/self.vector.y
+		z_lim = 2*np.pi/self.vector.z
+		k_spacing = 2*np.pi/self.grid_spacing
+		k_mesh = np.mgrid[-x_lim:x_lim:k_spacing, -y_lim:y_lim:k_spacing, -z_lim:z_lim:k_spacing]
+		k_dot_B = self.mesh_dot_product(k_mesh, B_fft)
+		integrand = g_fft * (A_fft + 1j * k_dot_B)
+		M = np.fft.ifftn(integrand)
+
+		return M
+

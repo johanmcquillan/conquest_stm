@@ -3,8 +3,8 @@ import numpy as np
 import datetime as dt
 
 import matplotlib.pyplot as plt
-#import mpl_toolkits.mplot3d as mp3d
-#from mpl_toolkits.mplot3d import Axes3D
+import mpl_toolkits.mplot3d as mp3d
+from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib import cm, colors
 
@@ -18,6 +18,40 @@ SPECTRAL = {0: 's', 1: 'p', 2: 'd', 3: 'f', 4: 'g',
                5: 'h', 6: 'i', 7: 'j', 8: 'k'}
 
 AXES = ('x', 'y', 'z')
+
+
+def plot_2d(cell, mesh_3d, title, save_name, axis, plane_value, minimum, maximum):
+
+	if axis == 'x':
+		index = np.where(cell.x_mesh == plane_value)[0][0]
+		mesh_2d = mesh_3d[index, :, :]
+		label1 = 'z'
+		label2 = 'y'
+	elif axis == 'y':
+		index = np.where(cell.y_mesh == plane_value)[1][0]
+		mesh_2d = mesh_3d[:, index, :]
+		label1 = 'z'
+		label2 = 'x'
+	elif axis == 'z':
+		index = np.where(cell.z_mesh == plane_value)[2][0]
+		mesh_2d = mesh_3d[:, :, index]
+		label1 = 'y'
+		label2 = 'x'
+	else:
+		raise ValueError("Axis must be x, y, or z")
+
+	with PdfPages('figures2D/'+save_name+'.pdf') as pdf:
+		plt.imshow(
+				mesh_2d, interpolation='bilinear', origin='center', cmap=cm.copper,
+				extent=(minimum, maximum, minimum, maximum))
+		plt.colorbar()
+		plt.title(title)
+		plt.xlabel(label1)
+		plt.ylabel(label2)
+
+		# Save to pdf
+		pdf.savefig()
+		plt.close()
 
 
 def plot_3d(title, mesh, fraction, x_range, y_range, z_range, step, save_name=None, show=True, top_down=False):
@@ -35,7 +69,7 @@ def plot_3d(title, mesh, fraction, x_range, y_range, z_range, step, save_name=No
 	faces = mes[1]
 
 	# Set up plot
-	fig, ax = plt.subplots(subplot_kw=dict(projection='3d'), figsize=(10, 10))
+	fig, ax = plt.subplots(subplot_kw=dict(projection='3d', figsize=(10, 10)))
 	plt.title(title)
 
 	ax.set_xlim3d(x_range[0] / step, x_range[1] / step)
@@ -61,6 +95,22 @@ def plot_3d(title, mesh, fraction, x_range, y_range, z_range, step, save_name=No
 		plt.show()
 	plt.close()
 
+
+def plot_vector_field(cell, vector_field):
+
+	# fig, ax = plt.subplots(subplot_kw=dict(projection='3d'))
+
+	fig = plt.figure()
+	ax = fig.gca(projection='3d')
+
+	# for i in range(vector_field.shape[0]):
+	# 	for j in range(vector_field.shape[1]):
+	# 		for k in range(vector_field.shape[2]):
+	# 			print vector_field[i, j, k]
+
+	ax.quiver(cell.x_mesh, cell.y_mesh, cell.z_mesh, vector_field[0], vector_field[1], vector_field[2])
+
+	plt.show()
 
 def plot_radials(ions, points=500, print_status=False, spectro=True, interpolation='cubic'):
 	"""Plot all radial functions from self.ions to pdf
@@ -388,40 +438,6 @@ def plot_ldos_2d(
 		print 'Finished ' + save_name + '.pdf'
 
 
-def plot_2d(cell, mesh_3d, title, save_name, axis, plane_value, minimum, maximum):
-
-	if axis == 'x':
-		index = np.where(cell.x_mesh == plane_value)[0][0]
-		mesh_2d = mesh_3d[index, :, :]
-		label1 = 'z'
-		label2 = 'y'
-	elif axis == 'y':
-		index = np.where(cell.y_mesh == plane_value)[1][0]
-		mesh_2d = mesh_3d[:, index, :]
-		label1 = 'z'
-		label2 = 'x'
-	elif axis == 'z':
-		index = np.where(cell.z_mesh == plane_value)[2][0]
-		mesh_2d = mesh_3d[:, :, index]
-		label1 = 'y'
-		label2 = 'x'
-	else:
-		raise ValueError("Axis must be x, y, or z")
-
-	with PdfPages('figures2D/'+save_name+'.pdf') as pdf:
-		plt.imshow(
-				mesh_2d, interpolation='bilinear', origin='center', cmap=cm.copper,
-				extent=(minimum, maximum, minimum, maximum))
-		plt.colorbar()
-		plt.title(title)
-		plt.xlabel(label1)
-		plt.ylabel(label2)
-
-		# Save to pdf
-		pdf.savefig()
-		plt.close()
-
-
 def plot_ldos_3d(
 		cell, min_E, max_E, T, x_range=(0.0, 0.0), y_range=(0.0, 0.0), z_range=(0.0, 0.0), step=0.0, fraction=0.8,
 		show=True, save=False, debug=False, recalculate=False, top_down=False):
@@ -457,8 +473,8 @@ def plot_ldos_3d(
 		step = cell.grid_spacing
 
 	# Get absolute energy
-	min_E_abs = min_E + cell.fermiLevel
-	max_E_abs = max_E + cell.fermiLevel
+	min_E_abs = min_E + cell.fermi_level
+	max_E_abs = max_E + cell.fermi_level
 
 	# Cartesian mesh
 	ldos = cell.get_ldos_grid(min_E_abs, max_E_abs, T, debug=debug, recalculate=recalculate)
