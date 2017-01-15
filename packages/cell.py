@@ -198,10 +198,6 @@ class Cell(object):
 
 		return Vector(x, y, z)
 
-	def constrain_indices_to_cell(self, indices, atom_indices):
-		for n in range(3):
-			i = indices[n]
-
 	def calculate_support_grid(self, debug=False):
 		"""Evaluate support function for each PAO on mesh.
 
@@ -511,7 +507,7 @@ class Cell(object):
 		"""Return standardised filename for relevant psi range file"""
 		return MESH_FOLDER+PSI_RANGE_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(min_E)+"_"+str(max_E)+"_"+str(T)+EXT
 
-	def write_psi_range(self, ldos_grid, min_E, max_E, T, debug=False):
+	def write_psi_range(self, psi_range_grid, min_E, max_E, T, debug=False):
 		"""Write LDoS mesh to file.
 
 		Args:
@@ -529,8 +525,9 @@ class Cell(object):
 		for indices in np.ndindex(self.real_mesh.shape[:3]):
 			i, j, k = indices
 			# If LDoS is non-zero at mesh point, write data to file
-			if ldos_grid[indices]:
-				psi_range_file.write(str(i)+" "+str(j)+" "+str(k)+" "+str(ldos_grid[i, j, k])+"\n")
+			if psi_range_grid[indices]:
+				psi = psi_range_grid[indices]
+				psi_range_file.write(str(i)+" "+str(j)+" "+str(k)+" "+str(psi.real)+" "+str(psi.imag)+"\n")
 		psi_range_file.close()
 
 	def read_psi_range(self, min_E, max_E, T, debug=False):
@@ -549,8 +546,9 @@ class Cell(object):
 			j = int(line_split[1])
 			k = int(line_split[2])
 			# Get LDoS value
-			value = float(line_split[3])
-			psi_range_grid[i, j, k] = value
+			real = float(line_split[3])
+			imag = float(line_split[4])
+			psi_range_grid[i, j, k] = complex(real, imag)
 
 		if debug:
 			print "Psi range successfully read"
@@ -571,7 +569,7 @@ class Cell(object):
 			array(float): Mesh of LDOS values
 		"""
 		# Read ldos grid from file if not stored by cell
-		if not recalculate and os.path.isfile(self.ldos_filename(min_E, max_E, T)):
+		if not recalculate and os.path.isfile(self.psi_range_filename(min_E, max_E, T)):
 			psi_range_grid = self.read_psi_range(min_E, max_E, T, debug=debug)
 		else:
 			# Calculate LDoS on mesh
