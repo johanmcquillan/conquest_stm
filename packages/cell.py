@@ -12,7 +12,7 @@ BOLTZMANN = 8.6173303E-5  # Boltzmann's Constant in eV/K
 ELECTRON_MASS = 9.10938E-31  # Electron Mass in kg
 H_BAR = 4.135667662E-15  # Reduced Planck's Constant in eV.s
 
-MESH_FOLDER = "temp/"
+MESH_FOLDER = "temp7/"
 SUPPORT_FNAME = "supp_"
 LDOS_FNAME = "ldos_"
 PSI_FNAME = "psi_"
@@ -64,7 +64,7 @@ class Cell(object):
 		self.vector = Vector(vector_x, vector_y, vector_z)
 
 		# Form Cartesian meshes
-		self.x_mesh, self.y_mesh, self.z_mesh = np.mgrid[0: x_length: grid_spacing, 0: y_length: grid_spacing, 0: z_length: grid_spacing]
+		self.real_mesh = np.transpose(np.mgrid[0: x_length: grid_spacing, 0: y_length: grid_spacing, 0: z_length: grid_spacing], (1, 2, 3, 0))
 
 		# Initialise atoms and bands
 		self.atoms = {}
@@ -118,8 +118,8 @@ class Cell(object):
 		f = 1.0 / (np.exp((energy - self.fermi_level) / (BOLTZMANN * temperature)) + 1)
 		return f
 
-	def get_nearest_mesh_value(self, x):
-		"""Return nearest mesh point to x.
+	def get_nearest_mesh_value(self, x, indices=False):
+		"""Return nearest mesh point to x. Not constrained within simulation cell.
 
 		Works for any direction: x, y, or z.
 		"""
@@ -130,15 +130,25 @@ class Cell(object):
 			div_x += 1
 		# Get new point
 		new_x = div_x * self.grid_spacing
-		return new_x
+		if indices:
+			return new_x, int(div_x)
+		else:
+			return new_x
 
-	def get_nearest_mesh_vector(self, position):
+	def get_nearest_mesh_vector(self, position, indices=False):
 		"""Return vector to nearest mesh point to position vector"""
 		# Get nearest mesh point for each component
-		x = self.get_nearest_mesh_value(position.x)
-		y = self.get_nearest_mesh_value(position.y)
-		z = self.get_nearest_mesh_value(position.z)
-		return Vector(x, y, z)
+		if indices:
+			x, i = self.get_nearest_mesh_value(position.x, indices=True)
+			y, j = self.get_nearest_mesh_value(position.y, indices=True)
+			z, k = self.get_nearest_mesh_value(position.z, indices=True)
+			indices = (i, j, k)
+			return Vector(x, y, z), indices
+		else:
+			x = self.get_nearest_mesh_value(position.x, indices=False)
+			y = self.get_nearest_mesh_value(position.y, indices=False)
+			z = self.get_nearest_mesh_value(position.z, indices=False)
+			return Vector(x, y, z)
 
 	def constrain_relative_vector(self, vector):
 		"""Return a vector that is constrained within simulation cell"""
@@ -188,6 +198,10 @@ class Cell(object):
 
 		return Vector(x, y, z)
 
+	def constrain_indices_to_cell(self, indices, atom_indices):
+		for n in range(3):
+			i = indices[n]
+
 	def calculate_support_grid(self, debug=False):
 		"""Evaluate support function for each PAO on mesh.
 
@@ -200,7 +214,7 @@ class Cell(object):
 		if debug:
 			print "Calculating support grid"
 		# Initialise support grid
-		support_grid = np.empty_like(self.x_mesh, dtype=SmartDict)
+		support_grid = np.empty_like(self.real_mesh[..., 0], dtype=SmartDict)
 
 		# Iterate over all atoms
 		for atom_key in self.atoms:
@@ -213,12 +227,12 @@ class Cell(object):
 			atom_pos_on_mesh = self.get_nearest_mesh_vector(atom.atom_pos)
 
 			# Get mesh points of maximum range of atoms orbitals in each direction
-			x_lower_lim = self.get_nearest_mesh_value(atom.atom_pos.x - cut)
-			x_upper_lim = self.get_nearest_mesh_value(atom.atom_pos.x + cut) + self.grid_spacing
-			y_lower_lim = self.get_nearest_mesh_value(atom.atom_pos.y - cut)
-			y_upper_lim = self.get_nearest_mesh_value(atom.atom_pos.y + cut) + self.grid_spacing
-			z_lower_lim = self.get_nearest_mesh_value(atom.atom_pos.z - cut)
-			z_upper_lim = self.get_nearest_mesh_value(atom.atom_pos.z + cut) + self.grid_spacing
+			x_lower_lim, i = self.get_nearest_mesh_value(atom.atom_pos.x - cut, indices=True)
+			x_upper_lim = self.get_nearest_mesh_value(atom.atom_pos.x + cut, indices=False) + self.grid_spacing
+			y_lower_lim, j = self.get_nearest_mesh_value(atom.atom_pos.y - cut, indices=True)
+			y_upper_lim = self.get_nearest_mesh_value(atom.atom_pos.y + cut, indices=False) + self.grid_spacing
+			z_lower_lim, k = self.get_nearest_mesh_value(atom.atom_pos.z - cut, indices=True)
+			z_upper_lim = self.get_nearest_mesh_value(atom.atom_pos.z + cut, indices=False) + self.grid_spacing
 
 			# Get array of mesh points within cutoff
 			x_points = np.arange(x_lower_lim, x_upper_lim, self.grid_spacing)
@@ -232,11 +246,6 @@ class Cell(object):
 						r = Vector(x, y, z)
 						# Constrain vector using periodic boundary conditions
 						constrained = self.constrain_vector_to_cell(r)
-
-						# Get indices of cell mesh corresponding to this point
-						i = np.where(self.x_mesh == constrained.x)[0][0]
-						j = np.where(self.y_mesh == constrained.y)[1][0]
-						k = np.where(self.z_mesh == constrained.z)[2][0]
 
 						relative_position = self.constrain_relative_vector(r - atom_pos_on_mesh)
 						# Iterate over orbitals
@@ -254,6 +263,15 @@ class Cell(object):
 											support_grid[i, j, k] = SmartDict()
 										# Store support value
 										support_grid[i, j, k][atom_key][l][zeta][m] = R * Y
+						k += 1
+						if k >= self.real_mesh.shape[2]:
+							k -= self.real_mesh.shape[2]
+					j += 1
+					if j >= self.real_mesh.shape[1]:
+						j -= self.real_mesh.shape[1]
+				i += 1
+				if i >= self.real_mesh.shape[0]:
+					i -= self.real_mesh.shape[0]
 			if debug:
 				print "Calculated support grid for atom " + atom.ion_name + " " + str(atom_key)
 		return support_grid
@@ -270,31 +288,30 @@ class Cell(object):
 			print "Writing support grid to "+filename
 
 		# Iterate over mesh points
-		for i in range(self.x_mesh.shape[0]):
-			for j in range(self.y_mesh.shape[1]):
-				for k in range(self.z_mesh.shape[2]):
-					# If support function values exist at mesh point
-					if self.support_grid[i, j, k]:
-						support_file.write(str(i)+" "+str(j)+" "+str(k)+"\n")
-						# Iterate over atoms
-						for atom_key in self.support_grid[i, j, k]:
-							# Write atom index
-							support_file.write(str(atom_key)+"\n")
-							# Iterate over orbitals
-							for l in self.support_grid[i, j, k][atom_key]:
-								for zeta in self.support_grid[i, j, k][atom_key][l]:
-									for m in self.support_grid[i, j, k][atom_key][l][zeta]:
-										# Write orbital data
-										line = (str(l)+" "+str(zeta)+" "+str(m)+" "
-												+str(self.support_grid[i, j, k][atom_key][l][zeta][m]))
-										support_file.write(line+"\n")
+		for indices in np.ndindex(self.real_mesh.shape[:3]):
+			i, j, k = indices
+			# If support function values exist at mesh point
+			if self.support_grid[indices]:
+				support_file.write(str(i)+" "+str(j)+" "+str(k)+"\n")
+				# Iterate over atoms
+				for atom_key in self.support_grid[indices]:
+					# Write atom index
+					support_file.write(str(atom_key)+"\n")
+					# Iterate over orbitals
+					for l in self.support_grid[indices][atom_key]:
+						for zeta in self.support_grid[indices][atom_key][l]:
+							for m in self.support_grid[indices][atom_key][l][zeta]:
+								# Write orbital data
+								line = (str(l)+" "+str(zeta)+" "+str(m)+" "
+										+str(self.support_grid[indices][atom_key][l][zeta][m]))
+								support_file.write(line+"\n")
 		support_file.close()
 
 	def read_support_grid(self, debug=False):
 		"""Read support function mesh from file"""
 		filename = self.support_filename()
 		support_file = open(filename, 'r')
-		support_grid = np.empty_like(self.x_mesh, dtype=SmartDict)
+		support_grid = np.empty_like(self.real_mesh[..., 0], dtype=SmartDict)
 
 		if debug:
 			print "Reading support grid from "+filename
@@ -382,7 +399,7 @@ class Cell(object):
 			print "Building Wavefunction for "+str(K)+", "+str(E)
 
 		# Initialise mesh
-		psi_grid = np.zeros_like(self.x_mesh, dtype=complex)
+		psi_grid = np.zeros_like(self.real_mesh[..., 0], dtype=complex)
 		# Get basis functions
 		support_grid = self.get_support_grid(recalculate=recalculate, write=write, debug=debug)
 
@@ -394,12 +411,10 @@ class Cell(object):
 					for m in atom.bands[K][E][l][zeta]:
 						# Evaluate wavefunction contribution over mesh
 						coefficient = atom.get_coefficient(K, E, l, zeta, m)
-						for i in range(self.x_mesh.shape[0]):
-							for j in range(self.y_mesh.shape[1]):
-								for k in range(self.z_mesh.shape[2]):
-									if support_grid[i, j, k]:
-										if atom_key in support_grid[i, j, k]:
-											psi_grid[i, j, k] += coefficient*support_grid[i, j, k][atom_key][l][zeta][m]
+						for indices in np.ndindex(self.real_mesh.shape[:3]):
+							if support_grid[indices]:
+								if atom_key in support_grid[indices]:
+									psi_grid[indices] += coefficient*support_grid[indices][atom_key][l][zeta][m]
 		return psi_grid
 
 	def psi_filename(self, K, E):
@@ -411,19 +426,18 @@ class Cell(object):
 		"""Write wavefunction function mesh to file"""
 		filename = self.psi_filename(K, E)
 		psi_file = safe_open(filename, "w")
-		for i in range(self.x_mesh.shape[0]):
-			for j in range(self.y_mesh.shape[1]):
-				for k in range(self.z_mesh.shape[2]):
-					if psi_grid[i, j, k] != 0:
-						psi = psi_grid[i, j, k]
-						psi_file.write(str(i)+" "+str(j)+" "+str(k)+" "+str(psi.real)+" "+str(psi.imag)+"\n")
+		for indices in np.ndindex(self.real_mesh.shape[:3]):
+			i, j, k = indices
+			if psi_grid[indices] != 0:
+				psi = psi_grid[indices]
+				psi_file.write(str(i)+" "+str(j)+" "+str(k)+" "+str(psi.real)+" "+str(psi.imag)+"\n")
 		psi_file.close()
 
 	def read_psi_grid(self, K, E):
 		"""Read wavefunction mesh from file"""
 		filename = self.psi_filename(K, E)
 		psi_file = open(filename, "r")
-		psi_grid = np.zeros_like(self.x_mesh, dtype=complex)
+		psi_grid = np.zeros_like(self.real_mesh[..., 0], dtype=complex)
 
 		for line in psi_file:
 			line_split = line.split()
@@ -475,7 +489,7 @@ class Cell(object):
 
 		if debug:
 			print "Calculating psi range grid"
-		total_psi_grid = np.zeros_like(self.x_mesh, dtype=float)
+		total_psi_grid = np.zeros_like(self.real_mesh[..., 0], dtype=complex)
 
 		total_k_weight = 0
 		for K in self.bands:
@@ -486,11 +500,9 @@ class Cell(object):
 				if min_E <= E <= max_E:
 					psi_grid = self.get_psi_grid(K, E, recalculate=recalculate, write=write, debug=debug)
 					fd = self.fermi_dirac(E, T)
-					for i in range(self.x_mesh.shape[0]):
-						for j in range(self.y_mesh.shape[1]):
-							for k in range(self.z_mesh.shape[2]):
-								psi = psi_grid[i, j, k]
-								total_psi_grid[i, j, k] += np.sqrt(fd * K.weight / total_k_weight) * psi
+					for indices in np.ndindex(self.real_mesh.shape[:3]):
+						psi = psi_grid[indices]
+						total_psi_grid[indices] += np.sqrt(fd * K.weight / total_k_weight) * psi
 				if debug:
 					print "Completed psi range for ", K, E
 		return total_psi_grid
@@ -514,19 +526,18 @@ class Cell(object):
 		if debug:
 			print "Writing partial wavefunction grid to "+filename
 		# Iterate over mesh points
-		for i in range(self.x_mesh.shape[0]):
-			for j in range(self.y_mesh.shape[1]):
-				for k in range(self.z_mesh.shape[2]):
-					# If LDoS is non-zero at mesh point, write data to file
-					if ldos_grid[i, j, k]:
-						psi_range_file.write(str(i)+" "+str(j)+" "+str(k)+" "+str(ldos_grid[i, j, k])+"\n")
+		for indices in np.ndindex(self.real_mesh.shape[:3]):
+			i, j, k = indices
+			# If LDoS is non-zero at mesh point, write data to file
+			if ldos_grid[indices]:
+				psi_range_file.write(str(i)+" "+str(j)+" "+str(k)+" "+str(ldos_grid[i, j, k])+"\n")
 		psi_range_file.close()
 
 	def read_psi_range(self, min_E, max_E, T, debug=False):
 		"""Read psi mesh from file"""
 		filename = self.psi_range_filename(min_E, max_E, T)
 		psi_range_file = open(filename, 'r')
-		psi_range_grid = np.zeros_like(self.x_mesh)
+		psi_range_grid = np.zeros_like(self.real_mesh[..., 0])
 
 		if debug:
 			print "Reading psi range from "+filename
@@ -605,7 +616,7 @@ class Cell(object):
 
 		if debug:
 			print "Calculating LDoS grid"
-		ldos_grid = np.zeros_like(self.x_mesh, dtype=float)
+		ldos_grid = np.zeros_like(self.real_mesh[..., 0], dtype=float)
 
 		total_k_weight = 0
 		for K in self.bands:
@@ -616,11 +627,9 @@ class Cell(object):
 				if min_E <= E <= max_E:
 					psi_grid = self.get_psi_grid(K, E, recalculate=recalculate, write=write, debug=debug)
 					fd = self.fermi_dirac(E, T)
-					for i in range(self.x_mesh.shape[0]):
-						for j in range(self.y_mesh.shape[1]):
-							for k in range(self.z_mesh.shape[2]):
-								psi = psi_grid[i, j, k]
-								ldos_grid[i, j, k] += (K.weight/total_k_weight)*fd*(abs(psi))**2
+					for indices in np.ndindex(self.real_mesh.shape[:3]):
+						psi = psi_grid[indices]
+						ldos_grid[indices] += (K.weight/total_k_weight)*fd*(abs(psi))**2
 				if debug:
 					print "Completed LDoS for ", K, E
 		return ldos_grid
@@ -644,19 +653,18 @@ class Cell(object):
 		if debug:
 			print "Writing LDoS grid to "+filename
 		# Iterate over mesh points
-		for i in range(self.x_mesh.shape[0]):
-			for j in range(self.y_mesh.shape[1]):
-				for k in range(self.z_mesh.shape[2]):
-					# If LDoS is non-zero at mesh point, write data to file
-					if ldos_grid[i, j, k]:
-						ldos_file.write(str(i)+" "+str(j)+" "+str(k)+" "+str(ldos_grid[i, j, k])+"\n")
+		for indices in np.ndindex(self.real_mesh.shape[:3]):
+			# If LDoS is non-zero at mesh point, write data to file
+			i, j, k = indices
+			if ldos_grid[indices]:
+				ldos_file.write(str(i)+" "+str(j)+" "+str(k)+" "+str(ldos_grid[i, j, k])+"\n")
 		ldos_file.close()
 
 	def read_ldos_grid(self, min_E, max_E, T, debug=False):
 		"""Read LDoS mesh from file"""
 		filename = self.ldos_filename(min_E, max_E, T)
 		ldos_file = open(filename, 'r')
-		ldos_grid = np.zeros_like(self.x_mesh)
+		ldos_grid = np.zeros_like(self.real_mesh[..., 0])
 
 		if debug:
 			print "Reading LDoS grid from "+filename
@@ -700,15 +708,11 @@ class Cell(object):
 		return ldos_grid
 
 	def get_vector_mesh(self):
-		vector_mesh = np.empty_like(self.x_mesh, dtype=Vector)
-		for i in range(self.x_mesh.shape[0]):
-			for j in range(self.y_mesh.shape[1]):
-				for k in range(self.z_mesh.shape[2]):
-					x = self.x_mesh[i, j, k]
-					y = self.y_mesh[i, j, k]
-					z = self.z_mesh[i, j, k]
-					r = Vector(x, y, z)
-					vector_mesh[i, j, k] = r
+		vector_mesh = np.empty_like(self.real_mesh[..., 0], dtype=Vector)
+		for indices in np.ndindex(self.real_mesh.shape[:3]):
+			x, y, z = self.real_mesh[indices]
+			r = Vector(x, y, z)
+			vector_mesh[indices] = r
 		return vector_mesh
 
 	def kappa_squared(self, tip_work_func, tip_energy):
