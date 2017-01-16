@@ -69,7 +69,8 @@ def plot_3d(title, mesh, fraction, x_range, y_range, z_range, step, save_name=No
 	faces = mes[1]
 
 	# Set up plot
-	fig, ax = plt.subplots(subplot_kw=dict(projection='3d', figsize=(10, 10)))
+	fig = plt.figure()
+	ax = fig.gca(projection='3d')
 	plt.title(title)
 
 	ax.set_xlim3d(x_range[0] / step, x_range[1] / step)
@@ -78,16 +79,13 @@ def plot_3d(title, mesh, fraction, x_range, y_range, z_range, step, save_name=No
 
 	if top_down:
 		ax.view_init(elev=90, azim=-90)
-		cmap = cm.Greys_r
+		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Greys_r, antialiased=False, lw=0.0, vmin=55)
 	else:
 		# Set axes
 		ax.set_xlabel("x")
 		ax.set_ylabel("y")
 		ax.set_zlabel("z")
-		cmap = cm.Spectral
-
-	# Plot surface
-	ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cmap, antialiased=False, lw=0.0, vmin=55)
+		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Spectral, antialiased=False, lw=0.1)
 
 	if save_name:
 		plt.savefig("figures3D/"+save_name+".png")

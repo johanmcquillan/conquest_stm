@@ -13,7 +13,14 @@ del prsr
 #plot.plot_charge_density_gamma_3d(C, 0)
 
 fl = C.fermi_level
-plot.plot_ldos_3d(C, -2, 0, 0.005, fraction=0.05, debug=True, top_down=True)
+plot.plot_ldos_3d(C, -2, 0, 0.005, fraction=0.005, debug=True, top_down=False)
+
+#C.calculate_support_grid(vectorised=True, debug=True)
+
+#K = C.bands.keys()[0]
+#E = C.bands[K][50]
+#C.calculate_psi_grid(K, E, recalculate=False, write=False, debug=True, vectorised=False)
+# C.calculate_psi_grid(K, E, recalculate=False, write=False, debug=True, vectorised=True)
 
 #C.bardeen_element(C.c(C.get_psi_range(-2, 0, 0.005, debug=True), 0.0005, 0.001), )
 #plot.plot_vector_field(C, C.c(C.get_ldos_grid(-2, 0, 0.005, debug=True), 0.0005, 0.001))
