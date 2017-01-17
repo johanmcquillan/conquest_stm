@@ -252,6 +252,8 @@ class Cell(object):
 						if k >= self.real_mesh.shape[2]:
 							k -= self.real_mesh.shape[2]
 
+						print (i, j, k), (self.real_mesh[i, 0, 0], self.real_mesh[0, j, 0], self.real_mesh[0, 0, k]), (x, y, z)
+
 						r = Vector(x, y, z)
 						relative_position = self.constrain_relative_vector(r - atom_pos_on_mesh)
 						# Iterate over orbitals
