@@ -15,7 +15,7 @@ del prsr
 fl = C.fermi_level
 print fl
 print C.bands[C.bands.keys()[0]][-1]
-plot.plot_ldos_3d(C, -2, 0, 0.005, fraction=0.05, debug=True, top_down=False, vectorised=False)
+plot.plot_ldos_3d(C, -2, 0, 0.005, fraction=0.05, debug=True, top_down=False, vectorised=True)
 
 #C.calculate_support_grid(vectorised=True, debug=True)
 

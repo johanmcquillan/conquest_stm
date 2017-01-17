@@ -12,7 +12,7 @@ BOLTZMANN = 8.6173303E-5  # Boltzmann's Constant in eV/K
 ELECTRON_MASS = 9.10938E-31  # Electron Mass in kg
 H_BAR = 4.135667662E-15  # Reduced Planck's Constant in eV.s
 
-MESH_FOLDER = "temp6/"
+MESH_FOLDER = "temp8/"
 SUPPORT_FNAME = "supp_"
 LDOS_FNAME = "ldos_"
 PSI_FNAME = "psi_"
@@ -228,11 +228,11 @@ class Cell(object):
 			atom_pos_on_mesh = self.get_nearest_mesh_vector(atom.atom_pos)
 
 			# Get mesh points of maximum range of atoms orbitals in each direction
-			x_lower_lim, i = self.get_nearest_mesh_value(atom.atom_pos.x - cut, indices=True, points=self.real_mesh.shape[0])
+			x_lower_lim, i_start = self.get_nearest_mesh_value(atom.atom_pos.x - cut, indices=True, points=self.real_mesh.shape[0])
 			x_upper_lim = self.get_nearest_mesh_value(atom.atom_pos.x + cut) + self.grid_spacing
-			y_lower_lim, j = self.get_nearest_mesh_value(atom.atom_pos.y - cut, indices=True, points=self.real_mesh.shape[1])
+			y_lower_lim, j_start = self.get_nearest_mesh_value(atom.atom_pos.y - cut, indices=True, points=self.real_mesh.shape[1])
 			y_upper_lim = self.get_nearest_mesh_value(atom.atom_pos.y + cut) + self.grid_spacing
-			z_lower_lim, k = self.get_nearest_mesh_value(atom.atom_pos.z - cut, indices=True, points=self.real_mesh.shape[2])
+			z_lower_lim, k_start = self.get_nearest_mesh_value(atom.atom_pos.z - cut, indices=True, points=self.real_mesh.shape[2])
 			z_upper_lim = self.get_nearest_mesh_value(atom.atom_pos.z + cut) + self.grid_spacing
 
 			# Get array of mesh points within cutoff
@@ -241,19 +241,27 @@ class Cell(object):
 			z_points = np.arange(z_lower_lim, z_upper_lim, self.grid_spacing)
 
 			# Iterate over mesh points within cutoff
+			i = i_start
 			for x in x_points:
+				j = j_start
 				if i >= self.real_mesh.shape[0]:
 					i -= self.real_mesh.shape[0]
 				for y in y_points:
+					k = k_start
 					if j >= self.real_mesh.shape[1]:
 						j -= self.real_mesh.shape[1]
 					for z in z_points:
 						if k >= self.real_mesh.shape[2]:
 							k -= self.real_mesh.shape[2]
 
-						print atom_key, (i, j, k), (self.real_mesh[i, j, k, 0], self.real_mesh[i, j, k, 1], self.real_mesh[i, j, k, 2]), (x, y, z)
+						#print atom_key, (i, j, k), (self.real_mesh[i, j, k, 0], self.real_mesh[i, j, k, 1], self.real_mesh[i, j, k, 2]), (x, y, z)
 
 						r = Vector(x, y, z)
+						constrained = self.constrain_vector_to_cell(r)
+						i = np.where(self.real_mesh[..., 0] == constrained.x)[0][0]
+						j = np.where(self.real_mesh[..., 1] == constrained.y)[1][0]
+						k = np.where(self.real_mesh[..., 2] == constrained.z)[2][0]
+
 						relative_position = self.constrain_relative_vector(r - atom_pos_on_mesh)
 						# Iterate over orbitals
 						for l in atom.radials:
@@ -419,7 +427,7 @@ class Cell(object):
 					for m in atom.bands[K][E][l][zeta]:
 						# Evaluate wavefunction contribution over mesh
 						coefficient = atom.get_coefficient(K, E, l, zeta, m)
-						if not vectorised:
+						if vectorised:
 							psi_grid += np.vectorize(self.calculate_psi_grid_vec)(support_grid, atom_key, l, zeta, m, coefficient)
 						else:
 							for indices in np.ndindex(self.real_mesh.shape[:3]):
