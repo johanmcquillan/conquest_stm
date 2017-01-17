@@ -13,7 +13,9 @@ del prsr
 #plot.plot_charge_density_gamma_3d(C, 0)
 
 fl = C.fermi_level
-plot.plot_ldos_3d(C, -2, 0, 0.005, fraction=0.005, debug=True, top_down=False)
+print fl
+print C.bands[C.bands.keys()[0]][-1]
+plot.plot_ldos_3d(C, -2, 0, 0.005, fraction=0.05, debug=True, top_down=False, vectorised=False)
 
 #C.calculate_support_grid(vectorised=True, debug=True)
 

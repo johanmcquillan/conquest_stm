@@ -85,7 +85,7 @@ def plot_3d(title, mesh, fraction, x_range, y_range, z_range, step, save_name=No
 		ax.set_xlabel("x")
 		ax.set_ylabel("y")
 		ax.set_zlabel("z")
-		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Spectral, antialiased=False, lw=0.1)
+		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Spectral, antialiased=True, lw=0.1)
 
 	if save_name:
 		plt.savefig("figures3D/"+save_name+".png")
@@ -438,7 +438,7 @@ def plot_ldos_2d(
 
 def plot_ldos_3d(
 		cell, min_E, max_E, T, x_range=(0.0, 0.0), y_range=(0.0, 0.0), z_range=(0.0, 0.0), step=0.0, fraction=0.8,
-		show=True, save=False, debug=False, recalculate=False, top_down=False):
+		show=True, save=False, recalculate=False, vectorised=True, top_down=False, debug=False):
 	"""Plots charge density isosurface.
 
 	All lengths measured in Bohr radii (a0).
@@ -475,7 +475,7 @@ def plot_ldos_3d(
 	max_E_abs = max_E + cell.fermi_level
 
 	# Cartesian mesh
-	ldos = cell.get_ldos_grid(min_E_abs, max_E_abs, T, debug=debug, recalculate=recalculate)
+	ldos = cell.get_ldos_grid(min_E_abs, max_E_abs, T, vectorised=vectorised, debug=debug, recalculate=recalculate)
 	max_ldos = np.max(ldos)
 
 	if max_ldos == 0.0:

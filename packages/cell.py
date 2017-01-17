@@ -12,7 +12,7 @@ BOLTZMANN = 8.6173303E-5  # Boltzmann's Constant in eV/K
 ELECTRON_MASS = 9.10938E-31  # Electron Mass in kg
 H_BAR = 4.135667662E-15  # Reduced Planck's Constant in eV.s
 
-MESH_FOLDER = "temp/"
+MESH_FOLDER = "temp6/"
 SUPPORT_FNAME = "supp_"
 LDOS_FNAME = "ldos_"
 PSI_FNAME = "psi_"
@@ -234,7 +234,6 @@ class Cell(object):
 			y_upper_lim = self.get_nearest_mesh_value(atom.atom_pos.y + cut) + self.grid_spacing
 			z_lower_lim, k = self.get_nearest_mesh_value(atom.atom_pos.z - cut, indices=True, points=self.real_mesh.shape[2])
 			z_upper_lim = self.get_nearest_mesh_value(atom.atom_pos.z + cut) + self.grid_spacing
-			print i, j, k
 
 			# Get array of mesh points within cutoff
 			x_points = np.arange(x_lower_lim, x_upper_lim, self.grid_spacing)
@@ -252,7 +251,7 @@ class Cell(object):
 						if k >= self.real_mesh.shape[2]:
 							k -= self.real_mesh.shape[2]
 
-						print (i, j, k), (self.real_mesh[i, 0, 0], self.real_mesh[0, j, 0], self.real_mesh[0, 0, k]), (x, y, z)
+						print atom_key, (i, j, k), (self.real_mesh[i, j, k, 0], self.real_mesh[i, j, k, 1], self.real_mesh[i, j, k, 2]), (x, y, z)
 
 						r = Vector(x, y, z)
 						relative_position = self.constrain_relative_vector(r - atom_pos_on_mesh)
@@ -412,7 +411,6 @@ class Cell(object):
 		psi_grid = np.zeros_like(self.real_mesh[..., 0], dtype=complex)
 		# Get basis functions
 		support_grid = self.get_support_grid(recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
-		print support_grid.shape
 		for atom_key in self.atoms:
 			atom = self.atoms[atom_key]
 			# Iterate over orbitals
@@ -421,7 +419,7 @@ class Cell(object):
 					for m in atom.bands[K][E][l][zeta]:
 						# Evaluate wavefunction contribution over mesh
 						coefficient = atom.get_coefficient(K, E, l, zeta, m)
-						if vectorised:
+						if not vectorised:
 							psi_grid += np.vectorize(self.calculate_psi_grid_vec)(support_grid, atom_key, l, zeta, m, coefficient)
 						else:
 							for indices in np.ndindex(self.real_mesh.shape[:3]):
@@ -508,17 +506,18 @@ class Cell(object):
 			total_k_weight += K.weight
 
 		for K in self.bands:
+			w_k = K.weight
 			for E in self.bands[K]:
 				if min_E <= E <= max_E:
 					psi_grid = self.get_psi_grid(K, E, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
 					fd = self.fermi_dirac(E, T)
 					if vectorised:
-						total_psi_grid += np.sqrt(fd * K.weight / total_k_weight) * psi_grid
+						total_psi_grid += np.sqrt(fd * w_k / total_k_weight) * psi_grid
 					else:
 						for indices in np.ndindex(self.real_mesh.shape[:3]):
-							total_psi_grid[indices] += np.sqrt(fd * K.weight / total_k_weight) * psi_grid[indices]
-				if debug:
-					print "Completed psi range for ", K, E
+							total_psi_grid[indices] += np.sqrt(fd * w_k / total_k_weight) * psi_grid[indices]
+					if debug:
+						print "Completed psi range for", K, E
 		return total_psi_grid
 
 	def psi_range_filename(self, min_E, max_E, T):
@@ -648,8 +647,8 @@ class Cell(object):
 					else:
 						for indices in np.ndindex(self.real_mesh.shape[:3]):
 							ldos_grid[indices] += (K.weight/total_k_weight)*fd*(abs(psi_grid[indices]))**2
-				if debug:
-					print "Completed LDoS for ", K, E
+					if debug:
+						print "Completed LDoS for ", K, E
 		return ldos_grid
 
 	def ldos_filename(self, min_E, max_E, T):
@@ -701,7 +700,7 @@ class Cell(object):
 			print "LDoS grid successfully read"
 		return ldos_grid
 
-	def get_ldos_grid(self, min_E, max_E, T, recalculate=False, write=True, debug=False):
+	def get_ldos_grid(self, min_E, max_E, T, recalculate=False, write=True, vectorised=True, debug=False):
 		"""Get LDoS mesh.
 
 		Args:
@@ -720,7 +719,7 @@ class Cell(object):
 			ldos_grid = self.read_ldos_grid(min_E, max_E, T, debug=debug)
 		else:
 			# Calculate LDoS on mesh
-			ldos_grid = self.calculate_ldos_grid_old(min_E, max_E, T, recalculate=recalculate, write=write, debug=debug)
+			ldos_grid = self.calculate_ldos_grid_old(min_E, max_E, T, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
 			if write:
 				self.write_ldos_grid(ldos_grid, min_E, max_E, T, debug=debug)
 		return ldos_grid
