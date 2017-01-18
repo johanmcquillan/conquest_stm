@@ -1,5 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import os
+import sys
 import numpy as np
 import math
 
@@ -12,19 +15,23 @@ BOLTZMANN = 8.6173303E-5  # Boltzmann's Constant in eV/K
 ELECTRON_MASS = 9.10938E-31  # Electron Mass in kg
 H_BAR = 4.135667662E-15  # Reduced Planck's Constant in eV.s
 
-MESH_FOLDER = "temp5B/"
+MESH_FOLDER = "meshes/"
 SUPPORT_FNAME = "supp_"
 LDOS_FNAME = "ldos_"
 PSI_FNAME = "psi_"
 PSI_RANGE_FNAME = "psi_range_"
 EXT = ".dat"
 
+PRINT_RELATIVE_TO_EF = True
+PROG_BAR_INTERVALS = 20
+PROG_BAR_CHARACTER = "█"
+
 
 class Cell(object):
 	"""Simulation cell which holds Atom objects in a 3D mesh.
 
 	All lengths measured in Bohr radii (a0).
-	All energies measured in Hartrees (Ha).
+	All energies measured in electron volts (eV).
 	
 	Attributes:
 		name (string): Name of simulation; used for plot titles
@@ -65,7 +72,8 @@ class Cell(object):
 
 		# Form Cartesian meshes
 		self.real_mesh = np.transpose(np.mgrid[0: x_length: grid_spacing, 0: y_length: grid_spacing, 0: z_length: grid_spacing], (1, 2, 3, 0))
-		print self.real_mesh.shape
+		self.mesh_points = self.real_mesh.shape[0] * self.real_mesh.shape[1] * self.real_mesh.shape[2]
+
 		# Initialise atoms and bands
 		self.atoms = {}
 		self.bands = {}
@@ -221,6 +229,10 @@ class Cell(object):
 		for atom_key in self.atoms:
 			atom = self.atoms[atom_key]
 
+			if debug:
+				sys.stdout.write("    Support grid for atom " + str(atom_key) + " - " + atom.ion_name + ": ")
+				sys.stdout.flush()
+
 			# Get atom cutoff radius
 			cut = atom.get_max_cutoff()
 
@@ -239,6 +251,10 @@ class Cell(object):
 			x_points = np.arange(x_lower_lim, x_upper_lim, self.grid_spacing)
 			y_points = np.arange(y_lower_lim, y_upper_lim, self.grid_spacing)
 			z_points = np.arange(z_lower_lim, z_upper_lim, self.grid_spacing)
+
+			points_done = 0
+			bars_done = 0
+			total_points = len(x_points)*len(y_points)*len(z_points)
 
 			# Iterate over mesh points within cutoff
 			i = i_start
@@ -278,11 +294,16 @@ class Cell(object):
 											support_grid[i, j, k] = SmartDict()
 										# Store support value
 										support_grid[i, j, k][atom_key][l][zeta][m] = R * Y
+						points_done += 1
 						k += 1
+					if debug and float(points_done) / total_points * PROG_BAR_INTERVALS > bars_done:
+						sys.stdout.write(PROG_BAR_CHARACTER)
+						sys.stdout.flush()
+						bars_done += 1
 					j += 1
 				i += 1
 			if debug:
-				print "Calculated support grid for atom " + atom.ion_name + " " + str(atom_key)
+				print
 		return support_grid
 
 	def support_filename(self):
@@ -293,27 +314,39 @@ class Cell(object):
 		"""Write support function mesh to file"""
 		filename = self.support_filename()
 		support_file = safe_open(filename, 'w')
+
 		if debug:
-			print "Writing support grid to "+filename
+			sys.stdout.write("Writing support grid to "+filename+": ")
+			sys.stdout.flush()
+		points_done = 0
+		bars_done = 0
 
 		# Iterate over mesh points
 		for indices in np.ndindex(self.real_mesh.shape[:3]):
 			i, j, k = indices
 			# If support function values exist at mesh point
 			if self.support_grid[indices]:
-				support_file.write(str(i)+" "+str(j)+" "+str(k)+"\n")
+				support_file.write(str(i) + " " + str(j) + " " + str(k) + "\n")
 				# Iterate over atoms
 				for atom_key in self.support_grid[indices]:
 					# Write atom index
-					support_file.write(str(atom_key)+"\n")
+					support_file.write(str(atom_key) + "\n")
 					# Iterate over orbitals
 					for l in self.support_grid[indices][atom_key]:
 						for zeta in self.support_grid[indices][atom_key][l]:
 							for m in self.support_grid[indices][atom_key][l][zeta]:
 								# Write orbital data
-								line = (str(l)+" "+str(zeta)+" "+str(m)+" "
-										+str(self.support_grid[indices][atom_key][l][zeta][m]))
-								support_file.write(line+"\n")
+								line = (str(l) + " " + str(zeta) + " " + str(m) + " "
+										+ str(self.support_grid[indices][atom_key][l][zeta][m]))
+								support_file.write(line + "\n")
+
+			points_done += 1
+			if debug and float(points_done) / self.mesh_points * PROG_BAR_INTERVALS > bars_done:
+				sys.stdout.write(PROG_BAR_CHARACTER)
+				sys.stdout.flush()
+				bars_done += 1
+		if debug:
+			print
 		support_file.close()
 
 	def read_support_grid(self, debug=False):
@@ -412,12 +445,24 @@ class Cell(object):
 		Returns:
 			array(complex): Mesh of complex wavefunction values
 		"""
-		if debug:
-			print "Building Wavefunction for "+str(K)+", "+str(E)
+		atoms_done = 0
+		total_atoms = len(self.atoms)
+		bars_done = 0
+
 		# Initialise mesh
 		psi_grid = np.zeros_like(self.real_mesh[..., 0], dtype=complex)
+
 		# Get basis functions
 		support_grid = self.get_support_grid(recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
+
+		if debug:
+			if PRINT_RELATIVE_TO_EF:
+				E_str = str(E - self.fermi_level) + " eV"
+			else:
+				E_str = str(E) + " eV"
+			sys.stdout.write("Calculating wavefunction at k = "+str(K)+", E = "+E_str+": ")
+			sys.stdout.flush()
+
 		if vectorised:
 			psi_v = np.vectorize(self.calculate_psi_grid_vec)
 		for atom_key in self.atoms:
@@ -442,6 +487,13 @@ class Cell(object):
 							# 			# 	print i, j, k, support_grid[i, j, k].keys()
 							# 			if support_grid[i, j, k] and atom_key in support_grid[i, j, k]:
 							# 				psi_grid[i, j, k] += coefficient*support_grid[i, j, k][atom_key][l][zeta][m]
+			atoms_done += 1
+			if debug and float(atoms_done) / total_atoms * PROG_BAR_INTERVALS > bars_done:
+				sys.stdout.write(PROG_BAR_CHARACTER)
+				sys.stdout.flush()
+				bars_done += 1
+		if debug:
+			print
 		return psi_grid
 
 	def psi_filename(self, K, E):
@@ -460,11 +512,20 @@ class Cell(object):
 				psi_file.write(str(i)+" "+str(j)+" "+str(k)+" "+str(psi.real)+" "+str(psi.imag)+"\n")
 		psi_file.close()
 
-	def read_psi_grid(self, K, E):
+	def read_psi_grid(self, K, E, debug=False, debug_file=False):
 		"""Read wavefunction mesh from file"""
 		filename = self.psi_filename(K, E)
 		psi_file = open(filename, "r")
 		psi_grid = np.zeros_like(self.real_mesh[..., 0], dtype=complex)
+
+		if debug_file:
+			print "Reading wavefunction from "+filename
+		elif debug:
+			if PRINT_RELATIVE_TO_EF:
+				E_str = str(E - self.fermi_level) + " eV"
+			else:
+				E_str = str(E) + " eV"
+			print "Reading wavefunction for k = "+str(K)+", E = "+E_str
 
 		for line in psi_file:
 			line_split = line.split()
@@ -476,7 +537,7 @@ class Cell(object):
 			psi_grid[i, j, k] = complex(real, imag)
 		return psi_grid
 
-	def get_psi_grid(self, K, E, recalculate=False, write=True, vectorised=True, debug=False):
+	def get_psi_grid(self, K, E, recalculate=False, write=True, vectorised=True, debug=False, debug_file=False):
 		"""Get mesh of complex wavefunction values.
 
 		Args:
@@ -491,14 +552,14 @@ class Cell(object):
 		"""
 		if not recalculate and os.path.isfile(self.psi_filename(K, E)):
 			# Read data from file
-			psi_grid = self.read_psi_grid(K, E)
+			psi_grid = self.read_psi_grid(K, E, debug=debug, debug_file=debug_file)
 		else:
 			psi_grid = self.calculate_psi_grid(K, E, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
 			if write:
 				self.write_psi_grid(psi_grid, K, E)
 		return psi_grid
 
-	def calculate_psi_range(self, min_E, max_E, T, recalculate=False, write=True, vectorised=True, debug=False):
+	def calculate_psi_range(self, min_E, max_E, T, recalculate=False, write=True, vectorised=True, debug=False, debug_file=False):
 		"""Calculate LDoS mesh.
 
 		Args:
@@ -514,7 +575,13 @@ class Cell(object):
 		"""
 
 		if debug:
-			print "Calculating psi range grid"
+			if PRINT_RELATIVE_TO_EF:
+				min_E_str = str(min_E - self.fermi_level)
+				max_E_str = str(max_E - self.fermi_level) + " eV"
+			else:
+				min_E_str = str(min_E)
+				max_E_str = str(max_E) + " eV"
+			print "Calculating psi range grid from "+min_E_str+" to "+max_E_str
 		total_psi_grid = np.zeros_like(self.real_mesh[..., 0], dtype=complex)
 
 		total_k_weight = 0
@@ -525,15 +592,13 @@ class Cell(object):
 			w_k = K.weight
 			for E in self.bands[K]:
 				if min_E <= E <= max_E:
-					psi_grid = self.get_psi_grid(K, E, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
+					psi_grid = self.get_psi_grid(K, E, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug, debug_file=debug_file)
 					fd = self.fermi_dirac(E, T)
 					if vectorised:
 						total_psi_grid += np.sqrt(fd * w_k / total_k_weight) * psi_grid
 					else:
 						for indices in np.ndindex(self.real_mesh.shape[:3]):
 							total_psi_grid[indices] += np.sqrt(fd * w_k / total_k_weight) * psi_grid[indices]
-					if debug:
-						print "Completed psi range for", K, E
 		return total_psi_grid
 
 	def psi_range_filename(self, min_E, max_E, T):
@@ -563,14 +628,22 @@ class Cell(object):
 				psi_range_file.write(str(i)+" "+str(j)+" "+str(k)+" "+str(psi.real)+" "+str(psi.imag)+"\n")
 		psi_range_file.close()
 
-	def read_psi_range(self, min_E, max_E, T, debug=False):
+	def read_psi_range(self, min_E, max_E, T, debug=False, debug_file=False):
 		"""Read psi mesh from file"""
 		filename = self.psi_range_filename(min_E, max_E, T)
 		psi_range_file = open(filename, 'r')
 		psi_range_grid = np.zeros_like(self.real_mesh[..., 0], dtype=complex)
 
-		if debug:
-			print "Reading psi range from "+filename
+		if debug_file:
+			print "Reading wavefunction range from "+filename
+		elif debug:
+			if PRINT_RELATIVE_TO_EF:
+				min_E_str = str(min_E - self.fermi_level)
+				max_E_str = str(max_E - self.fermi_level) + " eV"
+			else:
+				min_E_str = str(min_E)
+				max_E_str = str(max_E) + " eV"
+			print "Reading wavefunction range from " + min_E_str + " to " + max_E_str + " at " + str(T) + "K"
 
 		for line in psi_range_file:
 			line_split = line.split()
@@ -587,7 +660,7 @@ class Cell(object):
 			print "Psi range successfully read"
 		return psi_range_grid
 
-	def get_psi_range(self, min_E, max_E, T, recalculate=False, write=True, vectorised=True, debug=False):
+	def get_psi_range(self, min_E, max_E, T, recalculate=False, write=True, vectorised=True, debug=False, debug_file=False):
 		"""Get LDoS mesh.
 
 		Args:
@@ -603,10 +676,10 @@ class Cell(object):
 		"""
 		# Read ldos grid from file if not stored by cell
 		if not recalculate and os.path.isfile(self.psi_range_filename(min_E, max_E, T)):
-			psi_range_grid = self.read_psi_range(min_E, max_E, T, debug=debug)
+			psi_range_grid = self.read_psi_range(min_E, max_E, T, debug=debug, debug_file=debug_file)
 		else:
-			# Calculate LDoS on mesh
-			psi_range_grid = self.calculate_psi_range(min_E, max_E, T, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
+			# Calculate psi range
+			psi_range_grid = self.calculate_psi_range(min_E, max_E, T, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug, debug_file=debug_file)
 			if write:
 				self.write_psi_range(psi_range_grid, min_E, max_E, T, debug=debug)
 		return psi_range_grid
@@ -626,7 +699,7 @@ class Cell(object):
 			3D np.array: LDoS mesh
 		"""
 		if debug:
-			print "Calculaing LDoS grid"
+			print "Calculating LDoS grid"
 		psi_range_grid = self.get_psi_range(min_E, max_E, T, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
 		return abs(psi_range_grid)**2
 
@@ -735,7 +808,7 @@ class Cell(object):
 			ldos_grid = self.read_ldos_grid(min_E, max_E, T, debug=debug)
 		else:
 			# Calculate LDoS on mesh
-			ldos_grid = self.calculate_ldos_grid_old(min_E, max_E, T, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
+			ldos_grid = self.calculate_ldos_grid(min_E, max_E, T, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
 			if write:
 				self.write_ldos_grid(ldos_grid, min_E, max_E, T, debug=debug)
 		return ldos_grid
