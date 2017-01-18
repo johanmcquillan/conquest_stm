@@ -12,7 +12,7 @@ BOLTZMANN = 8.6173303E-5  # Boltzmann's Constant in eV/K
 ELECTRON_MASS = 9.10938E-31  # Electron Mass in kg
 H_BAR = 4.135667662E-15  # Reduced Planck's Constant in eV.s
 
-MESH_FOLDER = "temp8/"
+MESH_FOLDER = "temp5B/"
 SUPPORT_FNAME = "supp_"
 LDOS_FNAME = "ldos_"
 PSI_FNAME = "psi_"
@@ -65,7 +65,7 @@ class Cell(object):
 
 		# Form Cartesian meshes
 		self.real_mesh = np.transpose(np.mgrid[0: x_length: grid_spacing, 0: y_length: grid_spacing, 0: z_length: grid_spacing], (1, 2, 3, 0))
-
+		print self.real_mesh.shape
 		# Initialise atoms and bands
 		self.atoms = {}
 		self.bands = {}
@@ -85,7 +85,7 @@ class Cell(object):
 		return output
 
 	def add_atom(self, atom, atomKey):
-		"""Add atom to self.atoms, indexed by atomKey
+		"""Add atom to self.atoms, indexed by atom_key
 
 		Args:
 			atom (Atom): Atom object
@@ -257,10 +257,10 @@ class Cell(object):
 						#print atom_key, (i, j, k), (self.real_mesh[i, j, k, 0], self.real_mesh[i, j, k, 1], self.real_mesh[i, j, k, 2]), (x, y, z)
 
 						r = Vector(x, y, z)
-						constrained = self.constrain_vector_to_cell(r)
-						i = np.where(self.real_mesh[..., 0] == constrained.x)[0][0]
-						j = np.where(self.real_mesh[..., 1] == constrained.y)[1][0]
-						k = np.where(self.real_mesh[..., 2] == constrained.z)[2][0]
+						# constrained = self.constrain_vector_to_cell(r)
+						# i = np.where(self.real_mesh[..., 0] == constrained.x)[0][0]
+						# j = np.where(self.real_mesh[..., 1] == constrained.y)[1][0]
+						# k = np.where(self.real_mesh[..., 2] == constrained.z)[2][0]
 
 						relative_position = self.constrain_relative_vector(r - atom_pos_on_mesh)
 						# Iterate over orbitals
@@ -414,11 +414,12 @@ class Cell(object):
 		"""
 		if debug:
 			print "Building Wavefunction for "+str(K)+", "+str(E)
-
 		# Initialise mesh
 		psi_grid = np.zeros_like(self.real_mesh[..., 0], dtype=complex)
 		# Get basis functions
 		support_grid = self.get_support_grid(recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
+		if vectorised:
+			psi_v = np.vectorize(self.calculate_psi_grid_vec)
 		for atom_key in self.atoms:
 			atom = self.atoms[atom_key]
 			# Iterate over orbitals
@@ -428,13 +429,20 @@ class Cell(object):
 						# Evaluate wavefunction contribution over mesh
 						coefficient = atom.get_coefficient(K, E, l, zeta, m)
 						if vectorised:
-							psi_grid += np.vectorize(self.calculate_psi_grid_vec)(support_grid, atom_key, l, zeta, m, coefficient)
+							psi_grid += psi_v(support_grid, atom_key, l, zeta, m, coefficient)
 						else:
 							for indices in np.ndindex(self.real_mesh.shape[:3]):
 								if support_grid[indices]:
 									if atom_key in support_grid[indices]:
 										psi_grid[indices] += coefficient*support_grid[indices][atom_key][l][zeta][m]
-			return psi_grid
+							# for i in range(self.real_mesh.shape[0]):
+							# 	for j in range(self.real_mesh.shape[1]):
+							# 		for k in range(self.real_mesh.shape[2]):
+							# 			# if k > 35:
+							# 			# 	print i, j, k, support_grid[i, j, k].keys()
+							# 			if support_grid[i, j, k] and atom_key in support_grid[i, j, k]:
+							# 				psi_grid[i, j, k] += coefficient*support_grid[i, j, k][atom_key][l][zeta][m]
+		return psi_grid
 
 	def psi_filename(self, K, E):
 		"""Return standardised filename for relevant wavefunction file"""
@@ -834,4 +842,3 @@ class Cell(object):
 		M = np.fft.ifftn(integrand)
 
 		return M
-

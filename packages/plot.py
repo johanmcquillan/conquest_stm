@@ -364,11 +364,11 @@ def plot_basis_2d(
 		if spectro:
 			ttl = (
 				ion_name + ' Basis Function for \n \n $\zeta=' + str(zeta) + '$, $' + str(n) + SPECTRAL[l] + '$, $m_l=' + str(m)
-				+'$ in $' + axes[0] +'-' + axes[1] +'$ plane')
+				+ '$ in $' + axes[0] + '-' + axes[1] + '$ plane')
 		else:
 			ttl = (
 				ion_name + ' Basis Function for \n \n $\zeta=' + str(zeta) + '$, $n=' + str(n) + '$, $l=' + str(l) + '$, $m_l=' + str(m)
-				+'$ in $' + axes[0] +'-' + axes[1] +'$ plane')
+				+ '$ in $' + axes[0] + '-' + axes[1] + '$ plane')
 		plt.title(ttl)
 
 		# Save to pdf
