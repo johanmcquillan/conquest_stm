@@ -14,7 +14,7 @@ BOLTZMANN = 8.6173303E-5  # Boltzmann's Constant in eV/K
 ELECTRON_MASS = 9.10938E-31  # Electron Mass in kg
 H_BAR = 4.135667662E-15  # Reduced Planck's Constant in eV.s
 
-MESH_FOLDER = "meshes/"
+MESH_FOLDER = "mesh/"
 SUPPORT_FNAME = "supp_"
 LDOS_FNAME = "ldos_"
 PSI_FNAME = "psi_"
@@ -249,60 +249,60 @@ class Cell(object):
 			z_upper_lim = self.get_nearest_mesh_value(atom.atom_pos.z + cut) + self.grid_spacing
 
 			# Get array of mesh points within cutoff
-			x_points = np.arange(x_lower_lim, x_upper_lim, self.grid_spacing)
-			y_points = np.arange(y_lower_lim, y_upper_lim, self.grid_spacing)
-			z_points = np.arange(z_lower_lim, z_upper_lim, self.grid_spacing)
-
+			local_mesh = np.transpose(np.mgrid[x_lower_lim:x_upper_lim:self.grid_spacing, y_lower_lim:y_upper_lim:self.grid_spacing, z_lower_lim:z_upper_lim:self.grid_spacing], (1, 2, 3, 0))
+			lm_shape = local_mesh.shape[:3]
 			points_done = 0
 			bars_done = 0
-			total_points = len(x_points)*len(y_points)*len(z_points)
+			total_points = local_mesh.shape[0]*local_mesh.shape[1]*local_mesh.shape[2]
 
 			# Iterate over mesh points within cutoff
-			i = i_start
-			for x in x_points:
-				j = j_start
-				if i >= self.real_mesh.shape[0]:
-					i -= self.real_mesh.shape[0]
-				for y in y_points:
-					k = k_start
-					if j >= self.real_mesh.shape[1]:
-						j -= self.real_mesh.shape[1]
-					for z in z_points:
-						if k >= self.real_mesh.shape[2]:
-							k -= self.real_mesh.shape[2]
+			i_end = i_start + lm_shape[0] + 2
+			j_end = j_start + lm_shape[1] + 2
+			k_end = k_start + lm_shape[2] + 2
 
-						#print atom_key, (i, j, k), (self.real_mesh[i, j, k, 0], self.real_mesh[i, j, k, 1], self.real_mesh[i, j, k, 2]), (x, y, z)
+			rolled_mesh = np.roll(support_grid, -i_start, 0)
+			rolled_mesh = np.roll(rolled_mesh, -j_start, 1)
+			rolled_mesh = np.roll(rolled_mesh, -k_start, 2)
+			partial_mesh = rolled_mesh[0:lm_shape[0], 0:lm_shape[1], 0:lm_shape[2]]
+			for local_indices in np.ndindex(lm_shape):
 
-						r = Vector(x, y, z)
-						# constrained = self.constrain_vector_to_cell(r)
-						# i = np.where(self.real_mesh[..., 0] == constrained.x)[0][0]
-						# j = np.where(self.real_mesh[..., 1] == constrained.y)[1][0]
-						# k = np.where(self.real_mesh[..., 2] == constrained.z)[2][0]
+				position = local_mesh[local_indices]
+				r = Vector(*position)
+				relative_position = self.constrain_relative_vector(r - atom_pos_on_mesh)
 
-						relative_position = self.constrain_relative_vector(r - atom_pos_on_mesh)
-						# Iterate over orbitals
-						for l in atom.radials:
-							for zeta in atom.radials[l]:
-								# Get radial part of wavefunction
-								R = atom.get_radial_value_relative(l, zeta, relative_position)
-								# If R == 0, do not store
-								if R != 0.0:
-									for m in range(-l, l + 1):
-										# Get spherical harmonic
-										Y = sph(l, m, relative_position)
-										# Initialise support grid entry
-										if not support_grid[i, j, k]:
-											support_grid[i, j, k] = SmartDict()
-										# Store support value
-										support_grid[i, j, k][atom_key][l][zeta][m] = R * Y
-						points_done += 1
-						k += 1
-					if debug and float(points_done) / total_points * PROG_BAR_INTERVALS > bars_done:
-						sys.stdout.write(PROG_BAR_CHARACTER)
-						sys.stdout.flush()
-						bars_done += 1
-					j += 1
-				i += 1
+				partial_indices_list = list(local_indices)
+				for i in range(len(partial_indices_list)):
+					if partial_indices_list[i] >= self.real_mesh.shape[i]:
+						partial_indices_list[i] -= self.real_mesh.shape[i]
+				partial_indices = tuple(partial_indices_list)
+
+				# Iterate over orbitals
+				for l in atom.radials:
+					for zeta in atom.radials[l]:
+						# Get radial part of wavefunction
+						R = atom.get_radial_value_relative(l, zeta, relative_position)
+						# If R == 0, do not store
+						if R != 0.0:
+							for m in range(-l, l + 1):
+								# Get spherical harmonic
+								Y = sph(l, m, relative_position)
+								# Initialise support grid entry
+								if not partial_mesh[partial_indices]:
+									partial_mesh[partial_indices] = SmartDict()
+
+								if m not in partial_mesh[partial_indices][atom_key][l][zeta]:
+									partial_mesh[partial_indices][atom_key][l][zeta][m] = 0
+								# Store support value
+								partial_mesh[partial_indices][atom_key][l][zeta][m] += R * Y
+				points_done += 1
+				if debug and float(points_done) / total_points * PROG_BAR_INTERVALS > bars_done:
+					sys.stdout.write(PROG_BAR_CHARACTER)
+					sys.stdout.flush()
+					bars_done += 1
+			rolled_mesh[0:lm_shape[0], 0:lm_shape[1], 0:lm_shape[2]] = partial_mesh
+			rolled_mesh = np.roll(rolled_mesh, i_start, 0)
+			rolled_mesh = np.roll(rolled_mesh, j_start, 1)
+			support_grid = np.roll(rolled_mesh, k_start, 2)
 			if debug:
 				print
 		return support_grid
@@ -479,13 +479,6 @@ class Cell(object):
 								if support_grid[indices]:
 									if atom_key in support_grid[indices]:
 										psi_grid[indices] += coefficient*support_grid[indices][atom_key][l][zeta][m]
-							# for i in range(self.real_mesh.shape[0]):
-							# 	for j in range(self.real_mesh.shape[1]):
-							# 		for k in range(self.real_mesh.shape[2]):
-							# 			# if k > 35:
-							# 			# 	print i, j, k, support_grid[i, j, k].keys()
-							# 			if support_grid[i, j, k] and atom_key in support_grid[i, j, k]:
-							# 				psi_grid[i, j, k] += coefficient*support_grid[i, j, k][atom_key][l][zeta][m]
 			atoms_done += 1
 			if debug and float(atoms_done) / total_atoms * PROG_BAR_INTERVALS > bars_done:
 				sys.stdout.write(PROG_BAR_CHARACTER)
@@ -699,7 +692,7 @@ class Cell(object):
 		"""
 
 		if debug:
-			print "Calculating LDoS grid"
+			print "Calculating local density of states grid"
 		ldos_grid = np.zeros_like(self.real_mesh[..., 0], dtype=float)
 
 		total_k_weight = 0
@@ -716,8 +709,6 @@ class Cell(object):
 					else:
 						for indices in np.ndindex(self.real_mesh.shape[:3]):
 							ldos_grid[indices] += (K.weight/total_k_weight)*fd*(abs(psi_grid[indices]))**2
-					if debug:
-						print "Completed LDoS for ", K, E
 		return ldos_grid
 
 	def ldos_filename(self, min_E, max_E, T):
@@ -899,6 +890,7 @@ class Cell(object):
 
 		return M
 		return None
+
 	def lorentzian(self, E, fermi_level, self_energy):
 		return self_energy / (np.pi * ((E - fermi_level)**2 + self_energy**2))
 
