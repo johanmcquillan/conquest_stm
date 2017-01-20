@@ -5,7 +5,6 @@ import os
 import sys
 import numpy as np
 import math
-
 from sph import sph
 from smart_dict import SmartDict
 from vector import Vector, KVector
@@ -78,6 +77,8 @@ class Cell(object):
 		self.atoms = {}
 		self.bands = {}
 		self.support_grid = None
+
+		self.psi_vec = np.vectorize(self.calculate_psi_grid_vec)
 
 	def has_band(self, K, E):
 		"""Check if cell stores specified band.
@@ -463,8 +464,6 @@ class Cell(object):
 			sys.stdout.write("Calculating wavefunction at k = "+str(K)+", E = "+E_str+": ")
 			sys.stdout.flush()
 
-		if vectorised:
-			psi_v = np.vectorize(self.calculate_psi_grid_vec)
 		for atom_key in self.atoms:
 			atom = self.atoms[atom_key]
 			# Iterate over orbitals
@@ -474,7 +473,7 @@ class Cell(object):
 						# Evaluate wavefunction contribution over mesh
 						coefficient = atom.get_coefficient(K, E, l, zeta, m)
 						if vectorised:
-							psi_grid += psi_v(support_grid, atom_key, l, zeta, m, coefficient)
+							psi_grid += self.psi_vec(support_grid, atom_key, l, zeta, m, coefficient)
 						else:
 							for indices in np.ndindex(self.real_mesh.shape[:3]):
 								if support_grid[indices]:
@@ -684,26 +683,7 @@ class Cell(object):
 				self.write_psi_range(psi_range_grid, min_E, max_E, T, debug=debug)
 		return psi_range_grid
 
-	def calculate_ldos_grid(self, min_E, max_E, T, recalculate=False, write=True, vectorised=True, debug=False):
-		"""Calculate LDoS mesh.
-
-		Args:
-			min_E: Minimum energy
-			max_E: Maximum energy
-			T: Absolute temperature in Kelvin
-			recalculate (bool, opt.): Force recalculation, even if already stored
-			write (bool, opt.): Write calculated meshes to file
-			debug (bool, opt.): Print extra information during runtime
-
-		Returns:
-			3D np.array: LDoS mesh
-		"""
-		if debug:
-			print "Calculating LDoS grid"
-		psi_range_grid = self.get_psi_range(min_E, max_E, T, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
-		return abs(psi_range_grid)**2
-
-	def calculate_ldos_grid_old(self, min_E, max_E, T, recalculate=False, write=True, vectorised=False, debug=False):
+	def calculate_ldos_grid(self, min_E, max_E, T, recalculate=False, write=True, vectorised=False, debug=False):
 		"""Calculate LDoS mesh.
 
 		Args:
@@ -886,7 +866,7 @@ class Cell(object):
 	def get_B_mesh(self, c, wavefunction_mesh):
 		return c*wavefunction_mesh
 
-	def bardeen_element_mesh(self, R, wavefunction_mesh, c, tip_work_func, tip_energy, filtered=False, alpha=None):
+	def propogated_wavefunction_integrand(self, R, wavefunction_mesh, c, tip_work_func, tip_energy, filtered=False, alpha=None):
 		A = self.get_A_mesh(c, wavefunction_mesh)
 		B = self.get_B_mesh(c, wavefunction_mesh)
 
@@ -896,8 +876,11 @@ class Cell(object):
 			G_conjugate = np.conjugate(self.greens_function(self.get_vector_mesh(), R, tip_work_func, tip_energy))
 		G_conjugate_gradient = np.array(np.gradient(G_conjugate))
 
-		M = G_conjugate * A - B * G_conjugate_gradient
-		return M
+		integrand = G_conjugate * A - B * G_conjugate_gradient
+		return integrand
+
+	def bardeen_element(self):
+		return None
 
 	def bardeen_element_k(self, r, wavefunction_mesh, charge_density_mesh, fraction, delta_s, alpha, tip_work_func, tip_energy):
 		c = self.get_c(charge_density_mesh, fraction, delta_s)
@@ -915,3 +898,9 @@ class Cell(object):
 		M = np.fft.ifftn(integrand)
 
 		return M
+		return None
+	def lorentzian(self, E, fermi_level, self_energy):
+		return self_energy / (np.pi * ((E - fermi_level)**2 + self_energy**2))
+
+	def current(self):
+		return none
