@@ -104,6 +104,7 @@ class Ion(object):
 		"""
 		self.ion_name = ion_name
 		self.radials = radial_dict  # Radial objects; accessed by self.radials[zeta][n][l]
+		self.calculate_support_point_vec = np.vectorize(self.calculate_support_point)
 
 	def sorted_pao(self):
 		"""Sort pseudo-atomic orbitals into order according to .dat files.
@@ -205,6 +206,17 @@ class Ion(object):
 					max_cutoff = self.radials[l][zeta].cutoff
 		return max_cutoff
 
+	def calculate_support_point(self, vector, support_values, atom_key, interpolation='cubic'):
+		for l in self.radials:
+			for zeta in self.radials[l]:
+				R = self.get_radial_value(l, zeta, abs(vector), interpolation=interpolation)
+				if R != 0:
+					for m in range(-l, l+1):
+						if support_values is None:
+							support_values = SmartDict()
+						Y = sph(l, m, vector)
+						support_values[atom_key][l][zeta][m] = R*Y
+		return support_values
 
 class Atom(Ion):
 	"""Stores information on an atom, extending Ion to include atomic position and basis coefficients

@@ -16,6 +16,7 @@ class Vector(object):
 		self.x = x
 		self.y = y
 		self.z = z
+		self.components = np.array([x, y, z])
 		self.magnitude = None
 		self.hash = None
 
@@ -67,14 +68,11 @@ class Vector(object):
 
 	def __add__(self, other):
 		"""Add two vectors"""
-		return Vector(self.x + other.x, self.y + other.y, self.z + other.z)
+		return Vector(*(self.components + other.components))
 
 	def __sub__(self, other):
 		"""Subtract two vectors"""
 		return self + (-other)
-
-	def components(self):
-		return np.array([self.x, self.y, self.z])
 
 	@staticmethod
 	def get_x(vector):
@@ -196,9 +194,17 @@ class Vector(object):
 		"""Zero vector"""
 		return Vector(0.0, 0.0, 0.0)
 
+	@staticmethod
+	def array(mesh):
+		shape = mesh.shape[:3]
+		vector_array = np.empty(shape, dtype=Vector)
+		for indices in np.ndindex(shape):
+			vector_array[indices] = Vector(*mesh[indices])
+		return vector_array
+
 
 class KVector(Vector):
-	"""3D k-sapce Cartesian vector.
+	"""3D k-space Cartesian vector.
 
 	Attributes:
 		x (float): Component value in x direction

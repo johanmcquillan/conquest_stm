@@ -10,21 +10,6 @@ from smart_dict import SmartDict
 from vector import Vector, KVector
 from safe_open import safe_open
 
-BOLTZMANN = 8.6173303E-5  # Boltzmann's Constant in eV/K
-ELECTRON_MASS = 9.10938E-31  # Electron Mass in kg
-H_BAR = 4.135667662E-15  # Reduced Planck's Constant in eV.s
-
-MESH_FOLDER = "mesh/"
-SUPPORT_FNAME = "supp_"
-LDOS_FNAME = "ldos_"
-PSI_FNAME = "psi_"
-PSI_RANGE_FNAME = "psi_range_"
-EXT = ".dat"
-
-PRINT_RELATIVE_TO_EF = True
-PROG_BAR_INTERVALS = 20
-PROG_BAR_CHARACTER = "█"
-
 
 class Cell(object):
 	"""Simulation cell which holds Atom objects in a 3D mesh.
@@ -44,6 +29,22 @@ class Cell(object):
 		bands (Vector : [float]): Energies of bands indexed by k-point vector
 		support_grid (array(SmartDict)): Mesh of support function values, indexed by [x, y, z][atom_key][l][zeta][m]
 	"""
+
+	BOLTZMANN = 8.6173303E-5  # Boltzmann's Constant in eV/K
+	ELECTRON_MASS = 9.10938E-31  # Electron Mass in kg
+	H_BAR = 4.135667662E-15  # Reduced Planck's Constant in eV.s
+
+	MESH_FOLDER = "meshes/"
+	SUPPORT_FNAME = "supp_"
+	LDOS_FNAME = "ldos_"
+	PSI_FNAME = "psi_"
+	PSI_RANGE_FNAME = "psi_range_"
+	CURRENT_FNAME = "current_"
+	EXT = ".dat"
+
+	PRINT_RELATIVE_TO_EF = True
+	PROG_BAR_INTERVALS = 20
+	PROG_BAR_CHARACTER = "█"
 
 	def __init__(self, name, fermi_level, x_length, y_length, z_length, grid_spacing=0.5):
 		"""Constructs 3D cell with given dimensional.
@@ -71,6 +72,7 @@ class Cell(object):
 
 		# Form Cartesian meshes
 		self.real_mesh = np.transpose(np.mgrid[0: x_length: grid_spacing, 0: y_length: grid_spacing, 0: z_length: grid_spacing], (1, 2, 3, 0))
+		self.vector_mesh = self.get_vector_mesh()
 		self.mesh_points = self.real_mesh.shape[0] * self.real_mesh.shape[1] * self.real_mesh.shape[2]
 
 		# Initialise atoms and bands
@@ -124,7 +126,7 @@ class Cell(object):
 		Returns:
 			float: Occupation value
 		"""
-		f = 1.0 / (np.exp((energy - self.fermi_level) / (BOLTZMANN * temperature)) + 1)
+		f = 1.0 / (np.exp((energy - self.fermi_level) / (self.BOLTZMANN * temperature)) + 1)
 		return f
 
 	def get_nearest_mesh_value(self, x, indices=False, points=None):
@@ -264,52 +266,70 @@ class Cell(object):
 			rolled_mesh = np.roll(rolled_mesh, -j_start, 1)
 			rolled_mesh = np.roll(rolled_mesh, -k_start, 2)
 			partial_mesh = rolled_mesh[0:lm_shape[0], 0:lm_shape[1], 0:lm_shape[2]]
-			for local_indices in np.ndindex(lm_shape):
+			if not False:
+				for local_indices in np.ndindex(lm_shape):
 
-				position = local_mesh[local_indices]
-				r = Vector(*position)
-				relative_position = self.constrain_relative_vector(r - atom_pos_on_mesh)
+					position = local_mesh[local_indices]
+					r = Vector(*position)
+					relative_position = self.constrain_relative_vector(r - atom_pos_on_mesh)
 
-				partial_indices_list = list(local_indices)
-				for i in range(len(partial_indices_list)):
-					if partial_indices_list[i] >= self.real_mesh.shape[i]:
-						partial_indices_list[i] -= self.real_mesh.shape[i]
-				partial_indices = tuple(partial_indices_list)
+					partial_indices_list = list(local_indices)
+					for i in range(len(partial_indices_list)):
+						if partial_indices_list[i] >= self.real_mesh.shape[i]:
+							partial_indices_list[i] -= self.real_mesh.shape[i]
+					partial_indices = tuple(partial_indices_list)
 
-				# Iterate over orbitals
-				for l in atom.radials:
-					for zeta in atom.radials[l]:
-						# Get radial part of wavefunction
-						R = atom.get_radial_value_relative(l, zeta, relative_position)
-						# If R == 0, do not store
-						if R != 0.0:
-							for m in range(-l, l + 1):
-								# Get spherical harmonic
-								Y = sph(l, m, relative_position)
-								# Initialise support grid entry
-								if not partial_mesh[partial_indices]:
-									partial_mesh[partial_indices] = SmartDict()
+					# Iterate over orbitals
+					for l in atom.radials:
+						for zeta in atom.radials[l]:
+							# Get radial part of wavefunction
+							R = atom.get_radial_value_relative(l, zeta, relative_position)
+							# If R == 0, do not store
+							if R != 0.0:
+								for m in range(-l, l + 1):
+									# Get spherical harmonic
+									Y = sph(l, m, relative_position)
+									# Initialise support grid entry
+									if partial_mesh[partial_indices] is None:
+										partial_mesh[partial_indices] = SmartDict()
 
-								if m not in partial_mesh[partial_indices][atom_key][l][zeta]:
-									partial_mesh[partial_indices][atom_key][l][zeta][m] = 0
-								# Store support value
-								partial_mesh[partial_indices][atom_key][l][zeta][m] += R * Y
-				points_done += 1
-				if debug and float(points_done) / total_points * PROG_BAR_INTERVALS > bars_done:
-					sys.stdout.write(PROG_BAR_CHARACTER)
-					sys.stdout.flush()
-					bars_done += 1
-			rolled_mesh[0:lm_shape[0], 0:lm_shape[1], 0:lm_shape[2]] = partial_mesh
-			rolled_mesh = np.roll(rolled_mesh, i_start, 0)
-			rolled_mesh = np.roll(rolled_mesh, j_start, 1)
-			support_grid = np.roll(rolled_mesh, k_start, 2)
-			if debug:
-				print
+									if m not in partial_mesh[partial_indices][atom_key][l][zeta]:
+										partial_mesh[partial_indices][atom_key][l][zeta][m] = 0
+									# Store support value
+									partial_mesh[partial_indices][atom_key][l][zeta][m] += R * Y
+					points_done += 1
+					if debug and float(points_done) / total_points * self.PROG_BAR_INTERVALS > bars_done:
+						sys.stdout.write(self.PROG_BAR_CHARACTER)
+						sys.stdout.flush()
+						bars_done += 1
+				rolled_mesh[0:lm_shape[0], 0:lm_shape[1], 0:lm_shape[2]] = partial_mesh
+				rolled_mesh = np.roll(rolled_mesh, i_start, 0)
+				rolled_mesh = np.roll(rolled_mesh, j_start, 1)
+				support_grid = np.roll(rolled_mesh, k_start, 2)
+				if debug:
+					print
+			else:
+				rolled_mesh = np.roll(support_grid, -i_start, 0)
+				rolled_mesh = np.roll(rolled_mesh, -j_start, 1)
+				rolled_mesh = np.roll(rolled_mesh, -k_start, 2)
+
+				partial_mesh = rolled_mesh[0:lm_shape[0], 0:lm_shape[1], 0:lm_shape[2]]
+				vector_mesh = Vector.array(local_mesh) - atom.atom_pos
+				print vector_mesh.shape, partial_mesh.shape, self.real_mesh.shape
+				pg = atom.calculate_support_point_vec(vector_mesh, partial_mesh, atom_key)
+
+				rolled_mesh[0:lm_shape[0], 0:lm_shape[1], 0:lm_shape[2]] = partial_mesh
+				rolled_mesh = np.roll(rolled_mesh, i_start, 0)
+				rolled_mesh = np.roll(rolled_mesh, j_start, 1)
+				support_grid = np.roll(rolled_mesh, k_start, 2)
+
+				print "Calculated "+str(atom_key)
+
 		return support_grid
 
 	def support_filename(self):
 		"""Return standardised filename for relevant support function file"""
-		return MESH_FOLDER+SUPPORT_FNAME+self.name+"_"+str(self.grid_spacing)+EXT
+		return self.MESH_FOLDER+self.SUPPORT_FNAME+self.name+"_"+str(self.grid_spacing)+self.EXT
 
 	def write_support_grid(self, debug=False):
 		"""Write support function mesh to file"""
@@ -342,8 +362,8 @@ class Cell(object):
 								support_file.write(line + "\n")
 
 			points_done += 1
-			if debug and float(points_done) / self.mesh_points * PROG_BAR_INTERVALS > bars_done:
-				sys.stdout.write(PROG_BAR_CHARACTER)
+			if debug and float(points_done) / self.mesh_points * self.PROG_BAR_INTERVALS > bars_done:
+				sys.stdout.write(self.PROG_BAR_CHARACTER)
 				sys.stdout.flush()
 				bars_done += 1
 		if debug:
@@ -457,7 +477,7 @@ class Cell(object):
 		support_grid = self.get_support_grid(recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
 
 		if debug:
-			if PRINT_RELATIVE_TO_EF:
+			if self.PRINT_RELATIVE_TO_EF:
 				E_str = str(E - self.fermi_level) + " eV"
 			else:
 				E_str = str(E) + " eV"
@@ -480,8 +500,8 @@ class Cell(object):
 									if atom_key in support_grid[indices]:
 										psi_grid[indices] += coefficient*support_grid[indices][atom_key][l][zeta][m]
 			atoms_done += 1
-			if debug and float(atoms_done) / total_atoms * PROG_BAR_INTERVALS > bars_done:
-				sys.stdout.write(PROG_BAR_CHARACTER)
+			if debug and float(atoms_done) / total_atoms * self.PROG_BAR_INTERVALS > bars_done:
+				sys.stdout.write(self.PROG_BAR_CHARACTER)
 				sys.stdout.flush()
 				bars_done += 1
 		if debug:
@@ -490,8 +510,8 @@ class Cell(object):
 
 	def psi_filename(self, K, E):
 		"""Return standardised filename for relevant wavefunction file"""
-		return (MESH_FOLDER+PSI_FNAME+self.name+"_"+str(self.grid_spacing)+"_"
-				+str(K.x)+"_"+str(K.y)+"_"+str(K.z)+"_"+str(E)+EXT)
+		return (self.MESH_FOLDER+self.PSI_FNAME+self.name+"_"+str(self.grid_spacing)+"_"
+				+str(K.x)+"_"+str(K.y)+"_"+str(K.z)+"_"+str(E)+self.EXT)
 
 	def write_psi_grid(self, psi_grid, K, E):
 		"""Write wavefunction function mesh to file"""
@@ -513,7 +533,7 @@ class Cell(object):
 		if debug_file:
 			print "Reading wavefunction from "+filename
 		elif debug:
-			if PRINT_RELATIVE_TO_EF:
+			if self.PRINT_RELATIVE_TO_EF:
 				E_str = str(E - self.fermi_level) + " eV"
 			else:
 				E_str = str(E) + " eV"
@@ -567,7 +587,7 @@ class Cell(object):
 		"""
 
 		if debug:
-			if PRINT_RELATIVE_TO_EF:
+			if self.PRINT_RELATIVE_TO_EF:
 				min_E_str = str(min_E - self.fermi_level)
 				max_E_str = str(max_E - self.fermi_level) + " eV"
 			else:
@@ -595,7 +615,7 @@ class Cell(object):
 
 	def psi_range_filename(self, min_E, max_E, T):
 		"""Return standardised filename for relevant psi range file"""
-		return MESH_FOLDER+PSI_RANGE_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(min_E)+"_"+str(max_E)+"_"+str(T)+EXT
+		return self.MESH_FOLDER+self.PSI_RANGE_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(min_E)+"_"+str(max_E)+"_"+str(T)+self.EXT
 
 	def write_psi_range(self, psi_range_grid, min_E, max_E, T, debug=False):
 		"""Write LDoS mesh to file.
@@ -629,7 +649,7 @@ class Cell(object):
 		if debug_file:
 			print "Reading wavefunction range from "+filename
 		elif debug:
-			if PRINT_RELATIVE_TO_EF:
+			if self.PRINT_RELATIVE_TO_EF:
 				min_E_str = str(min_E - self.fermi_level)
 				max_E_str = str(max_E - self.fermi_level) + " eV"
 			else:
@@ -713,7 +733,7 @@ class Cell(object):
 
 	def ldos_filename(self, min_E, max_E, T):
 		"""Return standardised filename for relevant LDOS file"""
-		return MESH_FOLDER+LDOS_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(min_E)+"_"+str(max_E)+"_"+str(T)+EXT
+		return self.MESH_FOLDER+self.LDOS_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(min_E)+"_"+str(max_E)+"_"+str(T)+self.EXT
 
 	def write_ldos_grid(self, ldos_grid, min_E, max_E, T, debug=False):
 		"""Write LDoS mesh to file.
@@ -792,13 +812,15 @@ class Cell(object):
 			vector_mesh[indices] = r
 		return vector_mesh
 
-	def kappa_squared(self, tip_work_func, tip_energy):
-		return 2*ELECTRON_MASS/(H_BAR**2)*(tip_work_func - tip_energy)
+	def kappa_squared(self, tip_work_func, tip_fermi_level):
+		return 2*self.ELECTRON_MASS/(self.H_BAR**2)*(tip_work_func - tip_fermi_level)
 
-	def greens_function(self, position, tip_position, tip_work_func, tip_energy):
-		distance = abs(position - tip_position)
-		kappa2 = self.kappa_squared(tip_work_func, tip_energy)
-		return np.exp(- kappa2 * distance) / (4*np.pi*distance)
+	def greens_function(self, distance, tip_work_func, tip_energy):
+		if distance == 0:
+			return 0
+		else:
+			kappa2 = self.kappa_squared(tip_work_func, tip_energy)
+			return np.exp(- kappa2 * distance) / (4*np.pi*distance)
 
 	def filtered_greens_function(self, position, tip_position, tip_work_func, tip_energy, alpha):
 		distance = abs(position - tip_position)
@@ -835,64 +857,237 @@ class Cell(object):
 		log_mesh[abs(log_mesh) == np.inf] = delta_s + 1
 		log_mesh[log_mesh == np.nan] = delta_s + 1
 
-		varargs = (self.grid_spacing,)*3
+		varargs = self.grid_spacing
 		broadened_mesh = np.vectorize(self.broadened_surface)(log_mesh, delta_s)
+
 		unit_vector_surface = np.array(np.gradient(charge_density_mesh, varargs))
 		vector_surface = broadened_mesh*unit_vector_surface
 
-		return vector_surface
+		return np.transpose(vector_surface, (1, 2, 3, 0))
 
 	def get_A_mesh(self, c, wavefunction_mesh):
-		varargs = (self.grid_spacing,) * 3
-		grad_wavefunction = np.array(np.gradient(wavefunction_mesh), varargs)
-		return c*grad_wavefunction
+		grad_wavefunction = np.transpose(np.array(np.gradient(wavefunction_mesh, self.grid_spacing)), (1, 2, 3, 0))
+		return self.mesh_dot_product(c, grad_wavefunction)
 
 	@staticmethod
 	def mesh_dot_product(vector_mesh_A, vector_mesh_B):
-		scalar_mesh = np.zeros_like(vector_mesh_A[0], dtype=float)
-		for i in range(vector_mesh_A.shape[0]):
-			scalar_mesh += vector_mesh_A[i]*vector_mesh_B[i]
+		if vector_mesh_A.dtype == complex or vector_mesh_B.dtype == complex:
+			dtype = complex
+		else:
+			dtype = float
+
+		scalar_mesh = np.zeros(vector_mesh_A.shape[:3], dtype=dtype)
+		for i in range(3):
+			scalar_mesh += vector_mesh_A[..., i]*vector_mesh_B[..., i]
 		return scalar_mesh
 
 	def get_B_mesh(self, c, wavefunction_mesh):
-		return c*wavefunction_mesh
+		B = np.zeros_like(c, dtype=complex)
+		for i in range(c.shape[3]):
+			B[..., i] = c[..., i] * wavefunction_mesh
+		return B
 
-	def propogated_wavefunction_integrand(self, R, wavefunction_mesh, c, tip_work_func, tip_energy, filtered=False, alpha=None):
-		A = self.get_A_mesh(c, wavefunction_mesh)
-		B = self.get_B_mesh(c, wavefunction_mesh)
+	def differences_mesh(self, z_index, debug=False):
 
-		if not filtered or alpha is None:
-			G_conjugate = np.conjugate(self.filtered_greens_function(self.get_vector_mesh(), R, alpha, tip_work_func, tip_energy))
+		diff_shape = self.real_mesh.shape[:2] + self.real_mesh.shape[:3]
+		differences_mesh = np.zeros(diff_shape, dtype=float)
+
+		plane_length_h = max(self.real_mesh.shape[:2])
+		plane_length_f = plane_length_h*2
+		plane_shape = (plane_length_f,)*2
+
+		plane = np.zeros(plane_shape, dtype=float)
+
+		if debug:
+			sys.stdout.write("Calculating difference mesh: ")
+			sys.stdout.flush()
+		points_done = 0
+		bars_done = 0
+
+		for k in range(self.real_mesh.shape[2]):
+			for i in range(plane_length_h):
+				for j in range(i + 1):
+					if k < z_index:
+						distance = self.grid_spacing * np.sqrt(i**2 + j**2 + k**2)
+					else:
+						distance = 0
+					plane[plane_length_h + i, plane_length_h + j] = distance
+					plane[plane_length_h - i, plane_length_h - j] = distance
+					plane[plane_length_h + i, plane_length_h - j] = distance
+					plane[plane_length_h - i, plane_length_h + j] = distance
+					plane[plane_length_h + j, plane_length_h + i] = distance
+					plane[plane_length_h - j, plane_length_h - i] = distance
+					plane[plane_length_h + j, plane_length_h - i] = distance
+					plane[plane_length_h - j, plane_length_h + i] = distance
+
+				for ij in np.ndindex(differences_mesh.shape[:2]):
+					i, j = ij
+					i_start = plane_length_h - i
+					j_start = plane_length_h - j
+					i_end = plane_length_f - i
+					j_end = plane_length_f - j
+					differences_mesh[i, j, ..., k] = plane[i_start:i_end, j_start:j_end]
+
+			points_done += 1
+			if debug and float(points_done) / self.real_mesh.shape[2] * self.PROG_BAR_INTERVALS > bars_done:
+				sys.stdout.write(self.PROG_BAR_CHARACTER)
+				sys.stdout.flush()
+				bars_done += 1
+
+		if debug:
+			print
+		return differences_mesh
+
+	def current_scan(self, z, V, T, tip_work_func, tip_energy, delta_s, fraction=0.025, recalculate=False, write=True, vectorised=True, debug=False):
+
+		if debug:
+			sys.stdout.write("Calculating current\n")
+			sys.stdout.flush()
+
+		if V > 0:
+			min_E = self.fermi_level
+			max_E = self.fermi_level + V
 		else:
-			G_conjugate = np.conjugate(self.greens_function(self.get_vector_mesh(), R, tip_work_func, tip_energy))
-		G_conjugate_gradient = np.array(np.gradient(G_conjugate))
+			min_E = self.fermi_level + V
+			max_E = self.fermi_level
 
-		integrand = G_conjugate * A - B * G_conjugate_gradient
-		return integrand
+		total_k_weight = 0
+		for K in self.bands:
+			total_k_weight += K.weight
 
-	def bardeen_element(self):
-		return None
+		z, k = self.get_nearest_mesh_value(z, indices=True, points=self.real_mesh.shape[2])
+		# print z, k, self.real_mesh[0, 0, -1]
+		# scan_mesh = self.real_mesh[:, :, k, :]
+		scan_vectors = self.vector_mesh[:, :, k]
+		current = np.zeros(self.real_mesh.shape[:2], dtype=float)
+		ld = self.get_ldos_grid(min_E, max_E, T, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
+		c = self.get_c(ld, fraction, delta_s)
 
-	def bardeen_element_k(self, r, wavefunction_mesh, charge_density_mesh, fraction, delta_s, alpha, tip_work_func, tip_energy):
-		c = self.get_c(charge_density_mesh, fraction, delta_s)
-		A_fft = np.fft.fftn(self.get_A_mesh(c, wavefunction_mesh))
-		B_fft = np.fft.fftn(self.get_B_mesh(c, wavefunction_mesh))
-		g_fft = np.fft.fftn(self.filtered_greens_function(self.get_vector_mesh(), r, alpha, tip_work_func, tip_energy))
+		# diff_shape = scan_vectors.shape + self.vector_mesh.shape
+		# difference_array = np.zeros(diff_shape, dtype=float)
+		# iter1 = np.nditer(self.vector_mesh, flags=['multi_index', 'refs_ok'])
+		# while not iter1.finished:
+		# 	r = iter1[0]
+		# 	indices_1 = iter1.index
+		# 	iter2 = np.nditer(scan_vectors, flags=['multi_index', 'refs_ok'])
+		# 	while not iter2.finished:
+		# 		R = iter2[0]
+		# 		indices_2 = iter2.index
+		# 		distance = abs(r - R)
+		# 		difference_array[indices_2, indices_1] = distance
 
-		x_lim = 2*np.pi/self.vector.x
-		y_lim = 2*np.pi/self.vector.y
-		z_lim = 2*np.pi/self.vector.z
-		k_spacing = 2*np.pi/self.grid_spacing
-		k_mesh = np.mgrid[-x_lim:x_lim:k_spacing, -y_lim:y_lim:k_spacing, -z_lim:z_lim:k_spacing]
-		k_dot_B = self.mesh_dot_product(k_mesh, B_fft)
-		integrand = g_fft * (A_fft + 1j * k_dot_B)
-		M = np.fft.ifftn(integrand)
+		# if debug:
+		# 	sys.stdout.write("Calculating difference mesh: ")
+		# 	sys.stdout.flush()
+		# points_done = 0
+		# bars_done = 0
 
-		return M
-		return None
+		# print c.shape
+		#
+		# difference_dict = {}
+		#
+		# diff_shape = scan_vectors.shape + self.vector_mesh.shape
+		# difference_array = np.zeros(diff_shape, dtype=float)
+		# for indices_1 in np.ndindex(self.vector_mesh.shape):
+		#
+		# 	if indices_1[2] > self.vector_mesh.shape[2]/2:
+		# 		r = self.vector_mesh[indices_1]
+		#
+		# 		for indices_2 in np.ndindex(scan_vectors.shape):
+		# 			R = scan_vectors[indices_2]
+		# 			difference = r - R
+		# 			if difference in difference_dict:
+		# 				distance = difference_dict[difference]
+		# 			else:
+		# 				distance = abs(difference)
+		# 			difference_array[indices_2 + indices_1] = distance
+		#
+		# 		points_done += 1
+		# 		if debug and float(points_done) / self.mesh_points * self.PROG_BAR_INTERVALS > bars_done:
+		# 			sys.stdout.write(self.PROG_BAR_CHARACTER)
+		# 			sys.stdout.flush()
+		# 			bars_done += 1
+		# if debug:
+		# 	print
 
-	def lorentzian(self, E, fermi_level, self_energy):
-		return self_energy / (np.pi * ((E - fermi_level)**2 + self_energy**2))
 
-	def current(self):
-		return none
+		# difference_mesh = np.zeros_like(self.vector_mesh, dtype=float)
+		#
+		# for i in range(self.vector_mesh.shape[2]):
+		# 	vector_slice = self.vector_mesh[:, :, i]
+		# 	difference_slice = abs(vector_slice - scan_vectors)
+		# 	difference_mesh[:, :, i] = difference_slice
+
+		difference_array = self.differences_mesh(k, debug=debug)
+
+		if debug:
+			print "Calculating Green's Function"
+
+		G_conjugate = np.conjugate(np.vectorize(self.greens_function)(difference_array, tip_work_func, tip_energy))
+
+		G_conj_grad_shape = G_conjugate.shape + (3,)
+		G_conjugate_gradient = np.zeros(G_conj_grad_shape, dtype=complex)
+
+		if debug:
+			print "Calculating Green's Function gradient"
+
+		for ij in np.ndindex(G_conjugate.shape[:2]):
+			G_conjugate_gradient[ij] = np.transpose(np.array(np.gradient(G_conjugate[ij], self.grid_spacing)), (1, 2, 3, 0))
+
+		for K in self.bands:
+			w = K.weight
+			for E in self.bands[K]:
+				if min_E <= E <= max_E:
+					fd = self.fermi_dirac(E + V, T)
+					wavefunction = self.get_psi_grid(K, E, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
+
+					if debug:
+						sys.stdout.write("Propagating wavefunction: ")
+						sys.stdout.flush()
+					points_done = 0
+					bars_done = 0
+
+					A = self.get_A_mesh(c, wavefunction)
+					B = self.get_B_mesh(c, wavefunction)
+
+					for R_ij in np.ndindex(current.shape):
+						integrand = G_conjugate[R_ij] * A - self.mesh_dot_product(B, G_conjugate_gradient[R_ij])
+						psi = np.sum(integrand)*self.grid_spacing**3
+
+						current[R_ij] += fd * (w / total_k_weight) * abs(psi)**2
+						points_done += 1
+						if debug and float(points_done) / (current.shape[0]*current.shape[1]) * self.PROG_BAR_INTERVALS > bars_done:
+							sys.stdout.write(self.PROG_BAR_CHARACTER)
+							sys.stdout.flush()
+							bars_done += 1
+					if debug:
+						print
+		if write:
+			self.write_current(current, min_E, max_E, T, debug=debug)
+		return current
+
+	def current_filename(self, min_E, max_E, T):
+		"""Return standardised filename for relevant LDOS file"""
+		return self.MESH_FOLDER+self.CURRENT_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(min_E)+"_"+str(max_E)+"_"+str(T)+self.EXT
+
+	def write_current(self, current, min_E, max_E, T, debug=False):
+		"""Write current to file.
+
+		Args:
+			min_E: Minimum energy
+			max_E: Maximum energy
+			T: Absolute temperature in K
+			debug (bool, opt.): Print extra information during runtime
+		"""
+		filename = self.current_filename(min_E, max_E, T)
+
+		current_file = safe_open(filename, "w")
+		if debug:
+			print "Writing current grid to "+filename
+		# Iterate over mesh points
+		for indices in np.ndindex(current.shape):
+			# If LDoS is non-zero at mesh point, write data to file
+			i, j = indices
+			if current[indices] and current[indices] != 0:
+				current_file.write(str(i)+" "+str(j)+" "+str(current[indices])+"\n")
+		current_file.close()
