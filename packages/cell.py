@@ -158,8 +158,8 @@ class Cell(object):
 			x, i = self.get_nearest_mesh_value(position.x, indices=True)
 			y, j = self.get_nearest_mesh_value(position.y, indices=True)
 			z, k = self.get_nearest_mesh_value(position.z, indices=True)
-			indices = (i, j, k)
-			return Vector(x, y, z), indices
+			ijk = (i, j, k)
+			return Vector(x, y, z), ijk
 		else:
 			x = self.get_nearest_mesh_value(position.x, indices=False)
 			y = self.get_nearest_mesh_value(position.y, indices=False)
@@ -267,17 +267,17 @@ class Cell(object):
 			rolled_mesh = np.roll(rolled_mesh, -k_start, 2)
 			partial_mesh = rolled_mesh[0:lm_shape[0], 0:lm_shape[1], 0:lm_shape[2]]
 			if not False:
-				for local_indices in np.ndindex(lm_shape):
+				for local_ijk in np.ndindex(lm_shape):
 
-					position = local_mesh[local_indices]
+					position = local_mesh[local_ijk]
 					r = Vector(*position)
 					relative_position = self.constrain_relative_vector(r - atom_pos_on_mesh)
 
-					partial_indices_list = list(local_indices)
-					for i in range(len(partial_indices_list)):
-						if partial_indices_list[i] >= self.real_mesh.shape[i]:
-							partial_indices_list[i] -= self.real_mesh.shape[i]
-					partial_indices = tuple(partial_indices_list)
+					partial_ijk_list = list(local_ijk)
+					for i in range(len(partial_ijk_list)):
+						if partial_ijk_list[i] >= self.real_mesh.shape[i]:
+							partial_ijk_list[i] -= self.real_mesh.shape[i]
+					partial_ijk = tuple(partial_ijk_list)
 
 					# Iterate over orbitals
 					for l in atom.radials:
@@ -290,13 +290,13 @@ class Cell(object):
 									# Get spherical harmonic
 									Y = sph(l, m, relative_position)
 									# Initialise support grid entry
-									if partial_mesh[partial_indices] is None:
-										partial_mesh[partial_indices] = SmartDict()
+									if partial_mesh[partial_ijk] is None:
+										partial_mesh[partial_ijk] = SmartDict()
 
-									if m not in partial_mesh[partial_indices][atom_key][l][zeta]:
-										partial_mesh[partial_indices][atom_key][l][zeta][m] = 0
+									if m not in partial_mesh[partial_ijk][atom_key][l][zeta]:
+										partial_mesh[partial_ijk][atom_key][l][zeta][m] = 0
 									# Store support value
-									partial_mesh[partial_indices][atom_key][l][zeta][m] += R * Y
+									partial_mesh[partial_ijk][atom_key][l][zeta][m] += R * Y
 					points_done += 1
 					if debug and float(points_done) / total_points * self.PROG_BAR_INTERVALS > bars_done:
 						sys.stdout.write(self.PROG_BAR_CHARACTER)
@@ -343,22 +343,22 @@ class Cell(object):
 		bars_done = 0
 
 		# Iterate over mesh points
-		for indices in np.ndindex(self.real_mesh.shape[:3]):
-			i, j, k = indices
+		for ijk in np.ndindex(self.real_mesh.shape[:3]):
+			i, j, k = ijk
 			# If support function values exist at mesh point
-			if self.support_grid[indices]:
+			if self.support_grid[ijk]:
 				support_file.write(str(i) + " " + str(j) + " " + str(k) + "\n")
 				# Iterate over atoms
-				for atom_key in self.support_grid[indices]:
+				for atom_key in self.support_grid[ijk]:
 					# Write atom index
 					support_file.write(str(atom_key) + "\n")
 					# Iterate over orbitals
-					for l in self.support_grid[indices][atom_key]:
-						for zeta in self.support_grid[indices][atom_key][l]:
-							for m in self.support_grid[indices][atom_key][l][zeta]:
+					for l in self.support_grid[ijk][atom_key]:
+						for zeta in self.support_grid[ijk][atom_key][l]:
+							for m in self.support_grid[ijk][atom_key][l][zeta]:
 								# Write orbital data
 								line = (str(l) + " " + str(zeta) + " " + str(m) + " "
-										+ str(self.support_grid[indices][atom_key][l][zeta][m]))
+										+ str(self.support_grid[ijk][atom_key][l][zeta][m]))
 								support_file.write(line + "\n")
 
 			points_done += 1
@@ -495,10 +495,10 @@ class Cell(object):
 						if vectorised:
 							psi_grid += self.psi_vec(support_grid, atom_key, l, zeta, m, coefficient)
 						else:
-							for indices in np.ndindex(self.real_mesh.shape[:3]):
-								if support_grid[indices]:
-									if atom_key in support_grid[indices]:
-										psi_grid[indices] += coefficient*support_grid[indices][atom_key][l][zeta][m]
+							for ijk in np.ndindex(self.real_mesh.shape[:3]):
+								if support_grid[ijk]:
+									if atom_key in support_grid[ijk]:
+										psi_grid[ijk] += coefficient*support_grid[ijk][atom_key][l][zeta][m]
 			atoms_done += 1
 			if debug and float(atoms_done) / total_atoms * self.PROG_BAR_INTERVALS > bars_done:
 				sys.stdout.write(self.PROG_BAR_CHARACTER)
@@ -517,10 +517,10 @@ class Cell(object):
 		"""Write wavefunction function mesh to file"""
 		filename = self.psi_filename(K, E)
 		psi_file = safe_open(filename, "w")
-		for indices in np.ndindex(self.real_mesh.shape[:3]):
-			i, j, k = indices
-			if psi_grid[indices] != 0:
-				psi = psi_grid[indices]
+		for ijk in np.ndindex(self.real_mesh.shape[:3]):
+			i, j, k = ijk
+			if psi_grid[ijk] != 0:
+				psi = psi_grid[ijk]
 				psi_file.write(str(i)+" "+str(j)+" "+str(k)+" "+str(psi.real)+" "+str(psi.imag)+"\n")
 		psi_file.close()
 
@@ -609,8 +609,8 @@ class Cell(object):
 					if vectorised:
 						total_psi_grid += np.sqrt(fd * w_k / total_k_weight) * psi_grid
 					else:
-						for indices in np.ndindex(self.real_mesh.shape[:3]):
-							total_psi_grid[indices] += np.sqrt(fd * w_k / total_k_weight) * psi_grid[indices]
+						for ijk in np.ndindex(self.real_mesh.shape[:3]):
+							total_psi_grid[ijk] += np.sqrt(fd * w_k / total_k_weight) * psi_grid[ijk]
 		return total_psi_grid
 
 	def psi_range_filename(self, min_E, max_E, T):
@@ -632,11 +632,11 @@ class Cell(object):
 		if debug:
 			print "Writing partial wavefunction grid to "+filename
 		# Iterate over mesh points
-		for indices in np.ndindex(self.real_mesh.shape[:3]):
-			i, j, k = indices
+		for ijk in np.ndindex(self.real_mesh.shape[:3]):
+			i, j, k = ijk
 			# If LDoS is non-zero at mesh point, write data to file
-			if psi_range_grid[indices]:
-				psi = psi_range_grid[indices]
+			if psi_range_grid[ijk]:
+				psi = psi_range_grid[ijk]
 				psi_range_file.write(str(i)+" "+str(j)+" "+str(k)+" "+str(psi.real)+" "+str(psi.imag)+"\n")
 		psi_range_file.close()
 
@@ -727,8 +727,8 @@ class Cell(object):
 					if vectorised:
 						ldos_grid += (K.weight / total_k_weight) * fd * (abs(psi_grid))**2
 					else:
-						for indices in np.ndindex(self.real_mesh.shape[:3]):
-							ldos_grid[indices] += (K.weight/total_k_weight)*fd*(abs(psi_grid[indices]))**2
+						for ijk in np.ndindex(self.real_mesh.shape[:3]):
+							ldos_grid[ijk] += (K.weight/total_k_weight)*fd*(abs(psi_grid[ijk]))**2
 		return ldos_grid
 
 	def ldos_filename(self, min_E, max_E, T):
@@ -750,10 +750,10 @@ class Cell(object):
 		if debug:
 			print "Writing LDoS grid to "+filename
 		# Iterate over mesh points
-		for indices in np.ndindex(self.real_mesh.shape[:3]):
+		for ijk in np.ndindex(self.real_mesh.shape[:3]):
 			# If LDoS is non-zero at mesh point, write data to file
-			i, j, k = indices
-			if ldos_grid[indices]:
+			i, j, k = ijk
+			if ldos_grid[ijk]:
 				ldos_file.write(str(i)+" "+str(j)+" "+str(k)+" "+str(ldos_grid[i, j, k])+"\n")
 		ldos_file.close()
 
@@ -806,10 +806,10 @@ class Cell(object):
 
 	def get_vector_mesh(self):
 		vector_mesh = np.empty_like(self.real_mesh[..., 0], dtype=Vector)
-		for indices in np.ndindex(self.real_mesh.shape[:3]):
-			x, y, z = self.real_mesh[indices]
+		for ijk in np.ndindex(self.real_mesh.shape[:3]):
+			x, y, z = self.real_mesh[ijk]
 			r = Vector(x, y, z)
-			vector_mesh[indices] = r
+			vector_mesh[ijk] = r
 		return vector_mesh
 
 	def kappa_squared(self, tip_work_func, tip_fermi_level):
@@ -1050,11 +1050,11 @@ class Cell(object):
 					A = self.get_A_mesh(c, wavefunction)
 					B = self.get_B_mesh(c, wavefunction)
 
-					for R_ij in np.ndindex(current.shape):
-						integrand = G_conjugate[R_ij] * A - self.mesh_dot_product(B, G_conjugate_gradient[R_ij])
+					for ij in np.ndindex(current.shape):
+						integrand = G_conjugate[ij] * A - self.mesh_dot_product(B, G_conjugate_gradient[ij])
 						psi = np.sum(integrand)*self.grid_spacing**3
 
-						current[R_ij] += fd * (w / total_k_weight) * abs(psi)**2
+						current[ij] += fd * (w / total_k_weight) * abs(psi)**2
 						points_done += 1
 						if debug and float(points_done) / (current.shape[0]*current.shape[1]) * self.PROG_BAR_INTERVALS > bars_done:
 							sys.stdout.write(self.PROG_BAR_CHARACTER)
@@ -1085,9 +1085,9 @@ class Cell(object):
 		if debug:
 			print "Writing current grid to "+filename
 		# Iterate over mesh points
-		for indices in np.ndindex(current.shape):
+		for ij in np.ndindex(current.shape):
 			# If LDoS is non-zero at mesh point, write data to file
-			i, j = indices
-			if current[indices] and current[indices] != 0:
-				current_file.write(str(i)+" "+str(j)+" "+str(current[indices])+"\n")
+			i, j = ij
+			if current[ij] and current[ij] != 0:
+				current_file.write(str(i)+" "+str(j)+" "+str(current[ij])+"\n")
 		current_file.close()
