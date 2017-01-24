@@ -38,7 +38,6 @@ class Cell(object):
 	SUPPORT_FNAME = "supp_"
 	LDOS_FNAME = "ldos_"
 	PSI_FNAME = "psi_"
-	PSI_RANGE_FNAME = "psi_range_"
 	CURRENT_FNAME = "current_"
 	EXT = ".dat"
 
@@ -570,131 +569,6 @@ class Cell(object):
 			if write:
 				self.write_psi_grid(psi_grid, K, E)
 		return psi_grid
-
-	def calculate_psi_range(self, min_E, max_E, T, recalculate=False, write=True, vectorised=True, debug=False, debug_file=False):
-		"""Calculate LDoS mesh.
-
-		Args:
-			min_E: Minimum energy
-			max_E: Maximum energy
-			T: Absolute temperature in Kelvin
-			recalculate (bool, opt.): Force recalculation, even if already stored
-			write (bool, opt.): Write calculated meshes to file
-			debug (bool, opt.): Print extra information during runtime
-
-		Returns:
-			3D np.array: LDoS mesh
-		"""
-
-		if debug:
-			if self.PRINT_RELATIVE_TO_EF:
-				min_E_str = str(min_E - self.fermi_level)
-				max_E_str = str(max_E - self.fermi_level) + " eV"
-			else:
-				min_E_str = str(min_E)
-				max_E_str = str(max_E) + " eV"
-			print "Calculating psi range grid from "+min_E_str+" to "+max_E_str
-		total_psi_grid = np.zeros_like(self.real_mesh[..., 0], dtype=complex)
-
-		total_k_weight = 0
-		for K in self.bands:
-			total_k_weight += K.weight
-
-		for K in self.bands:
-			w_k = K.weight
-			for E in self.bands[K]:
-				if min_E <= E <= max_E:
-					psi_grid = self.get_psi_grid(K, E, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug, debug_file=debug_file)
-					fd = self.fermi_dirac(E, T)
-					if vectorised:
-						total_psi_grid += np.sqrt(fd * w_k / total_k_weight) * psi_grid
-					else:
-						for ijk in np.ndindex(self.real_mesh.shape[:3]):
-							total_psi_grid[ijk] += np.sqrt(fd * w_k / total_k_weight) * psi_grid[ijk]
-		return total_psi_grid
-
-	def psi_range_filename(self, min_E, max_E, T):
-		"""Return standardised filename for relevant psi range file"""
-		return self.MESH_FOLDER+self.PSI_RANGE_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(min_E)+"_"+str(max_E)+"_"+str(T)+self.EXT
-
-	def write_psi_range(self, psi_range_grid, min_E, max_E, T, debug=False):
-		"""Write LDoS mesh to file.
-
-		Args:
-			min_E: Minimum energy
-			max_E: Maximum energy
-			T: Absolute temperature in K
-			debug (bool, opt.): Print extra information during runtime
-		"""
-		filename = self.psi_range_filename(min_E, max_E, T)
-		# Get LDoS mesh
-		psi_range_file = safe_open(filename, "w")
-		if debug:
-			print "Writing partial wavefunction grid to "+filename
-		# Iterate over mesh points
-		for ijk in np.ndindex(self.real_mesh.shape[:3]):
-			i, j, k = ijk
-			# If LDoS is non-zero at mesh point, write data to file
-			if psi_range_grid[ijk]:
-				psi = psi_range_grid[ijk]
-				psi_range_file.write(str(i)+" "+str(j)+" "+str(k)+" "+str(psi.real)+" "+str(psi.imag)+"\n")
-		psi_range_file.close()
-
-	def read_psi_range(self, min_E, max_E, T, debug=False, debug_file=False):
-		"""Read psi mesh from file"""
-		filename = self.psi_range_filename(min_E, max_E, T)
-		psi_range_file = open(filename, 'r')
-		psi_range_grid = np.zeros_like(self.real_mesh[..., 0], dtype=complex)
-
-		if debug_file:
-			print "Reading wavefunction range from "+filename
-		elif debug:
-			if self.PRINT_RELATIVE_TO_EF:
-				min_E_str = str(min_E - self.fermi_level)
-				max_E_str = str(max_E - self.fermi_level) + " eV"
-			else:
-				min_E_str = str(min_E)
-				max_E_str = str(max_E) + " eV"
-			print "Reading wavefunction range from " + min_E_str + " to " + max_E_str + " at " + str(T) + "K"
-
-		for line in psi_range_file:
-			line_split = line.split()
-			# Get mesh indices
-			i = int(line_split[0])
-			j = int(line_split[1])
-			k = int(line_split[2])
-			# Get LDoS value
-			real = float(line_split[3])
-			imag = float(line_split[4])
-			psi_range_grid[i, j, k] = complex(real, imag)
-
-		if debug:
-			print "Psi range successfully read"
-		return psi_range_grid
-
-	def get_psi_range(self, min_E, max_E, T, recalculate=False, write=True, vectorised=True, debug=False, debug_file=False):
-		"""Get LDoS mesh.
-
-		Args:
-			min_E: Minimum energy
-			max_E: Maximum energy
-			T: Absolute temperature in K
-			recalculate (bool, opt.): Force recalculation of meshes, even if already stored
-			write (bool, opt.): Write calculated grids to file
-			debug (bool, opt.): Print extra information during runtime
-
-		Returns:
-			array(float): Mesh of LDOS values
-		"""
-		# Read ldos grid from file if not stored by cell
-		if not recalculate and os.path.isfile(self.psi_range_filename(min_E, max_E, T)):
-			psi_range_grid = self.read_psi_range(min_E, max_E, T, debug=debug, debug_file=debug_file)
-		else:
-			# Calculate psi range
-			psi_range_grid = self.calculate_psi_range(min_E, max_E, T, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug, debug_file=debug_file)
-			if write:
-				self.write_psi_range(psi_range_grid, min_E, max_E, T, debug=debug)
-		return psi_range_grid
 
 	def calculate_ldos_grid(self, min_E, max_E, T, recalculate=False, write=True, vectorised=False, debug=False):
 		"""Calculate LDoS mesh.
