@@ -493,3 +493,48 @@ def plot_ldos_3d(
 		save_name = None
 
 	plot_3d(title, ldos, fraction, x_range, y_range, z_range, step, save_name=save_name, show=show, top_down=top_down)
+
+def plot_current_2d(
+		cell, z, V, T, tip_work_func, tip_energy, delta_s, interpolation='cubic',
+		printStatus=False, debug=False):
+	"""Plots cross-section of charge density to pdf.
+
+	All lengths measured in bohr radii (a0).
+
+	Args:
+		cell (Cell): Simulation cell to plot
+		min_E (float): Minimum energy
+		max_E (float): Maximum energy
+		T (float): Absolute temperature in K
+		axis (string): Cartesian axis ('x', 'y', or 'z') to set to constant value given by planeValue
+		minimum (int): Minimum value of coordinates
+		maximum (int): Maximum value of coordinates
+		planeValue (float, opt.): Constant value assigned to Cartesian coordinate given by axis; Default is 0.0
+		step (float, opt.): Interval between Cartesian mgrid points, measured in a0;
+							Default is cell.gridSpacing
+		interpolation (string, opt.): Method of interpolation; possible arguments are 'cubic' (default) and 'linear'
+		printStatus (bool, opt.): If true, print update when file is saved
+		debug (bool, opt.): If true, print extra information during runtime
+	"""
+
+	current = cell.get_current_scan(z, V, T, tip_work_func, tip_energy, delta_s, debug=debug)
+
+	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
+	save_name = cell.name + '_current_' + '_' + timeStamp
+
+	title = cell.name+' current at $z='+str(z)+'a_0$'
+
+	with PdfPages('figures2D/'+save_name+'.pdf') as pdf:
+		plt.imshow(
+				current, interpolation='bilinear', origin='center', cmap=cm.copper)
+		plt.colorbar()
+		plt.title(title)
+		plt.xlabel('y')
+		plt.ylabel('x')
+
+		# Save to pdf
+		pdf.savefig()
+		plt.close()
+
+	if printStatus:
+		print 'Finished ' + save_name + '.pdf'

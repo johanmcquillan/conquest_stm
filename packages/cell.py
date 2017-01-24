@@ -883,7 +883,7 @@ class Cell(object):
 
 	def get_B_mesh(self, c, wavefunction_mesh):
 		B = np.zeros_like(c, dtype=complex)
-		for i in range(c.shape[3]):
+		for i in range(3):
 			B[..., i] = c[..., i] * wavefunction_mesh
 		return B
 
@@ -938,10 +938,62 @@ class Cell(object):
 			print
 		return differences_mesh
 
-	def current_scan(self, z, V, T, tip_work_func, tip_energy, delta_s, fraction=0.025, recalculate=False, write=True, vectorised=True, debug=False):
+	def greens_function_mesh(self, z_index, tip_work_func, tip_energy, debug=False):
+
+		G_shape = self.real_mesh.shape[:2] + self.real_mesh.shape[:3]
+		G_mesh = np.zeros(G_shape, dtype=float)
+
+		plane_length_h = max(self.real_mesh.shape[:2])
+		plane_length_f = plane_length_h*2
+		plane_shape = (plane_length_f,)*2
+
+		plane = np.zeros(plane_shape, dtype=float)
 
 		if debug:
-			sys.stdout.write("Calculating current\n")
+			sys.stdout.write("Calculating G(r - R): ")
+			sys.stdout.flush()
+		points_done = 0
+		bars_done = 0
+
+		for k in range(self.real_mesh.shape[2]):
+			for i in range(plane_length_h):
+				for j in range(i + 1):
+					if k < z_index:
+						distance = self.grid_spacing * np.sqrt(i**2 + j**2 + k**2)
+						G = self.greens_function(distance, tip_work_func, tip_energy)
+					else:
+						G = 0
+					plane[plane_length_h + i, plane_length_h + j] = G
+					plane[plane_length_h - i, plane_length_h - j] = G
+					plane[plane_length_h + i, plane_length_h - j] = G
+					plane[plane_length_h - i, plane_length_h + j] = G
+					plane[plane_length_h + j, plane_length_h + i] = G
+					plane[plane_length_h - j, plane_length_h - i] = G
+					plane[plane_length_h + j, plane_length_h - i] = G
+					plane[plane_length_h - j, plane_length_h + i] = G
+
+				for ij in np.ndindex(G_mesh.shape[:2]):
+					i, j = ij
+					i_start = plane_length_h - i
+					j_start = plane_length_h - j
+					i_end = plane_length_f - i
+					j_end = plane_length_f - j
+					G_mesh[i, j, ..., k] = plane[i_start:i_end, j_start:j_end]
+
+		points_done += 1
+		if debug and float(points_done) / self.real_mesh.shape[2] * self.PROG_BAR_INTERVALS > bars_done:
+			sys.stdout.write(self.PROG_BAR_CHARACTER)
+			sys.stdout.flush()
+			bars_done += 1
+
+		if debug:
+			print
+		return G_mesh
+
+	def calculate_current_scan(self, z, V, T, tip_work_func, tip_energy, delta_s, fraction=0.025, recalculate=False, write=True, vectorised=True, debug=False):
+
+		if debug:
+			sys.stdout.write("Calculating I(R)\n")
 			sys.stdout.flush()
 
 		if V > 0:
@@ -952,13 +1004,15 @@ class Cell(object):
 			max_E = self.fermi_level
 
 		total_k_weight = 0
+		total_energies = 0
 		for K in self.bands:
 			total_k_weight += K.weight
+			for E in self.bands[K]:
+				if min_E <= E <= max_E:
+					total_energies += 1
+		energies_done = 0
 
 		z, k = self.get_nearest_mesh_value(z, indices=True, points=self.real_mesh.shape[2])
-		# print z, k, self.real_mesh[0, 0, -1]
-		# scan_mesh = self.real_mesh[:, :, k, :]
-		scan_vectors = self.vector_mesh[:, :, k]
 		current = np.zeros(self.real_mesh.shape[:2], dtype=float)
 		ld = self.get_ldos_grid(min_E, max_E, T, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
 		c = self.get_c(ld, fraction, delta_s)
@@ -1010,7 +1064,6 @@ class Cell(object):
 		# if debug:
 		# 	print
 
-
 		# difference_mesh = np.zeros_like(self.vector_mesh, dtype=float)
 		#
 		# for i in range(self.vector_mesh.shape[2]):
@@ -1018,18 +1071,15 @@ class Cell(object):
 		# 	difference_slice = abs(vector_slice - scan_vectors)
 		# 	difference_mesh[:, :, i] = difference_slice
 
-		difference_array = self.differences_mesh(k, debug=debug)
+		# difference_array = self.differences_mesh(k, debug=debug)
 
-		if debug:
-			print "Calculating Green's Function"
-
-		G_conjugate = np.conjugate(np.vectorize(self.greens_function)(difference_array, tip_work_func, tip_energy))
+		G_conjugate = np.conjugate(self.greens_function_mesh(k, tip_work_func, tip_energy, debug=debug))
 
 		G_conj_grad_shape = G_conjugate.shape + (3,)
 		G_conjugate_gradient = np.zeros(G_conj_grad_shape, dtype=complex)
 
 		if debug:
-			print "Calculating Green's Function gradient"
+			print "Calculating grad(G(r - R))"
 
 		for ij in np.ndindex(G_conjugate.shape[:2]):
 			G_conjugate_gradient[ij] = np.transpose(np.array(np.gradient(G_conjugate[ij], self.grid_spacing)), (1, 2, 3, 0))
@@ -1042,13 +1092,27 @@ class Cell(object):
 					wavefunction = self.get_psi_grid(K, E, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
 
 					if debug:
-						sys.stdout.write("Propagating wavefunction: ")
+						if self.PRINT_RELATIVE_TO_EF:
+							E_str = str(E - self.fermi_level) + " eV"
+						else:
+							E_str = str(E) + " eV"
+
+						prog = float(energies_done) / total_energies * 100
+
+						sys.stdout.write("{0:1f}% Propagating psi at k = {1}, E = {2}: ".format(prog, K, E_str))
 						sys.stdout.flush()
+
 					points_done = 0
 					bars_done = 0
 
 					A = self.get_A_mesh(c, wavefunction)
 					B = self.get_B_mesh(c, wavefunction)
+
+					if debug:
+						if np.max(A) == 0:
+							print 'A: ZERO!'
+						if np.max(B) == 0:
+							print 'B: ZERO!'
 
 					for ij in np.ndindex(current.shape):
 						integrand = G_conjugate[ij] * A - self.mesh_dot_product(B, G_conjugate_gradient[ij])
@@ -1060,10 +1124,10 @@ class Cell(object):
 							sys.stdout.write(self.PROG_BAR_CHARACTER)
 							sys.stdout.flush()
 							bars_done += 1
+					if debug and np.max(current) == 0:
+						print "ZERO!"
 					if debug:
 						print
-		if write:
-			self.write_current(current, min_E, max_E, T, debug=debug)
 		return current
 
 	def current_filename(self, min_E, max_E, T):
@@ -1088,6 +1152,48 @@ class Cell(object):
 		for ij in np.ndindex(current.shape):
 			# If LDoS is non-zero at mesh point, write data to file
 			i, j = ij
-			if current[ij] and current[ij] != 0:
+			if current[ij] != 0:
 				current_file.write(str(i)+" "+str(j)+" "+str(current[ij])+"\n")
 		current_file.close()
+
+	def read_current(self, min_E, max_E, T, debug=False):
+		"""Read current mesh from file"""
+		filename = self.current_filename(min_E, max_E, T)
+		current_file = open(filename, 'r')
+		current = np.zeros(self.real_mesh.shape[:2], dtype=float)
+
+		if debug:
+			print "Reading current grid from "+filename
+
+		for line in current_file:
+			line_split = line.split()
+			# Get mesh indices
+			i = int(line_split[0])
+			j = int(line_split[1])
+
+			# Get current value
+			value = float(line_split[2])
+			current[i, j] = value
+
+		if debug:
+			print "current grid successfully read"
+		return current
+
+	def get_current_scan(self, z, V, T, tip_work_func, tip_energy, delta_s, fraction=0.025, recalculate=False, write=True, vectorised=True, debug=False):
+
+		if V > 0:
+			min_E = self.fermi_level
+			max_E = self.fermi_level + V
+		else:
+			min_E = self.fermi_level + V
+			max_E = self.fermi_level
+
+		if not recalculate and os.path.isfile(self.current_filename(min_E, max_E, T)):
+			# Read data from file
+			current = self.read_current(min_E, max_E, T, debug=debug)
+		else:
+			current = self.calculate_current_scan(z, V, T, tip_work_func, tip_energy, delta_s, fraction=fraction, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
+			if write:
+				self.write_current(current, min_E, max_E, T)
+		return current
+
