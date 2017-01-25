@@ -496,7 +496,7 @@ def plot_ldos_3d(
 
 def plot_current_2d(
 		cell, z, V, T, tip_work_func, tip_energy, delta_s, interpolation='cubic',
-		printStatus=False, debug=False):
+		printStatus=False, recalculate=False, debug=False):
 	"""Plots cross-section of charge density to pdf.
 
 	All lengths measured in bohr radii (a0).
@@ -517,7 +517,7 @@ def plot_current_2d(
 		debug (bool, opt.): If true, print extra information during runtime
 	"""
 
-	current = cell.get_current_scan(z, V, T, tip_work_func, tip_energy, delta_s, debug=debug)
+	current = cell.get_current_scan(z, V, T, tip_work_func, tip_energy, delta_s, recalculate=recalculate, debug=debug)
 
 	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
 	save_name = cell.name + '_current_' + '_' + timeStamp

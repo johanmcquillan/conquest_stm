@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 import os
 import sys
@@ -43,7 +41,7 @@ class Cell(object):
 
 	PRINT_RELATIVE_TO_EF = True
 	PROG_BAR_INTERVALS = 20
-	PROG_BAR_CHARACTER = "█"
+	PROG_BAR_CHARACTER = ">"
 
 	def __init__(self, name, fermi_level, x_length, y_length, z_length, grid_spacing=0.5):
 		"""Constructs 3D cell with given dimensional.
@@ -231,8 +229,9 @@ class Cell(object):
 		for atom_key in self.atoms:
 			atom = self.atoms[atom_key]
 
+			debug_str = "    Support grid for atom " + str(atom_key) + " - " + atom.ion_name + ": "
 			if debug:
-				sys.stdout.write("    Support grid for atom " + str(atom_key) + " - " + atom.ion_name + ": ")
+				sys.stdout.write(debug_str)
 				sys.stdout.flush()
 
 			# Get atom cutoff radius
@@ -297,16 +296,26 @@ class Cell(object):
 									# Store support value
 									partial_mesh[partial_ijk][atom_key][l][zeta][m] += R * Y
 					points_done += 1
-					if debug and float(points_done) / total_points * self.PROG_BAR_INTERVALS > bars_done:
-						sys.stdout.write(self.PROG_BAR_CHARACTER)
+
+					prog = float(points_done) / total_points
+					if debug and prog * self.PROG_BAR_INTERVALS >= bars_done:
+						percent = prog * 100
+						sys.stdout.write('\r')
+						sys.stdout.write(debug_str)
+						sys.stdout.write(
+							" [{:<{}}]".format(self.PROG_BAR_CHARACTER * bars_done, self.PROG_BAR_INTERVALS))
+						sys.stdout.write(" {:3.0f}%".format(percent))
 						sys.stdout.flush()
 						bars_done += 1
+
 				rolled_mesh[0:lm_shape[0], 0:lm_shape[1], 0:lm_shape[2]] = partial_mesh
 				rolled_mesh = np.roll(rolled_mesh, i_start, 0)
 				rolled_mesh = np.roll(rolled_mesh, j_start, 1)
 				support_grid = np.roll(rolled_mesh, k_start, 2)
+
 				if debug:
-					print
+					sys.stdout.write("\n")
+					sys.stdout.flush()
 			else:
 				rolled_mesh = np.roll(support_grid, -i_start, 0)
 				rolled_mesh = np.roll(rolled_mesh, -j_start, 1)
@@ -475,12 +484,14 @@ class Cell(object):
 		# Get basis functions
 		support_grid = self.get_support_grid(recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
 
+		if self.PRINT_RELATIVE_TO_EF:
+			E_str = str(E - self.fermi_level) + " eV"
+		else:
+			E_str = str(E) + " eV"
+		debug_str = "Calculating psi at k = "+str(K)+", E = "+E_str+": "
+
 		if debug:
-			if self.PRINT_RELATIVE_TO_EF:
-				E_str = str(E - self.fermi_level) + " eV"
-			else:
-				E_str = str(E) + " eV"
-			sys.stdout.write("Calculating wavefunction at k = "+str(K)+", E = "+E_str+": ")
+			sys.stdout.write(debug_str)
 			sys.stdout.flush()
 
 		for atom_key in self.atoms:
@@ -499,10 +510,17 @@ class Cell(object):
 									if atom_key in support_grid[ijk]:
 										psi_grid[ijk] += coefficient*support_grid[ijk][atom_key][l][zeta][m]
 			atoms_done += 1
-			if debug and float(atoms_done) / total_atoms * self.PROG_BAR_INTERVALS > bars_done:
-				sys.stdout.write(self.PROG_BAR_CHARACTER)
+			prog = float(atoms_done) / total_atoms
+
+			if debug and prog * self.PROG_BAR_INTERVALS >= bars_done:
+				percent = prog * 100
+				sys.stdout.write('\r')
+				sys.stdout.write(debug_str)
+				sys.stdout.write(" [{:<{}}]".format(self.PROG_BAR_CHARACTER * bars_done, self.PROG_BAR_INTERVALS))
+				sys.stdout.write(" {:3.0f}%".format(percent))
 				sys.stdout.flush()
 				bars_done += 1
+
 		if debug:
 			print
 		return psi_grid
@@ -530,13 +548,13 @@ class Cell(object):
 		psi_grid = np.zeros_like(self.real_mesh[..., 0], dtype=complex)
 
 		if debug_file:
-			print "Reading wavefunction from "+filename
+			print "Reading psi from "+filename
 		elif debug:
 			if self.PRINT_RELATIVE_TO_EF:
 				E_str = str(E - self.fermi_level) + " eV"
 			else:
 				E_str = str(E) + " eV"
-			print "Reading wavefunction for k = "+str(K)+", E = "+E_str
+			print "Reading psi for k = "+str(K)+", E = "+E_str
 
 		for line in psi_file:
 			line_split = line.split()
@@ -707,9 +725,10 @@ class Cell(object):
 		return u*(v - w - x)
 
 	def isosurface_condition(self, charge_density, reference_value):
-		with np.errstate(divide='ignore'):
-			result = np.log(charge_density / reference_value)
-		return result
+		if charge_density != 0:
+			return np.log(charge_density / reference_value)
+		else:
+			return 0
 
 	def broadened_surface(self, surface, delta_s):
 		if abs(surface) < delta_s:
@@ -717,19 +736,13 @@ class Cell(object):
 		else:
 			return 0.
 
-	def vector_gradient(self, scalar_field):
-		grad = np.array(np.gradient(scalar_field))
-		vector_grad = np.vectorize(Vector)(grad[0], grad[1], grad[2])
-		return vector_grad
-
-	def get_c(self, charge_density_mesh, fraction, delta_s):
+	def get_c(self, wavefunction_mesh, fraction, delta_s):
+		charge_density_mesh = abs(wavefunction_mesh)**2
 		max_density = np.max(charge_density_mesh)
 		isovalue = fraction * max_density
 
 		# Remove 0 elements from array such that logarithm does not raise errors
-		log_mesh = self.isosurface_condition(charge_density_mesh, isovalue)
-		log_mesh[abs(log_mesh) == np.inf] = delta_s + 1
-		log_mesh[log_mesh == np.nan] = delta_s + 1
+		log_mesh = np.vectorize(self.isosurface_condition)(charge_density_mesh, isovalue)
 
 		varargs = self.grid_spacing
 		broadened_mesh = np.vectorize(self.broadened_surface)(log_mesh, delta_s)
@@ -823,8 +836,9 @@ class Cell(object):
 
 		plane = np.zeros(plane_shape, dtype=float)
 
+		debug_str = "Calculating G(r - R): "
 		if debug:
-			sys.stdout.write("Calculating G(r - R): ")
+			sys.stdout.write(debug_str)
 			sys.stdout.flush()
 		points_done = 0
 		bars_done = 0
@@ -854,14 +868,20 @@ class Cell(object):
 					j_end = plane_length_f - j
 					G_mesh[i, j, ..., k] = plane[i_start:i_end, j_start:j_end]
 
-		points_done += 1
-		if debug and float(points_done) / self.real_mesh.shape[2] * self.PROG_BAR_INTERVALS > bars_done:
-			sys.stdout.write(self.PROG_BAR_CHARACTER)
-			sys.stdout.flush()
-			bars_done += 1
+			points_done += 1
+			prog = float(points_done) / self.real_mesh.shape[2]
+			if debug and prog * self.PROG_BAR_INTERVALS >= bars_done:
+				percent = prog * 100
+				sys.stdout.write('\r')
+				sys.stdout.write(debug_str)
+				sys.stdout.write(" [{:<{}}]".format(self.PROG_BAR_CHARACTER * bars_done, self.PROG_BAR_INTERVALS))
+				sys.stdout.write(" {:3.0f}%".format(percent))
+				sys.stdout.flush()
+				bars_done += 1
 
 		if debug:
-			print
+			sys.stdout.write("\n")
+			sys.stdout.flush()
 		return G_mesh
 
 	def calculate_current_scan(self, z, V, T, tip_work_func, tip_energy, delta_s, fraction=0.025, recalculate=False, write=True, vectorised=True, debug=False):
@@ -888,21 +908,6 @@ class Cell(object):
 
 		z, k = self.get_nearest_mesh_value(z, indices=True, points=self.real_mesh.shape[2])
 		current = np.zeros(self.real_mesh.shape[:2], dtype=float)
-		ld = self.get_ldos_grid(min_E, max_E, T, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
-		c = self.get_c(ld, fraction, delta_s)
-
-		# diff_shape = scan_vectors.shape + self.vector_mesh.shape
-		# difference_array = np.zeros(diff_shape, dtype=float)
-		# iter1 = np.nditer(self.vector_mesh, flags=['multi_index', 'refs_ok'])
-		# while not iter1.finished:
-		# 	r = iter1[0]
-		# 	indices_1 = iter1.index
-		# 	iter2 = np.nditer(scan_vectors, flags=['multi_index', 'refs_ok'])
-		# 	while not iter2.finished:
-		# 		R = iter2[0]
-		# 		indices_2 = iter2.index
-		# 		distance = abs(r - R)
-		# 		difference_array[indices_2, indices_1] = distance
 
 		# if debug:
 		# 	sys.stdout.write("Calculating difference mesh: ")
@@ -964,16 +969,16 @@ class Cell(object):
 				if min_E <= E <= max_E:
 					fd = self.fermi_dirac(E + V, T)
 					wavefunction = self.get_psi_grid(K, E, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
+					c = self.get_c(wavefunction, fraction, delta_s)
 
+					prog = float(energies_done) / total_energies * 100
+					if self.PRINT_RELATIVE_TO_EF:
+						E_str = str(E - self.fermi_level) + " eV"
+					else:
+						E_str = str(E) + " eV"
+					debug_str = "Propagating psi at k = {!s}, E = {}: {:3.1f}% ".format(K, E_str, prog)
 					if debug:
-						if self.PRINT_RELATIVE_TO_EF:
-							E_str = str(E - self.fermi_level) + " eV"
-						else:
-							E_str = str(E) + " eV"
-
-						prog = float(energies_done) / total_energies * 100
-
-						sys.stdout.write("{0:1f}% Propagating psi at k = {1}, E = {2}: ".format(prog, K, E_str))
+						sys.stdout.write(debug_str)
 						sys.stdout.flush()
 
 					points_done = 0
@@ -994,14 +999,24 @@ class Cell(object):
 
 						current[ij] += fd * (w / total_k_weight) * abs(psi)**2
 						points_done += 1
-						if debug and float(points_done) / (current.shape[0]*current.shape[1]) * self.PROG_BAR_INTERVALS > bars_done:
-							sys.stdout.write(self.PROG_BAR_CHARACTER)
+						prog = float(points_done) / (current.shape[0]*current.shape[1])
+
+						if debug and prog * self.PROG_BAR_INTERVALS >= bars_done:
+							percent = prog * 100
+							sys.stdout.write('\r')
+							sys.stdout.write(debug_str)
+							sys.stdout.write(" [{:<{}}]".format(self.PROG_BAR_CHARACTER * bars_done, self.PROG_BAR_INTERVALS))
+							sys.stdout.write(" {:3.0f}%".format(percent))
 							sys.stdout.flush()
 							bars_done += 1
+
+					energies_done += 1
 					if debug and np.max(current) == 0:
-						print "ZERO!"
+						print "I: ZERO!"
+
 					if debug:
-						print
+						sys.stdout.write("\n")
+						sys.stdout.flush()
 		return current
 
 	def current_filename(self, min_E, max_E, T):
@@ -1037,7 +1052,7 @@ class Cell(object):
 		current = np.zeros(self.real_mesh.shape[:2], dtype=float)
 
 		if debug:
-			print "Reading current grid from "+filename
+			print "Reading I(R) from "+filename
 
 		for line in current_file:
 			line_split = line.split()
