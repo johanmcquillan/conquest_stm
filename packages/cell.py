@@ -165,7 +165,7 @@ class Cell(object):
 
 	def constrain_relative_vector(self, vector):
 		"""Return a vector that is constrained within simulation cell"""
-		x, y, z = vector.components()
+		x, y, z = vector.components
 
 		# Check if vector components are greater than half of cell sides
 		# If greater, add or subtract cell length
@@ -189,7 +189,7 @@ class Cell(object):
 
 	def constrain_vector_to_cell(self, vector):
 		"""Return a vector that is constrained within simulation cell"""
-		x, y, z = vector.components()
+		x, y, z = vector.components
 
 		# Check if vector components are greater than half of cell sides
 		# If greater, add or subtract cell length
