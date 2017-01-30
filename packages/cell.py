@@ -229,7 +229,7 @@ class Cell(object):
 		for atom_key in self.atoms:
 			atom = self.atoms[atom_key]
 
-			debug_str = "    Support grid for atom " + str(atom_key) + " - " + atom.ion_name + ": "
+			debug_str = "    Support grid for atom {:3} - {!s}: ".format(atom_key, atom.ion_name)
 			if debug:
 				sys.stdout.write(debug_str)
 				sys.stdout.flush()
@@ -724,33 +724,40 @@ class Cell(object):
 		x = 2*np.sinh(kappa * distance)
 		return u*(v - w - x)
 
-	def isosurface_condition(self, charge_density, reference_value):
-		if charge_density != 0:
-			return np.log(charge_density / reference_value)
-		else:
-			return 0
-
 	def broadened_surface(self, surface, delta_s):
 		if abs(surface) < delta_s:
-			return 15/(16*delta_s)*(1 - (surface/delta_s)**2)**2
+			return 15.0/(16.0*delta_s)*(1.0 - (surface/delta_s)**2)**2
 		else:
-			return 0.
+			return 0.0
 
 	def get_c(self, wavefunction_mesh, fraction, delta_s):
 		charge_density_mesh = abs(wavefunction_mesh)**2
 		max_density = np.max(charge_density_mesh)
 		isovalue = fraction * max_density
 
-		# Remove 0 elements from array such that logarithm does not raise errors
-		log_mesh = np.vectorize(self.isosurface_condition)(charge_density_mesh, isovalue)
+		masked_mesh = np.ma.masked_array(charge_density_mesh, mask=np.where(charge_density_mesh == 0, 1, 0))
+		log_mesh = np.empty_like(charge_density_mesh)
+		log_mesh[~masked_mesh.mask] = np.log(masked_mesh[~masked_mesh.mask] / isovalue)
 
-		varargs = self.grid_spacing
-		broadened_mesh = np.vectorize(self.broadened_surface)(log_mesh, delta_s)
+		broadened_mesh = np.where(abs(masked_mesh) < delta_s, 15.0/(16.0*delta_s)*(1.0 - (masked_mesh/delta_s)**2)**2, 0)
 
-		unit_vector_surface = np.array(np.gradient(charge_density_mesh, varargs))
-		vector_surface = broadened_mesh*unit_vector_surface
+		for ij in np.ndindex(broadened_mesh.shape[:2]):
+			i, j = ij
+			on_surface = False
+			past_surface = False
+			for k in reversed(range(broadened_mesh.shape[2])):
+				if past_surface:
+					broadened_mesh[i, j, k] = 0
+				elif broadened_mesh[i, j, k] != 0 and not on_surface:
+					on_surface = True
+				elif on_surface and broadened_mesh[i, j, k] == 0:
+					on_surface = False
+					past_surface = True
 
-		return np.transpose(vector_surface, (1, 2, 3, 0))
+		unit_vector_surface = np.array(np.gradient(charge_density_mesh, self.grid_spacing))
+		vector_surface = np.transpose(np.multiply(broadened_mesh, unit_vector_surface), (1, 2, 3, 0))
+
+		return vector_surface
 
 	def get_A_mesh(self, c, wavefunction_mesh):
 		grad_wavefunction = np.transpose(np.array(np.gradient(wavefunction_mesh, self.grid_spacing)), (1, 2, 3, 0))
@@ -825,7 +832,40 @@ class Cell(object):
 			print
 		return differences_mesh
 
-	def greens_function_mesh(self, z_index, tip_work_func, tip_energy, debug=False):
+	def greens_function_mesh_partial(self, z_index, tip_work_func, tip_energy, c, debug=False):
+
+		G_shape = self.real_mesh.shape[:2] + self.real_mesh.shape[:3]
+		G_mesh = np.zeros(G_shape, dtype=float)
+
+		elements = G_shape[0]*G_shape[1]
+
+		debug_str = "Calculating G(r - R): "
+		if debug:
+			sys.stdout.write(debug_str)
+			sys.stdout.flush()
+		points_done = 0
+		bars_done = 0
+
+		for ab in np.ndindex(G_shape[:2]):
+			for ijk in np.ndindex(G_shape[2:]):
+				if np.any(c[ijk]):
+					distance = abs(self.vector_mesh[ab + (z_index,)] - self.vector_mesh[ijk])
+					G_mesh[ab + ijk] = self.greens_function(distance, tip_work_func, tip_energy)
+
+			points_done += 1
+			prog = float(points_done) / elements
+			if debug and prog * self.PROG_BAR_INTERVALS >= bars_done:
+				percent = prog * 100
+				sys.stdout.write('\r')
+				sys.stdout.write(debug_str)
+				sys.stdout.write(" [{:<{}}]".format(self.PROG_BAR_CHARACTER * bars_done, self.PROG_BAR_INTERVALS))
+				sys.stdout.write(" {:3.0f}%".format(percent))
+				sys.stdout.flush()
+				bars_done += 1
+
+		return G_mesh
+
+	def greens_function_mesh_full(self, z_index, tip_work_func, tip_energy, debug=False):
 
 		G_shape = self.real_mesh.shape[:2] + self.real_mesh.shape[:3]
 		G_mesh = np.zeros(G_shape, dtype=float)
@@ -847,18 +887,23 @@ class Cell(object):
 			for i in range(plane_length_h):
 				for j in range(i + 1):
 					if k < z_index:
-						distance = self.grid_spacing * np.sqrt(i**2 + j**2 + k**2)
+						distance = self.grid_spacing * np.sqrt(i**2 + j**2 + (z_index - k)**2)
 						G = self.greens_function(distance, tip_work_func, tip_energy)
 					else:
 						G = 0
-					plane[plane_length_h + i, plane_length_h + j] = G
-					plane[plane_length_h - i, plane_length_h - j] = G
-					plane[plane_length_h + i, plane_length_h - j] = G
-					plane[plane_length_h - i, plane_length_h + j] = G
-					plane[plane_length_h + j, plane_length_h + i] = G
-					plane[plane_length_h - j, plane_length_h - i] = G
-					plane[plane_length_h + j, plane_length_h - i] = G
-					plane[plane_length_h - j, plane_length_h + i] = G
+
+					for a in [-1, 1]:
+						for b in [-1, 1]:
+							plane[plane_length_h + a*i, plane_length_h + b*j] = G
+
+					# plane[plane_length_h + i, plane_length_h + j] = G
+					# plane[plane_length_h - i, plane_length_h - j] = G
+					# plane[plane_length_h + i, plane_length_h - j] = G
+					# plane[plane_length_h - i, plane_length_h + j] = G
+					# plane[plane_length_h + j, plane_length_h + i] = G
+					# plane[plane_length_h - j, plane_length_h - i] = G
+					# plane[plane_length_h + j, plane_length_h - i] = G
+					# plane[plane_length_h - j, plane_length_h + i] = G
 
 				for ij in np.ndindex(G_mesh.shape[:2]):
 					i, j = ij
@@ -885,6 +930,20 @@ class Cell(object):
 		return G_mesh
 
 	def calculate_current_scan(self, z, V, T, tip_work_func, tip_energy, delta_s, fraction=0.025, recalculate=False, write=True, vectorised=True, debug=False):
+		"""Calculate tunelling current across plane.
+
+		Args:
+			z (float): z-value of plane
+			V (float): Bias voltage
+			T (float): Absolute temperature
+			tip_work_func (float): Work function of tip
+			tip_energy (float): Fermi-level of tip
+			delta_s (float): Surface width
+			fraction (float, opt.): Fraction of maximum charge density to use as isovalue for isosurface
+			recalculate (bool, opt.): Force recalculation, even if already stored
+			write (bool, opt.): Write to file
+			debug (bool, opt.): Print extra information during runtime
+		"""
 
 		if debug:
 			sys.stdout.write("Calculating I(R)\n")
@@ -908,6 +967,7 @@ class Cell(object):
 
 		z, k = self.get_nearest_mesh_value(z, indices=True, points=self.real_mesh.shape[2])
 		current = np.zeros(self.real_mesh.shape[:2], dtype=float)
+		elements = current.shape[0]*current.shape[1]
 
 		# if debug:
 		# 	sys.stdout.write("Calculating difference mesh: ")
@@ -952,7 +1012,10 @@ class Cell(object):
 
 		# difference_array = self.differences_mesh(k, debug=debug)
 
-		G_conjugate = np.conjugate(self.greens_function_mesh(k, tip_work_func, tip_energy, debug=debug))
+		ldos = self.get_ldos_grid(min_E, max_E, T, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
+		c = self.get_c(ldos, fraction, delta_s)
+
+		G_conjugate = np.conjugate(self.greens_function_mesh_full(k, tip_work_func, tip_energy, debug=debug))
 
 		G_conj_grad_shape = G_conjugate.shape + (3,)
 		G_conjugate_gradient = np.zeros(G_conj_grad_shape, dtype=complex)
@@ -969,7 +1032,6 @@ class Cell(object):
 				if min_E <= E <= max_E:
 					fd = self.fermi_dirac(E + V, T)
 					wavefunction = self.get_psi_grid(K, E, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
-					c = self.get_c(wavefunction, fraction, delta_s)
 
 					prog = float(energies_done) / total_energies * 100
 					if self.PRINT_RELATIVE_TO_EF:
@@ -999,14 +1061,13 @@ class Cell(object):
 
 						current[ij] += fd * (w / total_k_weight) * abs(psi)**2
 						points_done += 1
-						prog = float(points_done) / (current.shape[0]*current.shape[1])
+						prog = float(points_done) / elements
 
 						if debug and prog * self.PROG_BAR_INTERVALS >= bars_done:
 							percent = prog * 100
 							sys.stdout.write('\r')
 							sys.stdout.write(debug_str)
-							sys.stdout.write(" [{:<{}}]".format(self.PROG_BAR_CHARACTER * bars_done, self.PROG_BAR_INTERVALS))
-							sys.stdout.write(" {:3.0f}%".format(percent))
+							sys.stdout.write(" [{:<{}}] {:3.0f}%".format(self.PROG_BAR_CHARACTER * bars_done, self.PROG_BAR_INTERVALS, percent))
 							sys.stdout.flush()
 							bars_done += 1
 

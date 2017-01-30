@@ -6,7 +6,8 @@ import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d as mp3d
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.backends.backend_pdf import PdfPages
-from matplotlib import cm, colors
+from matplotlib import cm
+from matplotlib import colors as clrs
 
 from skimage import measure
 
@@ -20,7 +21,7 @@ SPECTRAL = {0: 's', 1: 'p', 2: 'd', 3: 'f', 4: 'g',
 AXES = ('x', 'y', 'z')
 
 
-def plot_2d(cell, mesh_3d, title, save_name, axis, plane_value, minimum, maximum):
+def plot_2d(cell, mesh_3d, title, save_name, axis, plane_value):
 
 	if axis == 'x':
 		index = np.where(cell.x_mesh == plane_value)[0][0]
@@ -43,7 +44,7 @@ def plot_2d(cell, mesh_3d, title, save_name, axis, plane_value, minimum, maximum
 	with PdfPages('figures2D/'+save_name+'.pdf') as pdf:
 		plt.imshow(
 				mesh_2d, interpolation='bilinear', origin='center', cmap=cm.copper,
-				extent=(minimum, maximum, minimum, maximum))
+				extent=(0, mesh_2d.shape[0], 0, mesh_2d.shape[1]))
 		plt.colorbar()
 		plt.title(title)
 		plt.xlabel(label1)
@@ -54,7 +55,36 @@ def plot_2d(cell, mesh_3d, title, save_name, axis, plane_value, minimum, maximum
 		plt.close()
 
 
-def plot_3d(title, mesh, fraction, x_range, y_range, z_range, step, save_name=None, show=True, top_down=False):
+def plot_3d_scatter_mask(title, mesh, delta=0.0, zero_surf=False):
+
+	fig = plt.figure()
+	ax = fig.gca(projection='3d')
+	plt.title(title)
+
+	points = []
+
+	for ijk in np.ndindex(mesh.shape):
+		if (type(mesh) is not np.ma.MaskedArray or mesh[ijk] is not np.ma.masked) and (delta == 0.0 or abs(mesh[ijk]) <= delta) and (zero_surf or mesh[ijk] != 0) and ijk[2] > 55:
+			i, j, k = ijk
+			points.append([i, j, k, mesh[ijk]])
+			#print i, j, k, mesh[ijk], delta
+
+	np_points = np.transpose(np.array(points))
+
+	if len(points) == 0 or np.max(np_points) == 0:
+		raise ValueError("No Points!")
+	else:
+		print np_points.shape, np.max(np_points[3])
+
+	colmap = cm.ScalarMappable()
+	colmap.set_array(np_points[3])
+
+	ax.scatter(np_points[0], np_points[1], np_points[2], c=cm.Reds(abs(np_points[3])/np.max(np_points[3])))
+
+	plt.show()
+
+
+def plot_3d_isosurface(title, mesh, fraction, x_range, y_range, z_range, step, save_name=None, show=True, top_down=False):
 	"""Plot isosurface of 3D mesh.
 
 	Args:
@@ -109,6 +139,7 @@ def plot_vector_field(cell, vector_field):
 	ax.quiver(cell.x_mesh, cell.y_mesh, cell.z_mesh, vector_field[0], vector_field[1], vector_field[2])
 
 	plt.show()
+
 
 def plot_radials(ions, points=500, print_status=False, spectro=True, interpolation='cubic'):
 	"""Plot all radial functions from self.ions to pdf
@@ -492,7 +523,7 @@ def plot_ldos_3d(
 	else:
 		save_name = None
 
-	plot_3d(title, ldos, fraction, x_range, y_range, z_range, step, save_name=save_name, show=show, top_down=top_down)
+	plot_3d_isosurface(title, ldos, fraction, x_range, y_range, z_range, step, save_name=save_name, show=show, top_down=top_down)
 
 def plot_current_2d(
 		cell, z, V, T, tip_work_func, tip_energy, delta_s, interpolation='cubic',
