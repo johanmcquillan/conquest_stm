@@ -16,7 +16,7 @@ delta_s = 0.0001
 
 # C.current_scan(35, -2, 0.005, 4.85, C.fermi_level, delta_s, debug=True)
 
-for V in [0.5, ]:
+for V in [1.0, 0.5, -0.5, -0.75, -1.0, -1.25, -1.5, -1.75, -2.0, -2.25, -2.5, -2.75, -3.0]:
 	plot.plot_current_2d(C, 35, V, 0.005, 4.85, C.fermi_level, delta_s, recalculate=False, show=False, debug=True)
 
 # G = C.greens_function_mesh(70, 4.85, C.fermi_level, debug=True)

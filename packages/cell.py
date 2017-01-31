@@ -982,7 +982,14 @@ class Cell(object):
 					if not recalculate and os.path.isfile(self.propagated_psi_filename(K, E, T, fraction, delta_s)):
 						# Read data from file
 						psi = self.read_prop_psi(K, E, T, fraction, delta_s, debug=debug)
+						read = True
 					else:
+						read = False
+						points_done = 0
+						bars_done = 0
+
+						raw_psi = self.get_psi_grid(K, E, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
+
 						prog = float(energies_done) / total_energies * 100
 						if self.PRINT_RELATIVE_TO_EF:
 							E_str = str(E - self.fermi_level) + " eV"
@@ -992,12 +999,6 @@ class Cell(object):
 						if debug:
 							sys.stdout.write(debug_str)
 							sys.stdout.flush()
-
-						points_done = 0
-						bars_done = 0
-
-						raw_psi = self.get_psi_grid(K, E, recalculate=recalculate, write=write, vectorised=vectorised,
-						                            debug=debug)
 
 						A = self.get_A_mesh(c, raw_psi)
 						B = self.get_B_mesh(c, raw_psi)
@@ -1034,7 +1035,7 @@ class Cell(object):
 
 					energies_done += 1
 
-					if debug:
+					if debug and not read:
 						sys.stdout.write("\n")
 						sys.stdout.flush()
 		return current
