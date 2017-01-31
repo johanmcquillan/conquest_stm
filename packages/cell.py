@@ -36,6 +36,7 @@ class Cell(object):
 	SUPPORT_FNAME = "supp_"
 	LDOS_FNAME = "ldos_"
 	PSI_FNAME = "psi_"
+	PROP_PSI_FNAME = "prop_"
 	CURRENT_FNAME = "current_"
 	EXT = ".dat"
 
@@ -781,154 +782,6 @@ class Cell(object):
 			B[..., i] = c[..., i] * wavefunction_mesh
 		return B
 
-	def differences_mesh(self, z_index, debug=False):
-
-		diff_shape = self.real_mesh.shape[:2] + self.real_mesh.shape[:3]
-		differences_mesh = np.zeros(diff_shape, dtype=float)
-
-		plane_length_h = max(self.real_mesh.shape[:2])
-		plane_length_f = plane_length_h*2
-		plane_shape = (plane_length_f,)*2
-
-		plane = np.zeros(plane_shape, dtype=float)
-
-		if debug:
-			sys.stdout.write("Calculating difference mesh: ")
-			sys.stdout.flush()
-		points_done = 0
-		bars_done = 0
-
-		for k in range(self.real_mesh.shape[2]):
-			for i in range(plane_length_h):
-				for j in range(i + 1):
-					if k < z_index:
-						distance = self.grid_spacing * np.sqrt(i**2 + j**2 + k**2)
-					else:
-						distance = 0
-					plane[plane_length_h + i, plane_length_h + j] = distance
-					plane[plane_length_h - i, plane_length_h - j] = distance
-					plane[plane_length_h + i, plane_length_h - j] = distance
-					plane[plane_length_h - i, plane_length_h + j] = distance
-					plane[plane_length_h + j, plane_length_h + i] = distance
-					plane[plane_length_h - j, plane_length_h - i] = distance
-					plane[plane_length_h + j, plane_length_h - i] = distance
-					plane[plane_length_h - j, plane_length_h + i] = distance
-
-				for ij in np.ndindex(differences_mesh.shape[:2]):
-					i, j = ij
-					i_start = plane_length_h - i
-					j_start = plane_length_h - j
-					i_end = plane_length_f - i
-					j_end = plane_length_f - j
-					differences_mesh[i, j, ..., k] = plane[i_start:i_end, j_start:j_end]
-
-			points_done += 1
-			if debug and float(points_done) / self.real_mesh.shape[2] * self.PROG_BAR_INTERVALS > bars_done:
-				sys.stdout.write(self.PROG_BAR_CHARACTER)
-				sys.stdout.flush()
-				bars_done += 1
-
-		if debug:
-			print
-		return differences_mesh
-
-	def greens_function_mesh_partial(self, z_index, tip_work_func, tip_energy, c, debug=False):
-
-		G_shape = self.real_mesh.shape[:2] + self.real_mesh.shape[:3]
-		G_mesh = np.zeros(G_shape, dtype=float)
-
-		elements = G_shape[0]*G_shape[1]
-
-		debug_str = "Calculating G(r - R): "
-		if debug:
-			sys.stdout.write(debug_str)
-			sys.stdout.flush()
-		points_done = 0
-		bars_done = 0
-
-		for ab in np.ndindex(G_shape[:2]):
-			for ijk in np.ndindex(G_shape[2:]):
-				if np.any(c[ijk]):
-					distance = abs(self.vector_mesh[ab + (z_index,)] - self.vector_mesh[ijk])
-					G_mesh[ab + ijk] = self.greens_function(distance, tip_work_func, tip_energy)
-
-			points_done += 1
-			prog = float(points_done) / elements
-			if debug and prog * self.PROG_BAR_INTERVALS >= bars_done:
-				percent = prog * 100
-				sys.stdout.write('\r')
-				sys.stdout.write(debug_str)
-				sys.stdout.write(" [{:<{}}]".format(self.PROG_BAR_CHARACTER * bars_done, self.PROG_BAR_INTERVALS))
-				sys.stdout.write(" {:3.0f}%".format(percent))
-				sys.stdout.flush()
-				bars_done += 1
-
-		return G_mesh
-
-	def greens_function_mesh_full(self, z_index, tip_work_func, tip_energy, debug=False):
-
-		G_shape = self.real_mesh.shape[:2] + self.real_mesh.shape[:3]
-		G_mesh = np.zeros(G_shape, dtype=float)
-
-		plane_length_h = max(self.real_mesh.shape[:2])
-		plane_length_f = plane_length_h*2
-		plane_shape = (plane_length_f,)*2
-
-		plane = np.zeros(plane_shape, dtype=float)
-
-		debug_str = "Calculating G(r - R): "
-		if debug:
-			sys.stdout.write(debug_str)
-			sys.stdout.flush()
-		points_done = 0
-		bars_done = 0
-
-		for k in range(self.real_mesh.shape[2]):
-			for i in range(plane_length_h):
-				for j in range(i + 1):
-					if k < z_index:
-						distance = self.grid_spacing * np.sqrt(i**2 + j**2 + (z_index - k)**2)
-						G = self.greens_function(distance, tip_work_func, tip_energy)
-					else:
-						G = 0
-
-					for a in [-1, 1]:
-						for b in [-1, 1]:
-							plane[plane_length_h + a*i, plane_length_h + b*j] = G
-
-					# plane[plane_length_h + i, plane_length_h + j] = G
-					# plane[plane_length_h - i, plane_length_h - j] = G
-					# plane[plane_length_h + i, plane_length_h - j] = G
-					# plane[plane_length_h - i, plane_length_h + j] = G
-					# plane[plane_length_h + j, plane_length_h + i] = G
-					# plane[plane_length_h - j, plane_length_h - i] = G
-					# plane[plane_length_h + j, plane_length_h - i] = G
-					# plane[plane_length_h - j, plane_length_h + i] = G
-
-				for ij in np.ndindex(G_mesh.shape[:2]):
-					i, j = ij
-					i_start = plane_length_h - i
-					j_start = plane_length_h - j
-					i_end = plane_length_f - i
-					j_end = plane_length_f - j
-					G_mesh[i, j, ..., k] = plane[i_start:i_end, j_start:j_end]
-
-			points_done += 1
-			prog = float(points_done) / self.real_mesh.shape[2]
-			if debug and prog * self.PROG_BAR_INTERVALS >= bars_done:
-				percent = prog * 100
-				sys.stdout.write('\r')
-				sys.stdout.write(debug_str)
-				sys.stdout.write(" [{:<{}}]".format(self.PROG_BAR_CHARACTER * bars_done, self.PROG_BAR_INTERVALS))
-				sys.stdout.write(" {:3.0f}%".format(percent))
-				sys.stdout.flush()
-				bars_done += 1
-
-		if debug:
-			sys.stdout.write("\n")
-			sys.stdout.flush()
-		return G_mesh
-
 	def greens_function_mesh(self, z_index, tip_work_func, tip_energy, debug=False):
 
 		plane_length_full = max(self.real_mesh.shape[:2])
@@ -986,6 +839,45 @@ class Cell(object):
 			sys.stdout.flush()
 		return G_mesh
 
+	def propagated_psi_filename(self, K, E, T, fraction, delta_s):
+		"""Return standardised filename for relevant propagated wavefunction file"""
+		return (self.MESH_FOLDER+self.PROP_PSI_FNAME+self.name+"_"+str(self.grid_spacing)+"_"
+				+str(K.x)+"_"+str(K.y)+"_"+str(K.z)+"_"+str(E)+"_"+str(T)+"_"+str(fraction)+"_"+str(delta_s)+self.EXT)
+
+	def write_prop_psi(self, psi, K, E, T, fraction, delta_s):
+		"""Write wavefunction function mesh to file"""
+		filename = self.propagated_psi_filename(K, E, T, fraction, delta_s)
+		psi_file = safe_open(filename, "w")
+		for i, j in np.ndindex(psi.shape):
+			if psi[i, j] != 0:
+				p = psi[i, j]
+				psi_file.write(str(i)+" "+str(j)+" "+str(p.real)+" "+str(p.imag)+"\n")
+		psi_file.close()
+
+	def read_prop_psi(self, K, E, T, fraction, delta_s, debug=False, debug_file=False):
+		"""Read wavefunction mesh from file"""
+		filename = self.propagated_psi_filename(K, E, T, fraction, delta_s)
+		psi_file = open(filename, "r")
+		psi = np.zeros(self.real_mesh.shape[:2], dtype=complex)
+
+		if debug_file:
+			print "Reading psi(R) from "+filename
+		elif debug:
+			if self.PRINT_RELATIVE_TO_EF:
+				E_str = str(E - self.fermi_level) + " eV"
+			else:
+				E_str = str(E) + " eV"
+			print "Reading psi(R) at k = "+str(K)+", E = "+E_str
+
+		for line in psi_file:
+			line_split = line.split()
+			i = int(line_split[0])
+			j = int(line_split[1])
+			real = float(line_split[2])
+			imag = float(line_split[3])
+			psi[i, j] = complex(real, imag)
+		return psi
+
 	def calculate_current_scan(self, z, V, T, tip_work_func, tip_energy, delta_s, fraction=0.025, recalculate=False, write=True, vectorised=True, debug=False):
 		"""Calculate tunnelling current across plane.
 
@@ -1024,6 +916,7 @@ class Cell(object):
 
 		z, k = self.get_nearest_mesh_value(z, indices=True, points=self.real_mesh.shape[2])
 		current = np.zeros(self.real_mesh.shape[:2], dtype=float)
+		psi = np.zeros_like(current)
 		elements = current.shape[0]*current.shape[1]
 
 		# if debug:
@@ -1085,46 +978,59 @@ class Cell(object):
 			for E in self.bands[K]:
 				if min_E <= E <= max_E:
 					fd = self.fermi_dirac(E + V, T)
-					wavefunction = self.get_psi_grid(K, E, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
 
-					prog = float(energies_done) / total_energies * 100
-					if self.PRINT_RELATIVE_TO_EF:
-						E_str = str(E - self.fermi_level) + " eV"
+					if not recalculate and os.path.isfile(self.propagated_psi_filename(K, E, T, fraction, delta_s)):
+						# Read data from file
+						psi = self.read_prop_psi(K, E, T, fraction, delta_s, debug=debug)
 					else:
-						E_str = str(E) + " eV"
-					debug_str = "Calculating psi(R) at k = {!s}, E = {}: {:5.1f}%".format(K, E_str, prog)
-					if debug:
-						sys.stdout.write(debug_str)
-						sys.stdout.flush()
-
-					points_done = 0
-					bars_done = 0
-
-					A = self.get_A_mesh(c, wavefunction)
-					B = self.get_B_mesh(c, wavefunction)
-
-					for i, j in np.ndindex(current.shape):
-
-						G_conjugate_rolled = np.roll(G_conjugate, (i - G_centre), 0)
-						G_conjugate_rolled = np.roll(G_conjugate_rolled, (j - G_centre), 1)[:self.real_mesh.shape[0], :self.real_mesh.shape[1]]
-
-						G_conjugate_gradient_rolled = np.roll(G_conjugate_gradient, (i - G_centre), 0)
-						G_conjugate_gradient_rolled = np.roll(G_conjugate_gradient_rolled, (j - G_centre), 1)[:self.real_mesh.shape[0], :self.real_mesh.shape[1]]
-
-						integrand = G_conjugate_rolled * A - self.mesh_dot_product(B, G_conjugate_gradient_rolled)
-						psi = np.sum(integrand) * self.grid_spacing**3
-
-						current[i, j] += fd * (w / total_k_weight) * abs(psi)**2
-						points_done += 1
-						prog = float(points_done) / elements
-
-						if debug and prog * self.PROG_BAR_INTERVALS >= bars_done:
-							percent = prog * 100
-							sys.stdout.write('\r')
+						prog = float(energies_done) / total_energies * 100
+						if self.PRINT_RELATIVE_TO_EF:
+							E_str = str(E - self.fermi_level) + " eV"
+						else:
+							E_str = str(E) + " eV"
+						debug_str = "Calculating psi(R) at k = {!s}, E = {}: {:5.1f}%".format(K, E_str, prog)
+						if debug:
 							sys.stdout.write(debug_str)
-							sys.stdout.write(" [{:<{}}] {:3.0f}%".format(self.PROG_BAR_CHARACTER * bars_done, self.PROG_BAR_INTERVALS, percent))
 							sys.stdout.flush()
-							bars_done += 1
+
+						points_done = 0
+						bars_done = 0
+
+						raw_psi = self.get_psi_grid(K, E, recalculate=recalculate, write=write, vectorised=vectorised,
+						                            debug=debug)
+
+						A = self.get_A_mesh(c, raw_psi)
+						B = self.get_B_mesh(c, raw_psi)
+
+						for i, j in np.ndindex(current.shape):
+
+							G_conjugate_rolled = np.roll(G_conjugate, (i - G_centre), 0)
+							G_conjugate_rolled = np.roll(G_conjugate_rolled, (j - G_centre), 1)[
+							                     :self.real_mesh.shape[0], :self.real_mesh.shape[1]]
+
+							G_conjugate_gradient_rolled = np.roll(G_conjugate_gradient, (i - G_centre), 0)
+							G_conjugate_gradient_rolled = np.roll(G_conjugate_gradient_rolled, (j - G_centre), 1)[
+							                              :self.real_mesh.shape[0], :self.real_mesh.shape[1]]
+
+							integrand = G_conjugate_rolled * A - self.mesh_dot_product(B, G_conjugate_gradient_rolled)
+							psi[i, j] = np.sum(integrand) * self.grid_spacing ** 3
+
+							points_done += 1
+							prog = float(points_done) / elements
+
+							if debug and prog * self.PROG_BAR_INTERVALS >= bars_done:
+								percent = prog * 100
+								sys.stdout.write('\r')
+								sys.stdout.write(debug_str)
+								sys.stdout.write(" [{:<{}}] {:3.0f}%".format(self.PROG_BAR_CHARACTER * bars_done,
+								                                             self.PROG_BAR_INTERVALS, percent))
+								sys.stdout.flush()
+								bars_done += 1
+
+						if write:
+							self.write_prop_psi(psi, K, E, T, fraction, delta_s)
+
+					current += fd * (w / total_k_weight) * abs(psi)**2
 
 					energies_done += 1
 
