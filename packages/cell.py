@@ -770,7 +770,7 @@ class Cell(object):
 
 		# Get direction of gradient of isosurface
 		unit_vector_surface = np.array(np.gradient(charge_density_mesh, self.grid_spacing))
-		broadened_mesh /= charge_density_mesh
+		broadened_mesh[~masked_mesh.mask] /= charge_density_mesh[~masked_mesh.mask]
 		vector_surface = np.transpose(np.multiply(broadened_mesh, unit_vector_surface), (1, 2, 3, 0))
 
 		return vector_surface
