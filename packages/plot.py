@@ -527,7 +527,7 @@ def plot_ldos_3d(
 
 def plot_current_2d(
 		cell, z, V, T, tip_work_func, tip_energy, delta_s, interpolation='cubic',
-		printStatus=False, recalculate=False, debug=False):
+		printStatus=False, recalculate=False, show=True, debug=False):
 	"""Plots cross-section of charge density to pdf.
 
 	All lengths measured in bohr radii (a0).
@@ -555,7 +555,7 @@ def plot_current_2d(
 
 	title = cell.name+' current at $z='+str(z)+'a_0$'
 
-	with PdfPages(r'figures2D/'+save_name+'.pdf') as pdf:
+	with PdfPages('figures2D/'+save_name+'.pdf') as pdf:
 		plt.imshow(current, interpolation='bilinear', origin='lower', cmap=cm.copper)
 		plt.colorbar()
 		plt.title(title)
@@ -564,6 +564,10 @@ def plot_current_2d(
 
 		# Save to pdf
 		pdf.savefig()
+
+		if show:
+			plt.show()
+
 		plt.close()
 
 	if printStatus:
