@@ -216,6 +216,7 @@ class Cell(object):
 		"""Evaluate support function for each PAO on mesh.
 
 		Args:
+			vectorised (bool, opt.): If true, use NumPy vectorisation
 			debug (bool, opt.): If true, print extra information during runtime
 
 		Returns:
@@ -437,6 +438,7 @@ class Cell(object):
 		Args:
 			recalculate (bool, opt.): Force recalculation, even if already stored
 			write (bool, opt.): Write to file
+			vectorised (bool, opt.): If true, use NumPy vectorisation
 			debug (bool, opt.): Print extra information during runtime
 
 		Returns:
@@ -470,6 +472,7 @@ class Cell(object):
 			E (float): Band energy
 			recalculate (bool, opt.): Force recalculation, even if already stored
 			write (bool, opt.): Write to file
+			vectorised (bool, opt.): If true, use NumPy vectorisation
 			debug (bool, opt.): Print extra information during runtime
 
 		Returns:
@@ -510,9 +513,9 @@ class Cell(object):
 								if support_grid[ijk]:
 									if atom_key in support_grid[ijk]:
 										psi_grid[ijk] += coefficient*support_grid[ijk][atom_key][l][zeta][m]
+			# Print progress bar
 			atoms_done += 1
 			prog = float(atoms_done) / total_atoms
-
 			if debug and prog * self.PROG_BAR_INTERVALS >= bars_done:
 				percent = prog * 100
 				sys.stdout.write('\r')
@@ -521,7 +524,6 @@ class Cell(object):
 				sys.stdout.write(" {:3.0f}%".format(percent))
 				sys.stdout.flush()
 				bars_done += 1
-
 		if debug:
 			print
 		return psi_grid
@@ -575,7 +577,9 @@ class Cell(object):
 			E (float): Band energy
 			recalculate (bool, opt.): Force recalculation, even if already stored
 			write (bool, opt.): Write to file
+			vectorised (bool, opt.): If true, use NumPy vectorisation
 			debug (bool, opt.): Print extra information during runtime
+			debug_file (bool, opt.): If true, print name of files during debug rather than metadata
 
 		Returns:
 			array(complex): Mesh of complex wavefunction values
@@ -589,8 +593,8 @@ class Cell(object):
 				self.write_psi_grid(psi_grid, K, E)
 		return psi_grid
 
-	def calculate_ldos_grid(self, min_E, max_E, T, recalculate=False, write=True, vectorised=False, debug=False):
-		"""Calculate LDoS mesh.
+	def calculate_ldos_grid(self, min_E, max_E, T, recalculate=False, write=True, vectorised=False, debug=False, debug_file=False):
+		"""Calculate LDOS mesh.
 
 		Args:
 			min_E: Minimum energy
@@ -598,7 +602,9 @@ class Cell(object):
 			T: Absolute temperature in Kelvin
 			recalculate (bool, opt.): Force recalculation, even if already stored
 			write (bool, opt.): Write calculated meshes to file
+			vectorised (bool, opt.): If true, use NumPy vectorisation
 			debug (bool, opt.): Print extra information during runtime
+			debug_file (bool, opt.): If true, print name of files during debug rather than metadata
 
 		Returns:
 			3D np.array: LDoS mesh
@@ -615,7 +621,7 @@ class Cell(object):
 		for K in self.bands:
 			for E in self.bands[K]:
 				if min_E <= E <= max_E:
-					psi_grid = self.get_psi_grid(K, E, recalculate=recalculate, write=write, debug=debug)
+					psi_grid = self.get_psi_grid(K, E, recalculate=recalculate, write=write, debug=debug, debug_file=debug_file)
 					fd = self.fermi_dirac(E, T)
 					if vectorised:
 						ldos_grid += (K.weight / total_k_weight) * fd * (abs(psi_grid))**2
@@ -632,13 +638,14 @@ class Cell(object):
 		"""Write LDoS mesh to file.
 
 		Args:
-			min_E: Minimum energy
-			max_E: Maximum energy
-			T: Absolute temperature in K
+			ldos_grid (array(float)): 3D array of LDOS values
+			min_E (float): Minimum energy
+			max_E (float): Maximum energy
+			T (float): Absolute temperature in K
 			debug (bool, opt.): Print extra information during runtime
 		"""
 		filename = self.ldos_filename(min_E, max_E, T)
-		# Get LDoS mesh
+		# Get LDOS mesh
 		ldos_file = safe_open(filename, "w")
 		if debug:
 			print "Writing LDoS grid to "+filename
@@ -651,7 +658,7 @@ class Cell(object):
 		ldos_file.close()
 
 	def read_ldos_grid(self, min_E, max_E, T, debug=False):
-		"""Read LDoS mesh from file"""
+		"""Read LDOS mesh from file"""
 		filename = self.ldos_filename(min_E, max_E, T)
 		ldos_file = open(filename, 'r')
 		ldos_grid = np.zeros_like(self.real_mesh[..., 0])
@@ -674,7 +681,7 @@ class Cell(object):
 		return ldos_grid
 
 	def get_ldos_grid(self, min_E, max_E, T, recalculate=False, write=True, vectorised=True, debug=False):
-		"""Get LDoS mesh.
+		"""Get LDOS mesh by calculating or reading from file.
 
 		Args:
 			min_E: Minimum energy
@@ -685,77 +692,85 @@ class Cell(object):
 			debug (bool, opt.): Print extra information during runtime
 
 		Returns:
-			array(float): Mesh of LDOS values
+			array(float): 3D mesh of LDOS values
 		"""
 		# Read ldos grid from file if not stored by cell
 		if not recalculate and os.path.isfile(self.ldos_filename(min_E, max_E, T)):
 			ldos_grid = self.read_ldos_grid(min_E, max_E, T, debug=debug)
 		else:
-			# Calculate LDoS on mesh
+			# Calculate LDOS on mesh
 			ldos_grid = self.calculate_ldos_grid(min_E, max_E, T, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
 			if write:
 				self.write_ldos_grid(ldos_grid, min_E, max_E, T, debug=debug)
 		return ldos_grid
 
-	def get_vector_mesh(self):
-		vector_mesh = np.empty_like(self.real_mesh[..., 0], dtype=Vector)
-		for ijk in np.ndindex(self.real_mesh.shape[:3]):
-			x, y, z = self.real_mesh[ijk]
-			r = Vector(x, y, z)
-			vector_mesh[ijk] = r
+	def get_vector_mesh(self, vectorised=True):
+		"""Return 3D mesh of Vector objects pointing to corresponding element"""
+		vector_mesh = np.empty(self.real_mesh.shape[:3], dtype=Vector)
+		if vectorised:
+			vector_mesh = np.vectorize(Vector)(self.real_mesh[..., 0], self.real_mesh[..., 1], self.real_mesh[..., 2])
+		else:
+			for ijk in np.ndindex(self.real_mesh.shape[:3]):
+				x, y, z = self.real_mesh[ijk]
+				vector_mesh[ijk] = Vector(x, y, z)
 		return vector_mesh
 
 	def kappa_squared(self, tip_work_func, tip_fermi_level):
+		"""Calculate decay constant of tip wavefunction"""
 		return 2*self.ELECTRON_MASS/(self.H_BAR**2)*(tip_work_func - tip_fermi_level)
 
 	def greens_function(self, distance, tip_work_func, tip_energy):
+		"""Evaluate Tersoff-Hamann Green's Function"""
 		if distance == 0:
 			return 0
 		else:
 			kappa2 = self.kappa_squared(tip_work_func, tip_energy)
 			return np.exp(- kappa2 * distance) / (4*np.pi*distance)
 
-	def filtered_greens_function(self, position, tip_position, tip_work_func, tip_energy, alpha):
-		distance = abs(position - tip_position)
-		kappa2 = self.kappa_squared(tip_work_func, tip_energy)
-		kappa = np.sqrt(kappa2)
-		u = np.sqrt(2*np.pi)/(4*distance)*np.exp(alpha**2*kappa2)
-		v = np.exp(np.sqrt(kappa)*distance)*math.erf(alpha*kappa + distance/(2*alpha))
-		w = np.exp(- kappa * distance)*math.erf(alpha*kappa - distance/(2*alpha))
-		x = 2*np.sinh(kappa * distance)
-		return u*(v - w - x)
-
 	def broadened_surface(self, surface, delta_s):
+		"""Broaden charge density isosurface."""
 		if abs(surface) < delta_s:
 			return 15.0/(16.0*delta_s)*(1.0 - (surface/delta_s)**2)**2
 		else:
 			return 0.0
 
 	def get_c(self, wavefunction_mesh, fraction, delta_s):
+		"""Return c mesh for broadened surface integration."""
 		charge_density_mesh = abs(wavefunction_mesh)**2
 		max_density = np.max(charge_density_mesh)
 		isovalue = fraction * max_density
 
+		# Mask 0 entries to prevent errors from logarithm
 		masked_mesh = np.ma.masked_array(charge_density_mesh, mask=np.where(charge_density_mesh == 0, 1, 0))
 		log_mesh = np.empty_like(charge_density_mesh)
+
+		# Evaluate logarithm on unmasked entries
 		log_mesh[~masked_mesh.mask] = np.log(masked_mesh[~masked_mesh.mask] / isovalue)
 
-		broadened_mesh = np.where(abs(masked_mesh) < delta_s, 15.0/(16.0*delta_s)*(1.0 - (masked_mesh/delta_s)**2)**2, 0)
+		# Apply broadening to surface
+		broadened_mesh = np.where(abs(log_mesh) < delta_s, 15.0/(16.0*delta_s)*(1.0 - (log_mesh/delta_s)**2)**2, 0)
 
-		for ij in np.ndindex(broadened_mesh.shape[:2]):
-			i, j = ij
+		# Remove overlapping layers of surface
+		# Iterate over x and y
+		for i, j in np.ndindex(broadened_mesh.shape[:2]):
 			on_surface = False
 			past_surface = False
+			# Iterate over z, starting from top
 			for k in reversed(range(broadened_mesh.shape[2])):
 				if past_surface:
+					# First surface has been traversed, so replace subsequent elements with zeros
 					broadened_mesh[i, j, k] = 0
 				elif broadened_mesh[i, j, k] != 0 and not on_surface:
+					# Highest surface has been reached
 					on_surface = True
 				elif on_surface and broadened_mesh[i, j, k] == 0:
+					# Was on surface, now just below
 					on_surface = False
 					past_surface = True
 
+		# Get direction of gradient of isosurface
 		unit_vector_surface = np.array(np.gradient(charge_density_mesh, self.grid_spacing))
+		broadened_mesh /= charge_density_mesh
 		vector_surface = np.transpose(np.multiply(broadened_mesh, unit_vector_surface), (1, 2, 3, 0))
 
 		return vector_surface
@@ -766,6 +781,8 @@ class Cell(object):
 
 	@staticmethod
 	def mesh_dot_product(vector_mesh_A, vector_mesh_B):
+		"""Return dot/scalar product of two vector meshes"""
+		# Check if resulting mesh will be complex
 		if vector_mesh_A.dtype == complex or vector_mesh_B.dtype == complex:
 			dtype = complex
 		else:
@@ -919,52 +936,7 @@ class Cell(object):
 		psi = np.zeros_like(current, dtype=complex)
 		elements = current.shape[0]*current.shape[1]
 
-		# if debug:
-		# 	sys.stdout.write("Calculating difference mesh: ")
-		# 	sys.stdout.flush()
-		# points_done = 0
-		# bars_done = 0
-
-		# print c.shape
-		#
-		# difference_dict = {}
-		#
-		# diff_shape = scan_vectors.shape + self.vector_mesh.shape
-		# difference_array = np.zeros(diff_shape, dtype=float)
-		# for indices_1 in np.ndindex(self.vector_mesh.shape):
-		#
-		# 	if indices_1[2] > self.vector_mesh.shape[2]/2:
-		# 		r = self.vector_mesh[indices_1]
-		#
-		# 		for indices_2 in np.ndindex(scan_vectors.shape):
-		# 			R = scan_vectors[indices_2]
-		# 			difference = r - R
-		# 			if difference in difference_dict:
-		# 				distance = difference_dict[difference]
-		# 			else:
-		# 				distance = abs(difference)
-		# 			difference_array[indices_2 + indices_1] = distance
-		#
-		# 		points_done += 1
-		# 		if debug and float(points_done) / self.mesh_points * self.PROG_BAR_INTERVALS > bars_done:
-		# 			sys.stdout.write(self.PROG_BAR_CHARACTER)
-		# 			sys.stdout.flush()
-		# 			bars_done += 1
-		# if debug:
-		# 	print
-
-		# difference_mesh = np.zeros_like(self.vector_mesh, dtype=float)
-		#
-		# for i in range(self.vector_mesh.shape[2]):
-		# 	vector_slice = self.vector_mesh[:, :, i]
-		# 	difference_slice = abs(vector_slice - scan_vectors)
-		# 	difference_mesh[:, :, i] = difference_slice
-
-		# difference_array = self.differences_mesh(k, debug=debug)
-
 		ldos = self.get_ldos_grid(min_E, max_E, T, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
-
-
 		G_conjugate = np.conjugate(self.greens_function_mesh(k, tip_work_func, tip_energy, debug=debug))
 
 		if debug:
