@@ -916,7 +916,7 @@ class Cell(object):
 
 		z, k = self.get_nearest_mesh_value(z, indices=True, points=self.real_mesh.shape[2])
 		current = np.zeros(self.real_mesh.shape[:2], dtype=float)
-		psi = np.zeros_like(current)
+		psi = np.zeros_like(current, dtype=complex)
 		elements = current.shape[0]*current.shape[1]
 
 		# if debug:
