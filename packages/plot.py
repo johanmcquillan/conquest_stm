@@ -555,7 +555,7 @@ def plot_current_2d(
 
 	title = cell.name+' current at $z='+str(z)+'a_0$'
 
-	with PdfPages('figures2D/'+save_name+'.pdf') as pdf:
+	with PdfPages(r'figures2D/'+save_name+'.pdf') as pdf:
 		plt.imshow(current, interpolation='bilinear', origin='lower', cmap=cm.copper)
 		plt.colorbar()
 		plt.title(title)
