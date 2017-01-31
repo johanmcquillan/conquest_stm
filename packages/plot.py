@@ -551,13 +551,12 @@ def plot_current_2d(
 	current = cell.get_current_scan(z, V, T, tip_work_func, tip_energy, delta_s, recalculate=recalculate, debug=debug)
 
 	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
-	save_name = cell.name + '_current_' + '_' + timeStamp
+	save_name = cell.name + '_current_' + str(z) +'_' + str(V) + '_' + str(T) + timeStamp
 
 	title = cell.name+' current at $z='+str(z)+'a_0$'
 
 	with PdfPages('figures2D/'+save_name+'.pdf') as pdf:
-		plt.imshow(
-				current, interpolation='bilinear', origin='center', cmap=cm.copper)
+		plt.imshow(current, interpolation='bilinear', origin='lower', cmap=cm.copper)
 		plt.colorbar()
 		plt.title(title)
 		plt.xlabel('y')
