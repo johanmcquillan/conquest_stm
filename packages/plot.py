@@ -43,7 +43,7 @@ def plot_2d(cell, mesh_3d, title, save_name, axis, plane_value):
 
 	with PdfPages('figures2D/'+save_name+'.pdf') as pdf:
 		plt.imshow(
-				mesh_2d, interpolation='bilinear', origin='center', cmap=cm.copper,
+				mesh_2d, interpolation='bilinear', origin='lower', cmap=cm.copper,
 				extent=(0, mesh_2d.shape[0], 0, mesh_2d.shape[1]))
 		plt.colorbar()
 		plt.title(title)

@@ -17,7 +17,9 @@ delta_s = 0.0001
 # C.current_scan(35, -2, 0.005, 4.85, C.fermi_level, delta_s, debug=True)
 
 plot.plot_current_2d(C, 35, -2, 0.005, 4.85, C.fermi_level, delta_s, recalculate=False, debug=True)
-#
+
+# G = C.greens_function_mesh(70, 4.85, C.fermi_level, debug=True)
+
 # fraction = 0.01
 #
 # ld1 = C.get_ldos_grid(fl-2, fl, 0.005, debug=True)

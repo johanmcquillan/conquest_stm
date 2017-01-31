@@ -488,7 +488,7 @@ class Cell(object):
 			E_str = str(E - self.fermi_level) + " eV"
 		else:
 			E_str = str(E) + " eV"
-		debug_str = "Calculating psi at k = "+str(K)+", E = "+E_str+": "
+		debug_str = "Calculating psi(r) at k = "+str(K)+", E = "+E_str+": "
 
 		if debug:
 			sys.stdout.write(debug_str)
@@ -548,13 +548,13 @@ class Cell(object):
 		psi_grid = np.zeros_like(self.real_mesh[..., 0], dtype=complex)
 
 		if debug_file:
-			print "Reading psi from "+filename
+			print "Reading psi(r) from "+filename
 		elif debug:
 			if self.PRINT_RELATIVE_TO_EF:
 				E_str = str(E - self.fermi_level) + " eV"
 			else:
 				E_str = str(E) + " eV"
-			print "Reading psi for k = "+str(K)+", E = "+E_str
+			print "Reading psi(r) at k = "+str(K)+", E = "+E_str
 
 		for line in psi_file:
 			line_split = line.split()
@@ -929,8 +929,65 @@ class Cell(object):
 			sys.stdout.flush()
 		return G_mesh
 
+	def greens_function_mesh(self, z_index, tip_work_func, tip_energy, debug=False):
+
+		plane_length_full = max(self.real_mesh.shape[:2])
+		plane_length_half = - (- (max(self.real_mesh.shape[:2]) + 1) / 2)
+
+		plane_shape_half = (plane_length_half,) * 2
+
+		plane_UR = np.zeros(plane_shape_half, dtype=float)
+
+		G_shape = (plane_length_full + 1, plane_length_full + 1, self.real_mesh.shape[2])
+		G_mesh = np.zeros(G_shape, dtype=float)
+
+		debug_str = "Calculating G(r - R): "
+		if debug:
+			sys.stdout.write(debug_str)
+			sys.stdout.flush()
+		points_done = 0
+		bars_done = 0
+
+		for k in range(G_shape[2]):
+			for i in range(plane_length_half):
+				for j in range(i + 1):
+					if k >= z_index:
+						G = 0
+					else:
+						distance = self.grid_spacing * np.sqrt(i**2 + j**2 + (z_index - k)**2)
+						G = self.greens_function(distance, tip_work_func, tip_energy)
+
+					for x, y in [i, j], [j, i]:
+						plane_UR[x, y] = G
+
+			plane_UL = np.flipud(plane_UR[1:, :])
+			plane_LR = np.fliplr(plane_UR[:, 1:])
+			plane_LL = np.flipud(plane_LR[1:, :])
+
+			plane_U = np.concatenate((plane_UL, plane_UR), axis=0)
+			plane_L = np.concatenate((plane_LL, plane_LR), axis=0)
+			plane = np.concatenate((plane_L, plane_U), axis=1)
+
+			G_mesh[..., k] = plane
+
+			points_done += 1
+			prog = float(points_done) / self.real_mesh.shape[2]
+			if debug and prog * self.PROG_BAR_INTERVALS >= bars_done:
+				percent = prog * 100
+				sys.stdout.write('\r')
+				sys.stdout.write(debug_str)
+				sys.stdout.write(" [{:<{}}]".format(self.PROG_BAR_CHARACTER * bars_done, self.PROG_BAR_INTERVALS))
+				sys.stdout.write(" {:3.0f}%".format(percent))
+				sys.stdout.flush()
+				bars_done += 1
+
+		if debug:
+			sys.stdout.write("\n")
+			sys.stdout.flush()
+		return G_mesh
+
 	def calculate_current_scan(self, z, V, T, tip_work_func, tip_energy, delta_s, fraction=0.025, recalculate=False, write=True, vectorised=True, debug=False):
-		"""Calculate tunelling current across plane.
+		"""Calculate tunnelling current across plane.
 
 		Args:
 			z (float): z-value of plane
@@ -1015,16 +1072,13 @@ class Cell(object):
 		ldos = self.get_ldos_grid(min_E, max_E, T, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
 		c = self.get_c(ldos, fraction, delta_s)
 
-		G_conjugate = np.conjugate(self.greens_function_mesh_full(k, tip_work_func, tip_energy, debug=debug))
-
-		G_conj_grad_shape = G_conjugate.shape + (3,)
-		G_conjugate_gradient = np.zeros(G_conj_grad_shape, dtype=complex)
+		G_conjugate = np.conjugate(self.greens_function_mesh(k, tip_work_func, tip_energy, debug=debug))
 
 		if debug:
-			print "Calculating grad(G(r - R))"
+			print "Calculating grad(G)"
+		G_conjugate_gradient = np.transpose(np.array(np.gradient(G_conjugate, self.grid_spacing)), (1, 2, 3, 0))
 
-		for ij in np.ndindex(G_conjugate.shape[:2]):
-			G_conjugate_gradient[ij] = np.transpose(np.array(np.gradient(G_conjugate[ij], self.grid_spacing)), (1, 2, 3, 0))
+		G_centre = G_conjugate.shape[0] / 2
 
 		for K in self.bands:
 			w = K.weight
@@ -1038,7 +1092,7 @@ class Cell(object):
 						E_str = str(E - self.fermi_level) + " eV"
 					else:
 						E_str = str(E) + " eV"
-					debug_str = "Propagating psi at k = {!s}, E = {}: {:3.1f}% ".format(K, E_str, prog)
+					debug_str = "Calculating psi(R) at k = {!s}, E = {}: {:5.1f}%".format(K, E_str, prog)
 					if debug:
 						sys.stdout.write(debug_str)
 						sys.stdout.flush()
@@ -1049,17 +1103,18 @@ class Cell(object):
 					A = self.get_A_mesh(c, wavefunction)
 					B = self.get_B_mesh(c, wavefunction)
 
-					if debug:
-						if np.max(A) == 0:
-							print 'A: ZERO!'
-						if np.max(B) == 0:
-							print 'B: ZERO!'
+					for i, j in np.ndindex(current.shape):
 
-					for ij in np.ndindex(current.shape):
-						integrand = G_conjugate[ij] * A - self.mesh_dot_product(B, G_conjugate_gradient[ij])
-						psi = np.sum(integrand)*self.grid_spacing**3
+						G_conjugate_rolled = np.roll(G_conjugate, (i - G_centre), 0)
+						G_conjugate_rolled = np.roll(G_conjugate_rolled, (j - G_centre), 1)[:self.real_mesh.shape[0], :self.real_mesh.shape[1]]
 
-						current[ij] += fd * (w / total_k_weight) * abs(psi)**2
+						G_conjugate_gradient_rolled = np.roll(G_conjugate_gradient, (i - G_centre), 0)
+						G_conjugate_gradient_rolled = np.roll(G_conjugate_gradient_rolled, (j - G_centre), 1)[:self.real_mesh.shape[0], :self.real_mesh.shape[1]]
+
+						integrand = G_conjugate_rolled * A - self.mesh_dot_product(B, G_conjugate_gradient_rolled)
+						psi = np.sum(integrand) * self.grid_spacing**3
+
+						current[i, j] += fd * (w / total_k_weight) * abs(psi)**2
 						points_done += 1
 						prog = float(points_done) / elements
 
@@ -1072,8 +1127,6 @@ class Cell(object):
 							bars_done += 1
 
 					energies_done += 1
-					if debug and np.max(current) == 0:
-						print "I: ZERO!"
 
 					if debug:
 						sys.stdout.write("\n")
