@@ -963,7 +963,7 @@ class Cell(object):
 		# difference_array = self.differences_mesh(k, debug=debug)
 
 		ldos = self.get_ldos_grid(min_E, max_E, T, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
-		c = self.get_c(ldos, fraction, delta_s)
+
 
 		G_conjugate = np.conjugate(self.greens_function_mesh(k, tip_work_func, tip_energy, debug=debug))
 
@@ -999,6 +999,8 @@ class Cell(object):
 						if debug:
 							sys.stdout.write(debug_str)
 							sys.stdout.flush()
+
+						c = self.get_c(raw_psi, fraction, delta_s)
 
 						A = self.get_A_mesh(c, raw_psi)
 						B = self.get_B_mesh(c, raw_psi)
