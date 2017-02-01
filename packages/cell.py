@@ -734,9 +734,12 @@ class Cell(object):
 		else:
 			return 0.0
 
-	def get_c(self, wavefunction_mesh, fraction, delta_s):
+	def get_c(self, input_mesh, partial, fraction, delta_s):
 		"""Return c mesh for broadened surface integration."""
-		charge_density_mesh = abs(wavefunction_mesh)**2
+		if partial:
+			charge_density_mesh = abs(input_mesh)**2
+		else:
+			charge_density_mesh = input_mesh
 		max_density = np.max(charge_density_mesh)
 		isovalue = fraction * max_density
 
@@ -769,8 +772,12 @@ class Cell(object):
 					past_surface = True
 
 		# Get direction of gradient of isosurface
-		unit_vector_surface = np.array(np.gradient(charge_density_mesh, self.grid_spacing))
-		broadened_mesh[~masked_mesh.mask] /= charge_density_mesh[~masked_mesh.mask]
+		gradient_surface = np.array(np.gradient(charge_density_mesh, self.grid_spacing))
+		gradient_magnitude_surface = np.sqrt(gradient_surface[0]**2 + gradient_surface[1]**2 + gradient_surface[2]**2)
+		unit_vector_surface = gradient_surface
+		for i in range(3):
+			unit_vector_surface[i, gradient_magnitude_surface != 0] = gradient_surface[i, gradient_magnitude_surface != 0] / gradient_magnitude_surface[gradient_magnitude_surface != 0]
+
 		vector_surface = np.transpose(np.multiply(broadened_mesh, unit_vector_surface), (1, 2, 3, 0))
 
 		return vector_surface
@@ -895,7 +902,7 @@ class Cell(object):
 			psi[i, j] = complex(real, imag)
 		return psi
 
-	def calculate_current_scan(self, z, V, T, tip_work_func, tip_energy, delta_s, fraction=0.025, recalculate=False, write=True, vectorised=True, debug=False):
+	def calculate_current_scan(self, z, V, T, tip_work_func, tip_energy, delta_s, fraction=0.025, recalculate=False, write=True, vectorised=True, partial_surface=False, debug=False):
 		"""Calculate tunnelling current across plane.
 
 		Args:
@@ -936,7 +943,9 @@ class Cell(object):
 		psi = np.zeros_like(current, dtype=complex)
 		elements = current.shape[0]*current.shape[1]
 
-		ldos = self.get_ldos_grid(min_E, max_E, T, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
+		if not partial_surface:
+			ldos = self.get_ldos_grid(min_E, max_E, T, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
+			c = self.get_c(ldos, False, fraction, delta_s)
 		G_conjugate = np.conjugate(self.greens_function_mesh(k, tip_work_func, tip_energy, debug=debug))
 
 		if debug:
@@ -971,8 +980,8 @@ class Cell(object):
 						if debug:
 							sys.stdout.write(debug_str)
 							sys.stdout.flush()
-
-						c = self.get_c(raw_psi, fraction, delta_s)
+						if partial_surface:
+							c = self.get_c(raw_psi, True, fraction, delta_s)
 
 						A = self.get_A_mesh(c, raw_psi)
 						B = self.get_B_mesh(c, raw_psi)
@@ -1063,7 +1072,7 @@ class Cell(object):
 			print "current grid successfully read"
 		return current
 
-	def get_current_scan(self, z, V, T, tip_work_func, tip_energy, delta_s, fraction=0.025, recalculate=False, write=True, vectorised=True, debug=False):
+	def get_current_scan(self, z, V, T, tip_work_func, tip_energy, delta_s, fraction=0.025, recalculate=False, write=True, vectorised=True, partial_surface=False, debug=False):
 
 		if V > 0:
 			min_E = self.fermi_level
@@ -1076,7 +1085,7 @@ class Cell(object):
 			# Read data from file
 			current = self.read_current(min_E, max_E, T, debug=debug)
 		else:
-			current = self.calculate_current_scan(z, V, T, tip_work_func, tip_energy, delta_s, fraction=fraction, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
+			current = self.calculate_current_scan(z, V, T, tip_work_func, tip_energy, delta_s, fraction=fraction, recalculate=recalculate, write=write, vectorised=vectorised, partial_surface=partial_surface, debug=debug)
 			if write:
 				self.write_current(current, min_E, max_E, T)
 		return current
