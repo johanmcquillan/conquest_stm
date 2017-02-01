@@ -64,9 +64,11 @@ def plot_3d_scatter_mask(title, mesh, delta=0.0, zero_surf=False):
 	points = []
 
 	for ijk in np.ndindex(mesh.shape):
-		if (type(mesh) is not np.ma.MaskedArray or mesh[ijk] is not np.ma.masked) and (delta == 0.0 or abs(mesh[ijk]) <= delta) and (zero_surf or mesh[ijk] != 0) and ijk[2] > 55:
+		# print ijk, mesh[ijk], (type(mesh) is not np.ma.MaskedArray or mesh[ijk] is not np.ma.masked), (delta == 0.0 or abs(mesh[ijk]) <= delta), (zero_surf or mesh[ijk] != 0)
+		if (type(mesh) is not np.ma.MaskedArray or mesh[ijk] is not np.ma.masked) and (delta == 0.0 or abs(mesh[ijk]) <= delta) and (zero_surf or mesh[ijk] != 0):
 			i, j, k = ijk
 			points.append([i, j, k, mesh[ijk]])
+			print (i, j, k), mesh[ijk]
 			#print i, j, k, mesh[ijk], delta
 
 	np_points = np.transpose(np.array(points))
@@ -76,8 +78,8 @@ def plot_3d_scatter_mask(title, mesh, delta=0.0, zero_surf=False):
 	else:
 		print np_points.shape, np.max(np_points[3])
 
-	colmap = cm.ScalarMappable()
-	colmap.set_array(np_points[3])
+	#colmap = cm.ScalarMappable()
+	#colmap.set_array(np_points[3])
 
 	ax.scatter(np_points[0], np_points[1], np_points[2], c=cm.Reds(abs(np_points[3])/np.max(np_points[3])))
 
