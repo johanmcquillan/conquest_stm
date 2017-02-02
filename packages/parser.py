@@ -85,7 +85,7 @@ class Parser(object):
 			self.ions[ionName] = atomic.Ion(ionName, radialDict)
 			del radialDict
 
-	def parseConquestOutput(self, tolerance=0.0, debug=False):
+	def parseConquestOutput(self):
 		"""Parse data from conqFiles to Atom objects and store in self.ions indexed by conqFile name."""
 
 		# Open Conquest_out file
@@ -172,28 +172,6 @@ class Parser(object):
 							data = line.split()
 							bandN = int(data[0])
 							bandE = float(data[1])*HA_TO_EV
-
-							# If a tolerance is set, add coefficients to existing band
-							if tolerance != 0.0:
-								foundExistingBand = False
-								addedAtomKeys = self.atoms[conq].keys()
-								i = 0
-								while not foundExistingBand and i < len(addedAtomKeys):
-									addedAtomKey = addedAtomKeys[i]
-									addedAtom = self.atoms[conq][addedAtomKey]
-									existingBands = addedAtom.bands.keys()
-									j = 0
-									while not foundExistingBand and j < len(existingBands):
-										E = existingBands[j]
-										if abs(E - bandE) < tolerance:
-											if debug:
-												print 'Combining band '+str(bandE)+' with '+str(E)
-											bandE = E
-											foundExistingBand = True
-
-										j += 1
-									i += 1
-
 							line = Fcoeff.next()
 							while len(line.split()) > 2:
 								data = line.split()
