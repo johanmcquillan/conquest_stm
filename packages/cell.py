@@ -376,11 +376,13 @@ class Cell(object):
 
 			points_done += 1
 			if debug and float(points_done) / self.mesh_points * self.PROG_BAR_INTERVALS > bars_done:
-				sys.stdout.write(self.PROG_BAR_CHARACTER)
+				sys.stdout.write(" [{:<{}}]".format(self.PROG_BAR_CHARACTER * bars_done, self.PROG_BAR_INTERVALS))
 				sys.stdout.flush()
 				bars_done += 1
+
 		if debug:
-			print
+			sys.stdout("\n")
+			sys.stdout.flush()
 		support_file.close()
 
 	def read_support_grid(self, debug=False):
@@ -528,7 +530,8 @@ class Cell(object):
 				sys.stdout.flush()
 				bars_done += 1
 		if debug:
-			print
+			sys.stdout("\n")
+			sys.stdout.flush()
 		return psi_grid
 
 	def psi_filename(self, K, E):
@@ -554,13 +557,14 @@ class Cell(object):
 		psi_grid = np.zeros_like(self.real_mesh[..., 0], dtype=complex)
 
 		if debug_file:
-			print "Reading psi(r) from "+filename
+			sys.stdout.write("Reading psi(r) from {}\n".format(filename))
+			sys.stdout.flush()
 		elif debug:
 			if self.PRINT_RELATIVE_TO_EF:
 				E_str = str(E - self.fermi_level) + " eV"
 			else:
 				E_str = str(E) + " eV"
-			print "Reading psi(r) at k = "+str(K)+", E = "+E_str
+			sys.stdout.write("Reading psi(r) at k = {!s}, E = {}\n".format(K, E_str))
 
 		for line in psi_file:
 			line_split = line.split()
@@ -614,7 +618,8 @@ class Cell(object):
 		"""
 
 		if debug:
-			print "Calculating local density of states grid"
+			sys.stdout.write("Calculating local density of states grid\n")
+			sys.stdout.flush()
 		ldos_grid = np.zeros_like(self.real_mesh[..., 0], dtype=float)
 
 		total_k_weight = 0
@@ -651,12 +656,12 @@ class Cell(object):
 		# Get LDOS mesh
 		ldos_file = safe_open(filename, "w")
 		if debug:
-			print "Writing LDoS grid to "+filename
+			sys.stdout.write("Writing LDOS grid to {}\n".format(filename))
+			sys.stdout.flush()
 		# Iterate over mesh points
-		for ijk in np.ndindex(self.real_mesh.shape[:3]):
-			# If LDoS is non-zero at mesh point, write data to file
-			i, j, k = ijk
-			if ldos_grid[ijk]:
+		for i, j, k in np.ndindex(self.real_mesh.shape[:3]):
+			# If LDOS is non-zero at mesh point, write data to file
+			if ldos_grid[i, j, k]:
 				ldos_file.write(str(i)+" "+str(j)+" "+str(k)+" "+str(ldos_grid[i, j, k])+"\n")
 		ldos_file.close()
 
@@ -935,13 +940,15 @@ class Cell(object):
 		psi = np.zeros(self.real_mesh.shape[:2], dtype=complex)
 
 		if debug_file:
-			print "Reading psi(R) from "+filename
+			sys.stdout.write("Reading psi(R) from {}\n".format(filename))
+			sys.stdout.flush()
 		elif debug:
 			if self.PRINT_RELATIVE_TO_EF:
 				E_str = str(E - self.fermi_level) + " eV"
 			else:
 				E_str = str(E) + " eV"
-			print "Reading psi(R) at k = "+str(K)+", E = "+E_str
+			sys.stdout.write("Reading psi(R) at k = {!s}, E = {}\n".format(K, E_str))
+			sys.stdout.flush()
 
 		for line in psi_file:
 			line_split = line.split()
@@ -999,7 +1006,8 @@ class Cell(object):
 		G_conjugate = np.conjugate(self.greens_function_mesh(k, tip_work_func, tip_energy, debug=debug))
 
 		if debug:
-			print "Calculating grad(G)"
+			sys.stdout.write("Calculating grad(G)\n")
+			sys.stdout.flush()
 		G_conjugate_gradient = np.transpose(np.array(np.gradient(G_conjugate, self.grid_spacing)), (1, 2, 3, 0))
 
 		G_centre = G_conjugate.shape[0] / 2
@@ -1082,8 +1090,6 @@ class Cell(object):
 			T (float): Absolute temperature
 			tip_work_func (float): Work function of tip
 			tip_energy (float): Fermi-level of tip
-			delta_s (float): Surface width
-			fraction (float, opt.): Fraction of maximum charge density to use as isovalue for isosurface
 			recalculate (bool, opt.): Force recalculation, even if already stored
 			write (bool, opt.): Write to file
 			debug (bool, opt.): Print extra information during runtime
@@ -1107,19 +1113,20 @@ class Cell(object):
 			for E in self.bands[K]:
 				if min_E <= E <= max_E:
 					total_energies += 1
-		print 'Total Energies = {}'.format(total_energies)
+		sys.stdout.write("Total Energies = {}".format(total_energies))
+		sys.stdout.flush()
 		energies_done = 0
 
 		z, k = self.get_nearest_mesh_value(z, indices=True, points=self.real_mesh.shape[2])
 		wf_height, wf_index = self.get_nearest_mesh_value(wf_height, indices=True, points=self.real_mesh.shape[2])
 		current = np.zeros(self.real_mesh.shape[:2], dtype=float)
 		psi = np.zeros_like(current, dtype=complex)
-		elements = current.shape[0]*current.shape[1]
 
 		G_conjugate = np.conjugate(self.greens_function_mesh(k, tip_work_func, tip_energy, debug=debug))
 
 		if debug:
-			print "Calculating grad(G)"
+			sys.stdout.write("Calculating grad(G)")
+			sys.stdout.flush()
 		G_conjugate_gradient = np.transpose(np.array(np.gradient(G_conjugate, self.grid_spacing)), (1, 2, 3, 0))
 
 		G_conjugate = G_conjugate[..., wf_index]
@@ -1134,9 +1141,6 @@ class Cell(object):
 					if V > 0:
 						fd = 1 - fd
 
-					points_done = 0
-					bars_done = 0
-
 					raw_psi = self.get_psi_grid(K, E, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
 					grad_raw_psi = np.transpose(np.array(np.gradient(raw_psi, self.grid_spacing)), (1, 2, 3, 0))[..., wf_index, :]
 					raw_psi = raw_psi[..., wf_index]
@@ -1146,7 +1150,7 @@ class Cell(object):
 						E_str = str(E - self.fermi_level) + " eV"
 					else:
 						E_str = str(E) + " eV"
-					debug_str = "Calculating psi(R) at k = {!s}, E = {}: {:5.1f}%".format(K, E_str, prog)
+					debug_str = "Calculating psi(R) at k = {!s}, E = {}; {:5.1f}%\n".format(K, E_str, prog)
 					if debug:
 						sys.stdout.write(debug_str)
 						sys.stdout.flush()
@@ -1164,29 +1168,13 @@ class Cell(object):
 						integrand = G_conjugate_rolled * raw_psi - self.grid_dot_product(grad_raw_psi, G_conjugate_gradient_rolled)
 						psi[i, j] = np.sum(integrand) * self.grid_spacing ** 2
 
-						points_done += 1
-						prog = float(points_done) / elements
-
-						if debug and prog * self.PROG_BAR_INTERVALS >= bars_done:
-							percent = prog * 100
-							sys.stdout.write('\r')
-							sys.stdout.write(debug_str)
-							sys.stdout.write(" [{:<{}}] {:3.0f}%".format(self.PROG_BAR_CHARACTER * bars_done,
-							                                             self.PROG_BAR_INTERVALS, percent))
-							sys.stdout.flush()
-							bars_done += 1
-
 					current += fd * (w / total_k_weight) * abs(psi)**2
 
 					energies_done += 1
-
-					if debug:
-						sys.stdout.write("\n")
-						sys.stdout.flush()
 		return current
 
 	def current_filename(self, z, V, T):
-		"""Return standardised filename for relevant LDOS file"""
+		"""Return standardised filename for relevant current file"""
 		return self.MESH_FOLDER+self.CURRENT_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(z)+"_"+str(V)+"_"+str(T)+self.EXT
 
 	def write_current(self, current, z, V, T, debug=False):
@@ -1202,23 +1190,23 @@ class Cell(object):
 
 		current_file = safe_open(filename, "w")
 		if debug:
-			print "Writing current grid to "+filename
+			sys.stdout.write("Writing current grid to {}\n".format(filename))
 		# Iterate over mesh points
-		for ij in np.ndindex(current.shape):
-			# If LDoS is non-zero at mesh point, write data to file
-			i, j = ij
-			if current[ij] != 0:
-				current_file.write(str(i)+" "+str(j)+" "+str(current[ij])+"\n")
+		for i, j in np.ndindex(current.shape):
+			# If LDOS is non-zero at mesh point, write data to file
+			if current[i, j] != 0:
+				current_file.write(str(i)+" "+str(j)+" "+str(current[i, j])+"\n")
 		current_file.close()
 
 	def read_current(self, z, V, T, debug=False):
-		"""Read current mesh from file"""
+		"""Read current grid from file"""
 		filename = self.current_filename(z, V, T)
 		current_file = open(filename, 'r')
 		current = np.zeros(self.real_mesh.shape[:2], dtype=float)
 
 		if debug:
-			print "Reading I(R) from "+filename
+			sys.stdout.write("Reading I(R) from {}\n".format(filename))
+			sys.stdout.flush()
 
 		for line in current_file:
 			line_split = line.split()
@@ -1231,7 +1219,8 @@ class Cell(object):
 			current[i, j] = value
 
 		if debug:
-			print "current grid successfully read"
+			sys.stdout.write("I(R) successfully read\n")
+			sys.stdout.flush()
 		return current
 
 	def get_current_scan(self, z, V, T, tip_work_func, tip_energy, delta_s, fraction=0.025, recalculate=False, write=True, vectorised=True, partial_surface=False, debug=False):
