@@ -1,6 +1,7 @@
 
 import os
 import sys
+import warnings
 import numpy as np
 from sph import sph
 from smart_dict import SmartDict
@@ -114,17 +115,19 @@ class Cell(object):
 			self.bands[K] = sorted(self.bands[K])
 
 	def fermi_dirac(self, energy, temperature):
-		"""Calculate Fermi-Dirac distribution value.
+		"""Calculate Fermi-Dirac occupation factor.
 
 		Args:
 			energy (float): Energy in eV
 			temperature (float): Absolute temperature in K
 
 		Returns:
-			float: Occupation value
+			float: Occupation factor, between 0 and 1
 		"""
-		f = 1.0 / (np.exp((energy - self.fermi_level) / (self.BOLTZMANN * temperature)) + 1)
-		print f
+		with warnings.catch_warnings():
+			# Suppress RuntimeWarning from overflow and underflow in np.exp
+			warnings.simplefilter('ignore', RuntimeWarning)
+			f = 1.0 / (np.exp((energy - self.fermi_level) / (self.BOLTZMANN * temperature)) + 1)
 		return f
 
 	def get_nearest_mesh_value(self, x, indices=False, points=None):
