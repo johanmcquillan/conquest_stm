@@ -6,7 +6,7 @@ from cell import Cell
 from smart_dict import SmartDict
 from vector import Vector, KVector
 
-HA_TO_EV = 0.03674932  # Factor to convert Hartrees to electron volts
+HA_TO_EV = 27.2114  # Factor to convert Hartrees to electron volts
 
 
 class Parser(object):

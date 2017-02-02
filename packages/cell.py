@@ -2,7 +2,6 @@
 import os
 import sys
 import numpy as np
-import math
 from sph import sph
 from smart_dict import SmartDict
 from vector import Vector, KVector
@@ -125,6 +124,7 @@ class Cell(object):
 			float: Occupation value
 		"""
 		f = 1.0 / (np.exp((energy - self.fermi_level) / (self.BOLTZMANN * temperature)) + 1)
+		print f
 		return f
 
 	def get_nearest_mesh_value(self, x, indices=False, points=None):
@@ -775,8 +775,8 @@ class Cell(object):
 		gradient_surface = np.array(np.gradient(charge_density_mesh, self.grid_spacing))
 		gradient_magnitude_surface = np.sqrt(gradient_surface[0]**2 + gradient_surface[1]**2 + gradient_surface[2]**2)
 		unit_vector_surface = gradient_surface
-		for i in range(3):
-			unit_vector_surface[i, gradient_magnitude_surface != 0] = gradient_surface[i, gradient_magnitude_surface != 0] / gradient_magnitude_surface[gradient_magnitude_surface != 0]
+		# for i in range(3):
+		# 	unit_vector_surface[i, gradient_magnitude_surface != 0] = gradient_surface[i, gradient_magnitude_surface != 0] / gradient_magnitude_surface[gradient_magnitude_surface != 0]
 
 		vector_surface = np.transpose(np.multiply(broadened_mesh, unit_vector_surface), (1, 2, 3, 0))
 
@@ -796,6 +796,20 @@ class Cell(object):
 			dtype = float
 
 		scalar_mesh = np.zeros(vector_mesh_A.shape[:3], dtype=dtype)
+		for i in range(3):
+			scalar_mesh += vector_mesh_A[..., i]*vector_mesh_B[..., i]
+		return scalar_mesh
+
+	@staticmethod
+	def grid_dot_product(vector_mesh_A, vector_mesh_B):
+		"""Return dot/scalar product of two vector meshes"""
+		# Check if resulting mesh will be complex
+		if vector_mesh_A.dtype == complex or vector_mesh_B.dtype == complex:
+			dtype = complex
+		else:
+			dtype = float
+
+		scalar_mesh = np.zeros(vector_mesh_A.shape[:2], dtype=dtype)
 		for i in range(3):
 			scalar_mesh += vector_mesh_A[..., i]*vector_mesh_B[..., i]
 		return scalar_mesh
@@ -862,6 +876,39 @@ class Cell(object):
 			sys.stdout.write("\n")
 			sys.stdout.flush()
 		return G_mesh
+
+	def greens_function_grid(self, z_index, wf_index, tip_work_func, tip_energy, debug=False):
+
+		plane_length_half = - (- (max(self.real_mesh.shape[:2]) + 1) / 2)
+		plane_shape_half = (plane_length_half,) * 2
+
+		plane_UR = np.zeros(plane_shape_half, dtype=float)
+
+		debug_str = "Calculating G(r - R)\n"
+		if debug:
+			sys.stdout.write(debug_str)
+			sys.stdout.flush()
+
+		for i in range(plane_length_half):
+			for j in range(i + 1):
+				if wf_index >= z_index:
+					G = 0
+				else:
+					distance = self.grid_spacing * np.sqrt(i**2 + j**2 + (z_index - wf_index)**2)
+					G = self.greens_function(distance, tip_work_func, tip_energy)
+
+				for x, y in [i, j], [j, i]:
+					plane_UR[x, y] = G
+
+		plane_UL = np.flipud(plane_UR[1:, :])
+		plane_LR = np.fliplr(plane_UR[:, 1:])
+		plane_LL = np.flipud(plane_LR[1:, :])
+
+		plane_U = np.concatenate((plane_UL, plane_UR), axis=0)
+		plane_L = np.concatenate((plane_LL, plane_LR), axis=0)
+		plane = np.concatenate((plane_L, plane_U), axis=1)
+
+		return plane
 
 	def propagated_psi_filename(self, K, E, T, fraction, delta_s):
 		"""Return standardised filename for relevant propagated wavefunction file"""
@@ -958,7 +1005,7 @@ class Cell(object):
 			w = K.weight
 			for E in self.bands[K]:
 				if min_E <= E <= max_E:
-					fd = self.fermi_dirac(E + V, T)
+					fd = self.fermi_dirac(E - V, T)
 
 					if not recalculate and os.path.isfile(self.propagated_psi_filename(K, E, T, fraction, delta_s)):
 						# Read data from file
@@ -1023,11 +1070,123 @@ class Cell(object):
 						sys.stdout.flush()
 		return current
 
-	def current_filename(self, min_E, max_E, T):
-		"""Return standardised filename for relevant LDOS file"""
-		return self.MESH_FOLDER+self.CURRENT_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(min_E)+"_"+str(max_E)+"_"+str(T)+self.EXT
+	def calculate_current_scan_flat(self, z, V, T, tip_work_func, tip_energy, wf_height, recalculate=False, write=True, vectorised=True, partial_surface=False, debug=False):
+		"""Calculate tunnelling current across plane.
 
-	def write_current(self, current, min_E, max_E, T, debug=False):
+		Args:
+			z (float): z-value of plane
+			V (float): Bias voltage
+			T (float): Absolute temperature
+			tip_work_func (float): Work function of tip
+			tip_energy (float): Fermi-level of tip
+			delta_s (float): Surface width
+			fraction (float, opt.): Fraction of maximum charge density to use as isovalue for isosurface
+			recalculate (bool, opt.): Force recalculation, even if already stored
+			write (bool, opt.): Write to file
+			debug (bool, opt.): Print extra information during runtime
+		"""
+
+		if debug:
+			sys.stdout.write("Calculating I(R) at V = {} eV\n".format(V))
+			sys.stdout.flush()
+
+		if V > 0:
+			min_E = self.fermi_level
+			max_E = self.fermi_level + V
+		else:
+			min_E = self.fermi_level + V
+			max_E = self.fermi_level
+
+		total_k_weight = 0
+		total_energies = 0
+		for K in self.bands:
+			total_k_weight += K.weight
+			for E in self.bands[K]:
+				if min_E <= E <= max_E:
+					total_energies += 1
+		print 'Total Energies = {}'.format(total_energies)
+		energies_done = 0
+
+		z, k = self.get_nearest_mesh_value(z, indices=True, points=self.real_mesh.shape[2])
+		wf_height, wf_index = self.get_nearest_mesh_value(wf_height, indices=True, points=self.real_mesh.shape[2])
+		current = np.zeros(self.real_mesh.shape[:2], dtype=float)
+		psi = np.zeros_like(current, dtype=complex)
+		elements = current.shape[0]*current.shape[1]
+
+		G_conjugate = np.conjugate(self.greens_function_mesh(k, tip_work_func, tip_energy, debug=debug))
+
+		if debug:
+			print "Calculating grad(G)"
+		G_conjugate_gradient = np.transpose(np.array(np.gradient(G_conjugate, self.grid_spacing)), (1, 2, 3, 0))
+
+		G_conjugate = G_conjugate[..., wf_index]
+		G_conjugate_gradient = G_conjugate_gradient[..., wf_index, :]
+		G_centre = G_conjugate.shape[0] / 2
+
+		for K in self.bands:
+			w = K.weight
+			for E in self.bands[K]:
+				if min_E <= E <= max_E:
+					fd = self.fermi_dirac(E, T)
+					if V > 0:
+						fd = 1 - fd
+
+					points_done = 0
+					bars_done = 0
+
+					raw_psi = self.get_psi_grid(K, E, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
+					grad_raw_psi = np.transpose(np.array(np.gradient(raw_psi, self.grid_spacing)), (1, 2, 3, 0))[..., wf_index, :]
+					raw_psi = raw_psi[..., wf_index]
+
+					prog = float(energies_done) / total_energies * 100
+					if self.PRINT_RELATIVE_TO_EF:
+						E_str = str(E - self.fermi_level) + " eV"
+					else:
+						E_str = str(E) + " eV"
+					debug_str = "Calculating psi(R) at k = {!s}, E = {}: {:5.1f}%".format(K, E_str, prog)
+					if debug:
+						sys.stdout.write(debug_str)
+						sys.stdout.flush()
+
+					for i, j in np.ndindex(current.shape):
+
+						G_conjugate_rolled = np.roll(G_conjugate, (i - G_centre), 0)
+						G_conjugate_rolled = np.roll(G_conjugate_rolled, (j - G_centre), 1)[
+						                     :self.real_mesh.shape[0], :self.real_mesh.shape[1]]
+
+						G_conjugate_gradient_rolled = np.roll(G_conjugate_gradient, (i - G_centre), 0)
+						G_conjugate_gradient_rolled = np.roll(G_conjugate_gradient_rolled, (j - G_centre), 1)[
+						                              :self.real_mesh.shape[0], :self.real_mesh.shape[1]]
+
+						integrand = G_conjugate_rolled * raw_psi - self.grid_dot_product(grad_raw_psi, G_conjugate_gradient_rolled)
+						psi[i, j] = np.sum(integrand) * self.grid_spacing ** 2
+
+						points_done += 1
+						prog = float(points_done) / elements
+
+						if debug and prog * self.PROG_BAR_INTERVALS >= bars_done:
+							percent = prog * 100
+							sys.stdout.write('\r')
+							sys.stdout.write(debug_str)
+							sys.stdout.write(" [{:<{}}] {:3.0f}%".format(self.PROG_BAR_CHARACTER * bars_done,
+							                                             self.PROG_BAR_INTERVALS, percent))
+							sys.stdout.flush()
+							bars_done += 1
+
+					current += fd * (w / total_k_weight) * abs(psi)**2
+
+					energies_done += 1
+
+					if debug:
+						sys.stdout.write("\n")
+						sys.stdout.flush()
+		return current
+
+	def current_filename(self, z, V, T):
+		"""Return standardised filename for relevant LDOS file"""
+		return self.MESH_FOLDER+self.CURRENT_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(z)+"_"+str(V)+"_"+str(T)+self.EXT
+
+	def write_current(self, current, z, V, T, debug=False):
 		"""Write current to file.
 
 		Args:
@@ -1036,7 +1195,7 @@ class Cell(object):
 			T: Absolute temperature in K
 			debug (bool, opt.): Print extra information during runtime
 		"""
-		filename = self.current_filename(min_E, max_E, T)
+		filename = self.current_filename(z, V, T)
 
 		current_file = safe_open(filename, "w")
 		if debug:
@@ -1049,9 +1208,9 @@ class Cell(object):
 				current_file.write(str(i)+" "+str(j)+" "+str(current[ij])+"\n")
 		current_file.close()
 
-	def read_current(self, min_E, max_E, T, debug=False):
+	def read_current(self, z, V, T, debug=False):
 		"""Read current mesh from file"""
-		filename = self.current_filename(min_E, max_E, T)
+		filename = self.current_filename(z, V, T)
 		current_file = open(filename, 'r')
 		current = np.zeros(self.real_mesh.shape[:2], dtype=float)
 
@@ -1074,19 +1233,23 @@ class Cell(object):
 
 	def get_current_scan(self, z, V, T, tip_work_func, tip_energy, delta_s, fraction=0.025, recalculate=False, write=True, vectorised=True, partial_surface=False, debug=False):
 
-		if V > 0:
-			min_E = self.fermi_level
-			max_E = self.fermi_level + V
-		else:
-			min_E = self.fermi_level + V
-			max_E = self.fermi_level
-
-		if not recalculate and os.path.isfile(self.current_filename(min_E, max_E, T)):
+		if not recalculate and os.path.isfile(self.current_filename(z, V, T)):
 			# Read data from file
-			current = self.read_current(min_E, max_E, T, debug=debug)
+			current = self.read_current(z, V, T, debug=debug)
 		else:
 			current = self.calculate_current_scan(z, V, T, tip_work_func, tip_energy, delta_s, fraction=fraction, recalculate=recalculate, write=write, vectorised=vectorised, partial_surface=partial_surface, debug=debug)
 			if write:
-				self.write_current(current, min_E, max_E, T)
+				self.write_current(current, z, V, T)
+		return current
+
+	def get_current_scan_flat(self, z, V, T, tip_work_func, tip_energy, wf_height, recalculate=False, write=True, vectorised=True, partial_surface=False, debug=False):
+
+		if not recalculate and os.path.isfile(self.current_filename(z, V, T)):
+			# Read data from file
+			current = self.read_current(z, V, T, debug=debug)
+		else:
+			current = self.calculate_current_scan_flat(z, V, T, tip_work_func, tip_energy, wf_height, recalculate=recalculate, write=write, vectorised=vectorised, partial_surface=partial_surface, debug=debug)
+			if write:
+				self.write_current(current, z, V, T)
 		return current
 
