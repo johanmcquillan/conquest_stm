@@ -38,6 +38,7 @@ class Cell(object):
 	PSI_FNAME = "psi_"
 	PROP_PSI_FNAME = "prop_"
 	CURRENT_FNAME = "current_"
+	CURRENT_PLANE_FNAME = "cur_plane_"
 	EXT = ".dat"
 
 	PRINT_RELATIVE_TO_EF = True
@@ -381,7 +382,7 @@ class Cell(object):
 				bars_done += 1
 
 		if debug:
-			sys.stdout("\n")
+			sys.stdout.write("\n")
 			sys.stdout.flush()
 		support_file.close()
 
@@ -530,7 +531,7 @@ class Cell(object):
 				sys.stdout.flush()
 				bars_done += 1
 		if debug:
-			sys.stdout("\n")
+			sys.stdout.write("\n")
 			sys.stdout.flush()
 		return psi_grid
 
@@ -723,6 +724,34 @@ class Cell(object):
 				vector_mesh[ijk] = Vector(x, y, z)
 		return vector_mesh
 
+	def periodic_gradient(self, mesh):
+		"""Calculate gradient of mesh, enforcing periodic boundary conditions"""
+
+		# Width of padding
+		pad = 3
+		# Index of padding end
+		pad_index = pad - 1
+		# Shape of padded array
+		padded_shape = (mesh.shape[0] + 2*pad, mesh.shape[1] + 2*pad, mesh.shape[2] + 2*pad)
+
+		# Copy mesh into padded mesh
+		padded_mesh = np.zeros(padded_shape)
+		padded_mesh[pad_index:-pad_index, pad_index:-pad_index, pad_index:-pad_index] = mesh
+
+		# Copy boundary regions into padding
+		padded_mesh[:pad_index, :, :] = mesh[-pad_index:, :, :]
+		padded_mesh[:, :pad_index, :] = mesh[:, -pad_index:, :]
+		padded_mesh[:, :, :pad_index] = mesh[:, :, -pad_index:]
+		padded_mesh[-pad_index:, :, :] = mesh[:pad_index, :, :]
+		padded_mesh[:, -pad_index:, :] = mesh[:, :pad_index, :]
+		padded_mesh[:, :, -pad_index:] = mesh[:, :, :pad_index]
+
+		# Get gradient
+		padded_gradient = np.transpose(np.array(np.gradient(padded_mesh, self.grid_spacing)), (1, 2, 3, 0))
+
+		# Return unpadded gradient
+		return padded_gradient[pad_index:-pad_index, pad_index:-pad_index, pad_index:-pad_index]
+
 	def kappa_squared(self, tip_work_func, tip_fermi_level):
 		"""Calculate decay constant of tip wavefunction"""
 		return 2*self.ELECTRON_MASS/(self.H_BAR**2)*(tip_work_func - tip_fermi_level)
@@ -780,8 +809,8 @@ class Cell(object):
 					past_surface = True
 
 		# Get direction of gradient of isosurface
-		gradient_surface = np.array(np.gradient(charge_density_mesh, self.grid_spacing))
-		gradient_magnitude_surface = np.sqrt(gradient_surface[0]**2 + gradient_surface[1]**2 + gradient_surface[2]**2)
+		gradient_surface = self.periodic_gradient(charge_density_mesh)
+		gradient_magnitude_surface = np.sqrt(gradient_surface[..., 0]**2 + gradient_surface[..., 1]**2 + gradient_surface[..., 2]**2)
 		unit_vector_surface = gradient_surface
 		# for i in range(3):
 		# 	unit_vector_surface[i, gradient_magnitude_surface != 0] = gradient_surface[i, gradient_magnitude_surface != 0] / gradient_magnitude_surface[gradient_magnitude_surface != 0]
@@ -791,7 +820,7 @@ class Cell(object):
 		return vector_surface
 
 	def get_A_mesh(self, c, wavefunction_mesh):
-		grad_wavefunction = np.transpose(np.array(np.gradient(wavefunction_mesh, self.grid_spacing)), (1, 2, 3, 0))
+		grad_wavefunction = self.periodic_gradient(wavefunction_mesh)
 		return self.mesh_dot_product(c, grad_wavefunction)
 
 	@staticmethod
@@ -1008,7 +1037,7 @@ class Cell(object):
 		if debug:
 			sys.stdout.write("Calculating grad(G)\n")
 			sys.stdout.flush()
-		G_conjugate_gradient = np.transpose(np.array(np.gradient(G_conjugate, self.grid_spacing)), (1, 2, 3, 0))
+		G_conjugate_gradient = self.periodic_gradient(G_conjugate, self.grid_spacing)
 
 		G_centre = G_conjugate.shape[0] / 2
 
@@ -1127,7 +1156,7 @@ class Cell(object):
 		if debug:
 			sys.stdout.write("Calculating grad(G)")
 			sys.stdout.flush()
-		G_conjugate_gradient = np.transpose(np.array(np.gradient(G_conjugate, self.grid_spacing)), (1, 2, 3, 0))
+		G_conjugate_gradient = self.periodic_gradient(G_conjugate)
 
 		G_conjugate = G_conjugate[..., wf_index]
 		G_conjugate_gradient = G_conjugate_gradient[..., wf_index, :]
@@ -1142,7 +1171,7 @@ class Cell(object):
 						fd = 1 - fd
 
 					raw_psi = self.get_psi_grid(K, E, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
-					grad_raw_psi = np.transpose(np.array(np.gradient(raw_psi, self.grid_spacing)), (1, 2, 3, 0))[..., wf_index, :]
+					grad_raw_psi = self.periodic_gradient(raw_psi)[..., wf_index, :]
 					raw_psi = raw_psi[..., wf_index]
 
 					prog = float(energies_done) / total_energies * 100
@@ -1177,6 +1206,10 @@ class Cell(object):
 		"""Return standardised filename for relevant current file"""
 		return self.MESH_FOLDER+self.CURRENT_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(z)+"_"+str(V)+"_"+str(T)+self.EXT
 
+	def current_plane_filename(self, z, wf_height, V, T):
+		"""Return standardised filename for relevant current file"""
+		return self.MESH_FOLDER+self.CURRENT_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(z)+"_"+str(wf_height)+"_"+str(V)+"_"+str(T)+self.EXT
+
 	def write_current(self, current, z, V, T, debug=False):
 		"""Write current to file.
 
@@ -1187,6 +1220,25 @@ class Cell(object):
 			debug (bool, opt.): Print extra information during runtime
 		"""
 		filename = self.current_filename(z, V, T)
+
+		current_file = safe_open(filename, "w")
+		if debug:
+			sys.stdout.write("Writing current grid to {}\n".format(filename))
+		# Iterate over mesh points
+		for i, j in np.ndindex(current.shape):
+			# If LDOS is non-zero at mesh point, write data to file
+			if current[i, j] != 0:
+				current_file.write(str(i)+" "+str(j)+" "+str(current[i, j])+"\n")
+		current_file.close()
+
+	def write_current_plane(self, current, z, wf_height, V, T, debug=False):
+		"""Write current to file.
+
+		Args:
+			T: Absolute temperature in K
+			debug (bool, opt.): Print extra information during runtime
+		"""
+		filename = self.current_plane_filename(z, wf_height, V, T)
 
 		current_file = safe_open(filename, "w")
 		if debug:
@@ -1223,6 +1275,31 @@ class Cell(object):
 			sys.stdout.flush()
 		return current
 
+	def read_current_plane(self, z, wf_index, V, T, debug=False):
+		"""Read current grid from file"""
+		filename = self.current_plane_filename(z, wf_index, V, T)
+		current_file = open(filename, 'r')
+		current = np.zeros(self.real_mesh.shape[:2], dtype=float)
+
+		if debug:
+			sys.stdout.write("Reading I(R) from {}\n".format(filename))
+			sys.stdout.flush()
+
+		for line in current_file:
+			line_split = line.split()
+			# Get mesh indices
+			i = int(line_split[0])
+			j = int(line_split[1])
+
+			# Get current value
+			value = float(line_split[2])
+			current[i, j] = value
+
+		if debug:
+			sys.stdout.write("I(R) successfully read\n")
+			sys.stdout.flush()
+		return current
+
 	def get_current_scan(self, z, V, T, tip_work_func, tip_energy, delta_s, fraction=0.025, recalculate=False, write=True, vectorised=True, partial_surface=False, debug=False):
 
 		if not recalculate and os.path.isfile(self.current_filename(z, V, T)):
@@ -1234,14 +1311,12 @@ class Cell(object):
 				self.write_current(current, z, V, T)
 		return current
 
-	def get_current_scan_flat(self, z, V, T, tip_work_func, tip_energy, wf_height, recalculate=False, write=True, vectorised=True, partial_surface=False, debug=False):
-
-		if not recalculate and os.path.isfile(self.current_filename(z, V, T)):
+	def get_current_scan_plane(self, z, wf_height, V, T, tip_work_func, tip_energy, recalculate=False, write=True, vectorised=True, partial_surface=False, debug=False):
+		if not recalculate and os.path.isfile(self.current_plane_filename(z, wf_height, V, T)):
 			# Read data from file
-			current = self.read_current(z, V, T, debug=debug)
+			current = self.read_current_plane(z, wf_height, V, T, debug=debug)
 		else:
 			current = self.calculate_current_scan_flat(z, V, T, tip_work_func, tip_energy, wf_height, recalculate=recalculate, write=write, vectorised=vectorised, partial_surface=partial_surface, debug=debug)
 			if write:
-				self.write_current(current, z, V, T)
+				self.write_current_plane(current, z, wf_height, V, T)
 		return current
-

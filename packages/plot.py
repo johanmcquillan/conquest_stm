@@ -414,7 +414,7 @@ def plot_basis_2d(
 
 def plot_ldos_2d(
 		cell, min_E, max_E, T, axis, planeValue, minimum, maximum, step=None, interpolation='cubic',
-		printStatus=False, debug=False):
+		print_status=False, debug=False):
 	"""Plots cross-section of charge density to pdf.
 
 	All lengths measured in bohr radii (a0).
@@ -431,7 +431,7 @@ def plot_ldos_2d(
 		step (float, opt.): Interval between Cartesian mgrid points, measured in a0;
 							Default is cell.gridSpacing
 		interpolation (string, opt.): Method of interpolation; possible arguments are 'cubic' (default) and 'linear'
-		printStatus (bool, opt.): If true, print update when file is saved
+		print_status (bool, opt.): If true, print update when file is saved
 		debug (bool, opt.): If true, print extra information during runtime
 	"""
 
@@ -465,7 +465,7 @@ def plot_ldos_2d(
 
 	plot_2d(cell, ldos_3d, title, save_name, axis, planeValue, minimum, maximum)
 
-	if printStatus:
+	if print_status:
 		print 'Finished ' + save_name + '.pdf'
 
 
@@ -527,9 +527,9 @@ def plot_ldos_3d(
 
 	plot_3d_isosurface(title, ldos, fraction, x_range, y_range, z_range, step, save_name=save_name, show=show, top_down=top_down)
 
-def plot_current_2d(
+def plot_current_2d_iso(
 		cell, z, V, T, tip_work_func, tip_energy, delta_s, interpolation='cubic',
-		printStatus=False, recalculate=False, show=True, partial_surface=False, debug=False, curr=None):
+		print_status=False, recalculate=False, show=True, partial_surface=False, debug=False):
 	"""Plots cross-section of charge density to pdf.
 
 	All lengths measured in bohr radii (a0).
@@ -540,13 +540,10 @@ def plot_current_2d(
 		max_E (float): Maximum energy
 		T (float): Absolute temperature in K
 		interpolation (string, opt.): Method of interpolation; possible arguments are 'cubic' (default) and 'linear'
-		printStatus (bool, opt.): If true, print update when file is saved
+		print_status (bool, opt.): If true, print update when file is saved
 		debug (bool, opt.): If true, print extra information during runtime
 	"""
-	if curr is not None:
-		current = curr
-	else:
-		current = cell.get_current_scan(z, V, T, tip_work_func, tip_energy, delta_s, recalculate=recalculate, debug=debug, partial_surface=partial_surface)
+	current = cell.get_current_scan(z, V, T, tip_work_func, tip_energy, delta_s, recalculate=recalculate, debug=debug, partial_surface=partial_surface)
 
 	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
 	save_name = cell.name + '_current_' + str(z) +'_' + str(V) + '_' + str(T) + timeStamp
@@ -554,7 +551,7 @@ def plot_current_2d(
 	title = cell.name+' STM scan at $V={:.2}V$ at $z={}a_0$'.format(V, z)
 
 	with PdfPages('figures2D/'+save_name+'.pdf') as pdf:
-		plt.imshow(current, interpolation='bilinear', origin='lower', cmap=cm.copper)
+		plt.imshow(current, interpolation='bilinear', origin='lower', cmap=cm.afmhot)
 		plt.colorbar()
 		plt.title(title)
 		plt.xlabel('y')
@@ -568,5 +565,45 @@ def plot_current_2d(
 
 		plt.close()
 
-	if printStatus:
+	if print_status:
+		print 'Finished ' + save_name + '.pdf'
+		
+		
+def plot_current_2d_plane(
+		cell, z, wf_height, V, T, tip_work_func, tip_energy, delta_s, interpolation='cubic',
+		print_status=False, recalculate=False, show=True, debug=False):
+	"""Plots cross-section of charge density to pdf.
+
+	All lengths measured in bohr radii (a0).
+
+	Args:
+		cell (Cell): Simulation cell to plot
+		T (float): Absolute temperature in K
+		interpolation (string, opt.): Method of interpolation; possible arguments are 'cubic' (default) and 'linear'
+		print_status (bool, opt.): If true, print update when file is saved
+		debug (bool, opt.): If true, print extra information during runtime
+	"""
+	current = cell.get_current_scan_plane(z, wf_height, V, T, tip_work_func, tip_energy, recalculate=recalculate, debug=debug)
+	
+	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
+	save_name = cell.name + '_current_' + str(z) +'_' + str(V) + '_' + str(T) + timeStamp
+
+	title = cell.name+' STM scan at $V={:.2}V$ at $z={}a_0$'.format(V, z)
+
+	with PdfPages('figures2D/'+save_name+'.pdf') as pdf:
+		plt.imshow(current, interpolation='bilinear', origin='lower', cmap=cm.afmhot)
+		plt.colorbar()
+		plt.title(title)
+		plt.xlabel('y')
+		plt.ylabel('x')
+
+		# Save to pdf
+		pdf.savefig()
+
+		if show:
+			plt.show()
+
+		plt.close()
+
+	if print_status:
 		print 'Finished ' + save_name + '.pdf'

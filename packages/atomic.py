@@ -327,6 +327,8 @@ class Atom(Ion):
 			PAO (int): index of PAO as given in .dat file
 			coefficient (complex): Coefficient of PAO
 		"""
+		print self.sorted_pao()
+		print PAO, self.ion_name
 		PAOdata = self.sorted_pao()[PAO - 1]
 		l = PAOdata[0]
 		zeta = PAOdata[1]
