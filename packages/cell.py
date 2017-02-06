@@ -20,11 +20,9 @@ class Cell(object):
 		fermi_level (float): Fermi Level of simulation
 		vector (Vector): Vector from origin to far corner of cell; components are maximum lengths of cell
 		grid_spacing (float): Resolution of mesh points
-		x_mesh (3D mgrid): Mesh of x values
-		y_mesh (3D mgrid): Mesh of y values
-		z_mesh (3D mgrid): Mesh of z values
-		atoms (int : Atom): Atom objects of simulation indexed by atom number
-		bands (Vector : [float]): Energies of bands indexed by k-point vector
+		real_mesh (np.ndarray): Real space mesh
+		atoms ({int : Atom}): Atom objects of simulation indexed by atom number
+		bands ({Vector : [float]}): Energies of bands indexed by k-point vector
 		support_grid (array(SmartDict)): Mesh of support function values, indexed by [x, y, z][atom_key][l][zeta][m]
 	"""
 
@@ -70,8 +68,10 @@ class Cell(object):
 		self.vector = Vector(vector_x, vector_y, vector_z)
 
 		# Form Cartesian meshes
-		self.real_mesh = np.transpose(np.mgrid[0: x_length: grid_spacing, 0: y_length: grid_spacing, 0: z_length: grid_spacing], (1, 2, 3, 0))
-		self.vector_mesh = self.get_vector_mesh()
+		self.real_mesh = np.transpose(np.mgrid[0:x_length:grid_spacing,
+		                                       0: y_length: grid_spacing, 0:
+		                                       z_length: grid_spacing],
+		                              (1, 2, 3, 0))
 		self.mesh_points = self.real_mesh.shape[0] * self.real_mesh.shape[1] * self.real_mesh.shape[2]
 
 		# Initialise atoms and bands
@@ -726,31 +726,28 @@ class Cell(object):
 
 	def periodic_gradient(self, mesh):
 		"""Calculate gradient of mesh, enforcing periodic boundary conditions"""
-
 		# Width of padding
 		pad = 3
-		# Index of padding end
-		pad_index = pad - 1
 		# Shape of padded array
 		padded_shape = (mesh.shape[0] + 2*pad, mesh.shape[1] + 2*pad, mesh.shape[2] + 2*pad)
 
 		# Copy mesh into padded mesh
-		padded_mesh = np.zeros(padded_shape)
-		padded_mesh[pad_index:-pad_index, pad_index:-pad_index, pad_index:-pad_index] = mesh
+		padded_mesh = np.zeros(padded_shape, dtype=mesh.dtype)
+		padded_mesh[pad:-pad, pad:-pad, pad:-pad] = mesh
 
 		# Copy boundary regions into padding
-		padded_mesh[:pad_index, :, :] = mesh[-pad_index:, :, :]
-		padded_mesh[:, :pad_index, :] = mesh[:, -pad_index:, :]
-		padded_mesh[:, :, :pad_index] = mesh[:, :, -pad_index:]
-		padded_mesh[-pad_index:, :, :] = mesh[:pad_index, :, :]
-		padded_mesh[:, -pad_index:, :] = mesh[:, :pad_index, :]
-		padded_mesh[:, :, -pad_index:] = mesh[:, :, :pad_index]
+		padded_mesh[:pad, pad:-pad, pad:-pad] = mesh[-pad:, :, :]
+		padded_mesh[pad:-pad, :pad, pad:-pad] = mesh[:, -pad:, :]
+		padded_mesh[pad:-pad, pad:-pad, :pad] = mesh[:, :, -pad:]
+		padded_mesh[-pad:, pad:-pad, pad:-pad] = mesh[:pad, :, :]
+		padded_mesh[pad:-pad, -pad:, pad:-pad] = mesh[:, :pad, :]
+		padded_mesh[pad:-pad, pad:-pad, -pad:] = mesh[:, :, :pad]
 
 		# Get gradient
 		padded_gradient = np.transpose(np.array(np.gradient(padded_mesh, self.grid_spacing)), (1, 2, 3, 0))
 
 		# Return unpadded gradient
-		return padded_gradient[pad_index:-pad_index, pad_index:-pad_index, pad_index:-pad_index]
+		return padded_gradient[pad:-pad, pad:-pad, pad:-pad]
 
 	def kappa_squared(self, tip_work_func, tip_fermi_level):
 		"""Calculate decay constant of tip wavefunction"""
@@ -988,7 +985,7 @@ class Cell(object):
 			psi[i, j] = complex(real, imag)
 		return psi
 
-	def calculate_current_scan(self, z, V, T, tip_work_func, tip_energy, delta_s, fraction=0.025, recalculate=False, write=True, vectorised=True, partial_surface=False, debug=False):
+	def calculate_current_scan_iso(self, z, V, T, tip_work_func, tip_energy, delta_s, fraction=0.025, recalculate=False, write=True, vectorised=True, partial_surface=False, debug=False):
 		"""Calculate tunnelling current across plane.
 
 		Args:
@@ -1300,13 +1297,13 @@ class Cell(object):
 			sys.stdout.flush()
 		return current
 
-	def get_current_scan(self, z, V, T, tip_work_func, tip_energy, delta_s, fraction=0.025, recalculate=False, write=True, vectorised=True, partial_surface=False, debug=False):
+	def get_current_scan_iso(self, z, V, T, tip_work_func, tip_energy, delta_s, fraction=0.025, recalculate=False, write=True, vectorised=True, partial_surface=False, debug=False):
 
 		if not recalculate and os.path.isfile(self.current_filename(z, V, T)):
 			# Read data from file
 			current = self.read_current(z, V, T, debug=debug)
 		else:
-			current = self.calculate_current_scan(z, V, T, tip_work_func, tip_energy, delta_s, fraction=fraction, recalculate=recalculate, write=write, vectorised=vectorised, partial_surface=partial_surface, debug=debug)
+			current = self.calculate_current_scan_iso(z, V, T, tip_work_func, tip_energy, delta_s, fraction=fraction, recalculate=recalculate, write=write, vectorised=vectorised, partial_surface=partial_surface, debug=debug)
 			if write:
 				self.write_current(current, z, V, T)
 		return current

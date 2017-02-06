@@ -16,10 +16,12 @@ fl = C.fermi_level
 
 # C.current_scan(35, -2, 0.005, 4.85, C.fermi_level, delta_s, debug=True)
 
+z = [31, 31.5, 32, 32.5, 33, 33.5, 34, 34.5, 35]
 V = np.linspace(-4.0, 4.0, 41)
 for i in range(len(V)):
-	# c = C.get_current_scan_plane(37, V[i], 0.005, 4.85, C.fermi_level, 32, recalculate=False, debug=True)
-	plot.plot_current_2d(C, 37, V[i], 0.005, 4.85, fl, 0.0, show=False, debug=True, flat=True, wf_height=32)
+	for j in range(len(z)):
+		# c = C.get_current_scan_plane(37, V[i], 0.005, 4.85, C.fermi_level, 32, recalculate=False, debug=True)
+		plot.plot_current_2d_plane(C, 37, z[j], V[i], 0.005, 4.85, fl, 0.0, show=False, debug=True)
 
 # G = C.greens_function_mesh(70, 4.85, C.fermi_level, debug=True)
 

@@ -470,7 +470,7 @@ def plot_ldos_2d(
 
 
 def plot_ldos_3d(
-		cell, min_E, max_E, T, x_range=(0.0, 0.0), y_range=(0.0, 0.0), z_range=(0.0, 0.0), step=0.0, fraction=0.8,
+		cell, min_E, max_E, T, step=0.0, fraction=0.8,
 		show=True, save=False, recalculate=False, vectorised=True, top_down=False, debug=False):
 	"""Plots charge density isosurface.
 
@@ -490,14 +490,9 @@ def plot_ldos_3d(
 		save (bool, opt.): If true, save plot
 		debug (bool, opt.): If true, print extra information during runtime
 	"""
-
-	# If plot limits not given, set to limits of cell
-	if x_range == (0.0, 0.0):
-		x_range = (0.0, cell.vector.x)
-	if y_range == (0.0, 0.0):
-		y_range = (0.0, cell.vector.y)
-	if z_range == (0.0, 0.0):
-		z_range = (0.0, cell.vector.z)
+	x_range = (0.0, cell.vector.x)
+	y_range = (0.0, cell.vector.y)
+	z_range = (0.0, cell.vector.z)
 
 	# If step not given, set to cell.grid_spacing
 	if step == 0.0:
@@ -588,10 +583,10 @@ def plot_current_2d_plane(
 	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
 	save_name = cell.name + '_current_' + str(z) +'_' + str(V) + '_' + str(T) + timeStamp
 
-	title = cell.name+' STM scan at $V={:.2}V$ at $z={}a_0$'.format(V, z)
+	title = cell.name+r' STM scan at $V={:.2}V$ at $z={}a_0$, with $\psi$ integrated at $z={}$'.format(V, z, wf_height)
 
 	with PdfPages('figures2D/'+save_name+'.pdf') as pdf:
-		plt.imshow(current, interpolation='bilinear', origin='lower', cmap=cm.afmhot)
+		plt.imshow(current, interpolation='bilinear', origin='lower', cmap=cm.coppers)
 		plt.colorbar()
 		plt.title(title)
 		plt.xlabel('y')
