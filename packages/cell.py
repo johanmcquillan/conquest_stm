@@ -856,15 +856,17 @@ class Cell(object):
 
 	def greens_function_mesh(self, z_index, tip_work_func, tip_energy, debug=False):
 
-		plane_length_full = max(self.real_mesh.shape[:2])
 		plane_length_half = - (- (max(self.real_mesh.shape[:2]) + 1) / 2)
+		plane_length_full = plane_length_half * 2 - 1
 
 		plane_shape_half = (plane_length_half,) * 2
 
 		plane_UR = np.zeros(plane_shape_half, dtype=float)
 
-		G_shape = (plane_length_full + 1, plane_length_full + 1, self.real_mesh.shape[2])
+		G_shape = (plane_length_full, plane_length_full, self.real_mesh.shape[2])
 		G_mesh = np.zeros(G_shape, dtype=float)
+
+		print self.real_mesh.shape, plane_length_half, plane_length_full, G_shape
 
 		debug_str = "Calculating G(r - R): "
 		if debug:
@@ -910,39 +912,6 @@ class Cell(object):
 			sys.stdout.write("\n")
 			sys.stdout.flush()
 		return G_mesh
-
-	def greens_function_grid(self, z_index, wf_index, tip_work_func, tip_energy, debug=False):
-
-		plane_length_half = - (- (max(self.real_mesh.shape[:2]) + 1) / 2)
-		plane_shape_half = (plane_length_half,) * 2
-
-		plane_UR = np.zeros(plane_shape_half, dtype=float)
-
-		debug_str = "Calculating G(r - R)\n"
-		if debug:
-			sys.stdout.write(debug_str)
-			sys.stdout.flush()
-
-		for i in range(plane_length_half):
-			for j in range(i + 1):
-				if wf_index >= z_index:
-					G = 0
-				else:
-					distance = self.grid_spacing * np.sqrt(i**2 + j**2 + (z_index - wf_index)**2)
-					G = self.greens_function(distance, tip_work_func, tip_energy)
-
-				for x, y in [i, j], [j, i]:
-					plane_UR[x, y] = G
-
-		plane_UL = np.flipud(plane_UR[1:, :])
-		plane_LR = np.fliplr(plane_UR[:, 1:])
-		plane_LL = np.flipud(plane_LR[1:, :])
-
-		plane_U = np.concatenate((plane_UL, plane_UR), axis=0)
-		plane_L = np.concatenate((plane_LL, plane_LR), axis=0)
-		plane = np.concatenate((plane_L, plane_U), axis=1)
-
-		return plane
 
 	def propagated_psi_filename(self, K, E, T, fraction, delta_s):
 		"""Return standardised filename for relevant propagated wavefunction file"""
