@@ -69,6 +69,9 @@ class Parser(object):
 
 	def make_cell(self, conquest_out, grid_spacing=0.5, debug=False):
 		# Open Conquest_out file
+		if debug:
+			sys.stdout.write("Building simulation cell\n")
+			sys.stdout.flush()
 		try:
 			conquest_out_file = open(self.conquest_folder+conquest_out, 'r')
 			ions = {}
