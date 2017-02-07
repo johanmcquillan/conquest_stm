@@ -79,6 +79,7 @@ class Cell(object):
 		self.atoms = {}
 		self.bands = {}
 		self.support_mesh = None
+		self.current_group = -1
 
 		self.psi_vec = np.vectorize(self.calculate_psi_grid_vec)
 
@@ -216,185 +217,6 @@ class Cell(object):
 			z += self.vector.z
 
 		return Vector(x, y, z)
-
-	def calculate_support_grid(self, vectorised=True, debug=False):
-		"""Evaluate support function for each PAO on mesh.
-
-		Args:
-			vectorised (bool, opt.): If true, use NumPy vectorisation
-			debug (bool, opt.): If true, print extra information during runtime
-
-		Returns:
-			array(SmartDict): Mesh of support function values, indexed by [x, y, z][atom_key][l][zeta][m]
-		"""
-		if debug:
-			print "Calculating support grid"
-		# Initialise support grid
-		support_grid = np.empty(self.real_mesh.shape[:3], dtype=SmartDict)
-
-		# Iterate over all atoms
-		previous_group = 0
-		for atom_key in sorted(self.atoms.iterkeys()):
-			atom = self.atoms[atom_key]
-			group = atom_key / self.ATOM_GROUP_SIZE
-
-			debug_str = "  Support grid for atom {:3} - {!s}: ".format(atom_key, atom.ion_name)
-			if debug:
-				sys.stdout.write(debug_str)
-				sys.stdout.flush()
-
-			# Get atom cutoff radius
-			cut = atom.get_max_cutoff()
-
-			# Get nearest mesh point to atom position
-			atom_pos_on_mesh = self.get_nearest_mesh_vector(atom.atom_pos)
-
-			# Get mesh points of maximum range of atoms orbitals in each direction
-			x_lower_lim, i_start = self.get_nearest_mesh_value(atom.atom_pos.x - cut, indices=True, points=self.real_mesh.shape[0])
-			x_upper_lim = self.get_nearest_mesh_value(atom.atom_pos.x + cut) + self.grid_spacing
-			y_lower_lim, j_start = self.get_nearest_mesh_value(atom.atom_pos.y - cut, indices=True, points=self.real_mesh.shape[1])
-			y_upper_lim = self.get_nearest_mesh_value(atom.atom_pos.y + cut) + self.grid_spacing
-			z_lower_lim, k_start = self.get_nearest_mesh_value(atom.atom_pos.z - cut, indices=True, points=self.real_mesh.shape[2])
-			z_upper_lim = self.get_nearest_mesh_value(atom.atom_pos.z + cut) + self.grid_spacing
-
-			# Get array of mesh points within cutoff
-			local_mesh = np.transpose(np.mgrid[x_lower_lim:x_upper_lim:self.grid_spacing, y_lower_lim:y_upper_lim:self.grid_spacing, z_lower_lim:z_upper_lim:self.grid_spacing], (1, 2, 3, 0))
-			lm_shape = local_mesh.shape[:3]
-			points_done = 0
-			bars_done = 0
-			total_points = local_mesh.shape[0]*local_mesh.shape[1]*local_mesh.shape[2]
-
-			rolled_mesh = np.roll(support_grid, -i_start, 0)
-			rolled_mesh = np.roll(rolled_mesh, -j_start, 1)
-			rolled_mesh = np.roll(rolled_mesh, -k_start, 2)
-			partial_mesh = rolled_mesh[0:lm_shape[0], 0:lm_shape[1], 0:lm_shape[2]]
-			if False:
-				for local_ijk in np.ndindex(lm_shape):
-
-					position = local_mesh[local_ijk]
-					r = Vector(*position)
-					relative_position = self.constrain_relative_vector(r - atom_pos_on_mesh)
-
-					partial_ijk_list = list(local_ijk)
-					for i in range(len(partial_ijk_list)):
-						if partial_ijk_list[i] >= self.real_mesh.shape[i]:
-							partial_ijk_list[i] -= self.real_mesh.shape[i]
-					partial_ijk = tuple(partial_ijk_list)
-
-					# Iterate over orbitals
-					for l in atom.radials:
-						for zeta in atom.radials[l]:
-							# Get radial part of wavefunction
-							R = atom.get_radial_value_relative(l, zeta, relative_position)
-							# If R == 0, do not store
-							if R != 0.0:
-								for m in range(-l, l + 1):
-									# Get spherical harmonic
-									Y = sph(l, m, relative_position)
-									# Initialise support grid entry
-									if partial_mesh[partial_ijk] is None:
-										partial_mesh[partial_ijk] = SmartDict()
-
-									if m not in partial_mesh[partial_ijk][atom_key][l][zeta]:
-										partial_mesh[partial_ijk][atom_key][l][zeta][m] = 0
-									# Store support value
-									partial_mesh[partial_ijk][atom_key][l][zeta][m] += R * Y
-					points_done += 1
-
-					prog = float(points_done) / total_points
-					if debug and prog * self.PROG_BAR_INTERVALS >= bars_done:
-						percent = prog * 100
-						sys.stdout.write('\r')
-						sys.stdout.write(debug_str)
-						sys.stdout.write(
-							" [{:<{}}]".format(self.PROG_BAR_CHARACTER * bars_done, self.PROG_BAR_INTERVALS))
-						sys.stdout.write(" {:3.0f}%".format(percent))
-						sys.stdout.flush()
-						bars_done += 1
-
-				rolled_mesh[0:lm_shape[0], 0:lm_shape[1], 0:lm_shape[2]] = partial_mesh
-				rolled_mesh = np.roll(rolled_mesh, i_start, 0)
-				rolled_mesh = np.roll(rolled_mesh, j_start, 1)
-				support_grid = np.roll(rolled_mesh, k_start, 2)
-
-				if debug:
-					sys.stdout.write("\n")
-					sys.stdout.flush()
-
-			elif True:
-				if group != previous_group:
-					self.write_support_group(group, support_grid)
-					# support_grid = np.empty(self.real_mesh.shape[:3], dtype=SmartDict)
-					rolled_mesh = np.empty(self.real_mesh.shape[:3], dtype=SmartDict)
-
-				for local_ijk in np.ndindex(lm_shape):
-					position = local_mesh[local_ijk]
-					r = Vector(*position)
-					relative_position = self.constrain_relative_vector(r - atom_pos_on_mesh)
-
-					partial_ijk_list = list(local_ijk)
-					for i in range(len(partial_ijk_list)):
-						if partial_ijk_list[i] >= self.real_mesh.shape[i]:
-							partial_ijk_list[i] -= self.real_mesh.shape[i]
-					partial_ijk = tuple(partial_ijk_list)
-
-					# Iterate over orbitals
-					for l in atom.radials:
-						for zeta in atom.radials[l]:
-							# Get radial part of wavefunction
-							R = atom.get_radial_value_relative(l, zeta, relative_position)
-							# If R == 0, do not store
-							if R != 0.0:
-								for m in range(-l, l + 1):
-									# Get spherical harmonic
-									Y = sph(l, m, relative_position)
-									# Initialise support grid entry
-									if partial_mesh[partial_ijk] is None:
-										partial_mesh[partial_ijk] = SmartDict()
-
-									if m not in partial_mesh[partial_ijk][atom_key][l][zeta]:
-										partial_mesh[partial_ijk][atom_key][l][zeta][m] = 0
-									# Store support value
-									partial_mesh[partial_ijk][atom_key][l][zeta][m] += R * Y
-					points_done += 1
-
-					prog = float(points_done) / total_points
-					if debug and prog * self.PROG_BAR_INTERVALS >= bars_done:
-						percent = prog * 100
-						sys.stdout.write('\r')
-						sys.stdout.write(debug_str)
-						sys.stdout.write(
-							" [{:<{}}]".format(self.PROG_BAR_CHARACTER * bars_done, self.PROG_BAR_INTERVALS))
-						sys.stdout.write(" {:3.0f}%".format(percent))
-						sys.stdout.flush()
-						bars_done += 1
-
-				rolled_mesh[0:lm_shape[0], 0:lm_shape[1], 0:lm_shape[2]] = partial_mesh
-				rolled_mesh = np.roll(rolled_mesh, i_start, 0)
-				rolled_mesh = np.roll(rolled_mesh, j_start, 1)
-				support_grid = np.roll(rolled_mesh, k_start, 2)
-
-				if debug:
-					sys.stdout.write("\n")
-					sys.stdout.flush()
-			else:
-				rolled_mesh = np.roll(support_grid, -i_start, 0)
-				rolled_mesh = np.roll(rolled_mesh, -j_start, 1)
-				rolled_mesh = np.roll(rolled_mesh, -k_start, 2)
-
-				partial_mesh = rolled_mesh[0:lm_shape[0], 0:lm_shape[1], 0:lm_shape[2]]
-				vector_mesh = Vector.array(local_mesh) - atom.atom_pos
-				print vector_mesh.shape, partial_mesh.shape, self.real_mesh.shape
-				pg = atom.calculate_support_point_vec(vector_mesh, partial_mesh, atom_key)
-
-				rolled_mesh[0:lm_shape[0], 0:lm_shape[1], 0:lm_shape[2]] = partial_mesh
-				rolled_mesh = np.roll(rolled_mesh, i_start, 0)
-				rolled_mesh = np.roll(rolled_mesh, j_start, 1)
-				support_grid = np.roll(rolled_mesh, k_start, 2)
-
-				print "Calculated "+str(atom_key)
-
-		return support_grid
 
 	def calculate_support_group(self, group, debug=False):
 		"""Evaluate support function for each PAO on mesh.
@@ -612,137 +434,21 @@ class Cell(object):
 		Returns:
 			array(SmartDict): Mesh of support function values, indexed by [x, y, z][atom_key][l][zeta][m]
 		"""
-		if not recalculate and os.path.isfile(self.support_group_filename(group)):
-			# Read support grid from file
-			support_mesh = self.read_support_group(group, debug=debug)
+		if group == self.current_group and self.support_mesh is not None:
+			return self.support_mesh
 		else:
-			# Recalculate support grid
-			support_mesh = self.calculate_support_group(group, debug=debug)
-			# Write to file
-			if write:
-				self.write_support_group(group, support_mesh, debug=debug)
-		return support_mesh
-
-	def support_filename(self):
-		"""Return standardised filename for relevant support function file"""
-		return self.MESH_FOLDER+self.SUPPORT_FNAME+self.name+"_"+str(self.grid_spacing)+self.EXT
-
-	def write_support_grid(self, debug=False):
-		"""Write support function mesh to file"""
-		filename = self.support_filename()
-		support_file = safe_open(filename, 'w')
-
-		if debug:
-			sys.stdout.write("Writing support grid to "+filename+": ")
-			sys.stdout.flush()
-		points_done = 0
-		bars_done = 0
-
-		# Iterate over mesh points
-		for ijk in np.ndindex(self.real_mesh.shape[:3]):
-			i, j, k = ijk
-			# If support function values exist at mesh point
-			if self.support_mesh[ijk]:
-				support_file.write(str(i) + " " + str(j) + " " + str(k) + "\n")
-				# Iterate over atoms
-				for atom_key in self.support_mesh[ijk]:
-					# Write atom index
-					support_file.write(str(atom_key) + "\n")
-					# Iterate over orbitals
-					for l in self.support_mesh[ijk][atom_key]:
-						for zeta in self.support_mesh[ijk][atom_key][l]:
-							for m in self.support_mesh[ijk][atom_key][l][zeta]:
-								# Write orbital data
-								line = (str(l) + " " + str(zeta) + " " + str(m) + " "
-								        + str(self.support_mesh[ijk][atom_key][l][zeta][m]))
-								support_file.write(line + "\n")
-
-			points_done += 1
-			if debug and float(points_done) / self.mesh_points * self.PROG_BAR_INTERVALS > bars_done:
-				sys.stdout.write(" [{:<{}}]".format(self.PROG_BAR_CHARACTER * bars_done, self.PROG_BAR_INTERVALS))
-				sys.stdout.flush()
-				bars_done += 1
-
-		if debug:
-			sys.stdout.write("\n")
-			sys.stdout.flush()
-		support_file.close()
-
-	def read_support_grid(self, debug=False):
-		"""Read support function mesh from file"""
-		filename = self.support_filename()
-		support_file = open(filename, 'r')
-		support_grid = np.empty_like(self.real_mesh[..., 0], dtype=SmartDict)
-
-		if debug:
-			print "Reading support grid from "+filename
-
-		# Iterate over file lines
-		end_of_file = False
-		line = support_file.next()
-		line_split = line.split()
-		while not end_of_file:
-			try:
-				# Get mesh indices
-				i = int(line_split[0])
-				j = int(line_split[1])
-				k = int(line_split[2])
-				# Read atom data
-				reading_atoms = True
-				line = support_file.next()
-				line_split = line.split()
-				while reading_atoms:
-					if len(line_split) == 1:
-						# Get atom index
-						atom_key = int(line)
-						# Read orbital data
-						reading_orbitals = True
-						while reading_orbitals:
-							line = support_file.next()
-							line_split = line.split()
-							if len(line_split) != 4:
-								reading_orbitals = False
-							elif len(line_split) == 1:
-								reading_atoms = True
-							else:
-								l = int(line_split[0])
-								zeta = int(line_split[1])
-								m = int(line_split[2])
-								value = float(line_split[3])
-								if not support_grid[i, j, k]:
-									support_grid[i, j, k] = SmartDict()
-								support_grid[i, j, k][atom_key][l][zeta][m] = value
-					else:
-						reading_atoms = False
-			except StopIteration:
-				end_of_file = True
-		if debug:
-			print "Support grid successfully read"
-		return support_grid
-
-	def get_support_grid(self, recalculate=False, write=True, vectorised=True, debug=False):
-		"""Get support function mesh.
-
-		Args:
-			recalculate (bool, opt.): Force recalculation, even if already stored
-			write (bool, opt.): Write to file
-			vectorised (bool, opt.): If true, use NumPy vectorisation
-			debug (bool, opt.): Print extra information during runtime
-
-		Returns:
-			array(SmartDict): Mesh of support function values, indexed by [x, y, z][atom_key][l][zeta][m]
-		"""
-		if self.support_mesh is None:
-			if not recalculate and os.path.isfile(self.support_filename()):
+			if not recalculate and os.path.isfile(self.support_group_filename(group)):
 				# Read support grid from file
-				self.support_mesh = self.read_support_grid(debug=debug)
+				support_mesh = self.read_support_group(group, debug=debug)
 			else:
 				# Recalculate support grid
-				self.support_mesh = self.calculate_support_grid(vectorised=vectorised, debug=debug)
+				support_mesh = self.calculate_support_group(group, debug=debug)
 				# Write to file
 				if write:
-					self.write_support_grid(debug=debug)
-		return self.support_mesh
+					self.write_support_group(group, support_mesh, debug=debug)
+			self.current_group = group
+			self.support_mesh = support_mesh
+			return support_mesh
 
 	def calculate_psi_grid_vec(self, support_dict, atom_key, l, zeta, m, coefficient):
 		# Evaluate wavefunction contribution
@@ -920,6 +626,8 @@ class Cell(object):
 				if min_E <= E <= max_E:
 					psi_grid = self.get_psi_grid(K, E, recalculate=recalculate, write=write, debug=debug, debug_file=debug_file)
 					fd = self.fermi_dirac(E, T)
+					if E > self.fermi_level:
+						fd = 1 - fd
 					if vectorised:
 						ldos_grid += (K.weight / total_k_weight) * fd * (abs(psi_grid))**2
 					else:
@@ -1065,12 +773,13 @@ class Cell(object):
 		max_density = np.max(charge_density_mesh)
 		isovalue = fraction * max_density
 
-		# Mask 0 entries to prevent errors from logarithm
-		masked_mesh = np.ma.masked_array(charge_density_mesh, mask=np.where(charge_density_mesh == 0, 1, 0))
-		log_mesh = np.empty_like(charge_density_mesh)
+		log_mesh = np.empty(charge_density_mesh.shape, dtype=float)
+
+		cd_zeros = charge_density_mesh == 0
 
 		# Evaluate logarithm on unmasked entries
-		log_mesh[~masked_mesh.mask] = np.log(masked_mesh[~masked_mesh.mask] / isovalue)
+		log_mesh[~cd_zeros] = np.log(charge_density_mesh[charge_density_mesh != 0] / isovalue)
+		log_mesh[cd_zeros] = np.inf
 
 		# Apply broadening to surface
 		broadened_mesh = np.where(abs(log_mesh) < delta_s, 15.0/(16.0*delta_s)*(1.0 - (log_mesh/delta_s)**2)**2, 0)
@@ -1095,12 +804,15 @@ class Cell(object):
 
 		# Get direction of gradient of isosurface
 		gradient_surface = self.periodic_gradient(charge_density_mesh)
-		gradient_magnitude_surface = np.sqrt(gradient_surface[..., 0]**2 + gradient_surface[..., 1]**2 + gradient_surface[..., 2]**2)
-		unit_vector_surface = gradient_surface
+
 		# for i in range(3):
 		# 	unit_vector_surface[i, gradient_magnitude_surface != 0] = gradient_surface[i, gradient_magnitude_surface != 0] / gradient_magnitude_surface[gradient_magnitude_surface != 0]
+		vector_surface = np.zeros(gradient_surface.shape, dtype=float)
 
-		vector_surface = np.transpose(np.multiply(broadened_mesh, unit_vector_surface), (1, 2, 3, 0))
+		for i in range(3):
+			gradient_surface[~cd_zeros, i] = gradient_surface[~cd_zeros, i] / charge_density_mesh[~cd_zeros]
+			gradient_surface[cd_zeros, i] = 0
+			vector_surface[..., i] = np.multiply(broadened_mesh, gradient_surface[..., i])
 
 		return vector_surface
 
@@ -1291,7 +1003,7 @@ class Cell(object):
 		if debug:
 			sys.stdout.write("Calculating grad(G)\n")
 			sys.stdout.flush()
-		G_conjugate_gradient = self.periodic_gradient(G_conjugate, self.grid_spacing)
+		G_conjugate_gradient = self.periodic_gradient(G_conjugate)
 
 		G_centre = G_conjugate.shape[0] / 2
 
@@ -1299,7 +1011,9 @@ class Cell(object):
 			w = K.weight
 			for E in self.bands[K]:
 				if min_E <= E <= max_E:
-					fd = self.fermi_dirac(E - V, T)
+					fd = self.fermi_dirac(E, T)
+					if V > 0:
+						fd = 1 - fd
 
 					if not recalculate and os.path.isfile(self.propagated_psi_filename(K, E, T, fraction, delta_s)):
 						# Read data from file
@@ -1396,8 +1110,9 @@ class Cell(object):
 			for E in self.bands[K]:
 				if min_E <= E <= max_E:
 					total_energies += 1
-		sys.stdout.write("Total Energies = {}".format(total_energies))
-		sys.stdout.flush()
+		if debug:
+			sys.stdout.write("Total Energies = {}\n".format(total_energies))
+			sys.stdout.flush()
 		energies_done = 0
 
 		z, k = self.get_nearest_mesh_value(z, indices=True, points=self.real_mesh.shape[2])

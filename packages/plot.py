@@ -538,7 +538,7 @@ def plot_current_2d_iso(
 		print_status (bool, opt.): If true, print update when file is saved
 		debug (bool, opt.): If true, print extra information during runtime
 	"""
-	current = cell.get_current_scan(z, V, T, tip_work_func, tip_energy, delta_s, recalculate=recalculate, debug=debug, partial_surface=partial_surface)
+	current = cell.get_current_scan_iso(z, V, T, tip_work_func, tip_energy, delta_s, recalculate=recalculate, debug=debug, partial_surface=partial_surface)
 
 	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
 	save_name = cell.name + '_current_' + str(z) +'_' + str(V) + '_' + str(T) + timeStamp
@@ -586,7 +586,7 @@ def plot_current_2d_plane(
 	title = cell.name+r' STM scan at $V={:.2}V$ at $z={}a_0$, with $\psi$ integrated at $z={}$'.format(V, z, wf_height)
 
 	with PdfPages('figures2D/'+save_name+'.pdf') as pdf:
-		plt.imshow(current, interpolation='bilinear', origin='lower', cmap=cm.coppers)
+		plt.imshow(current, interpolation='bilinear', origin='lower', cmap=cm.copper)
 		plt.colorbar()
 		plt.title(title)
 		plt.xlabel('y')
