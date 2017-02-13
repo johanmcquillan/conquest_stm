@@ -772,8 +772,10 @@ class Cell(object):
 		else:
 			return 0.0
 
-	def get_c(self, input_mesh, partial, fraction, delta_s):
+	def get_c(self, input_mesh, partial, fraction, delta_s=None):
 		"""Return c mesh for broadened surface integration."""
+		if delta_s is None:
+			delta_s = self.default_delta_s
 		if partial:
 			charge_density_mesh = abs(input_mesh)**2
 		else:
@@ -921,14 +923,18 @@ class Cell(object):
 			sys.stdout.flush()
 		return G_mesh
 
-	def propagated_psi_filename(self, K, E, T, fraction, delta_s):
+	def propagated_psi_filename(self, K, E, T, fraction, delta_s=None):
 		"""Return standardised filename for relevant propagated wavefunction file"""
+		if delta_s is None:
+			delta_s = self.default_delta_s
 		return (self.MESH_FOLDER+self.PROP_PSI_FNAME+self.name+"_"+str(self.grid_spacing)+"_"
 				+str(K.x)+"_"+str(K.y)+"_"+str(K.z)+"_"+str(E)+"_"+str(T)+"_"+str(fraction)+"_"+str(delta_s)+self.EXT)
 
-	def write_prop_psi(self, psi, K, E, T, fraction, delta_s):
+	def write_prop_psi(self, psi, K, E, T, fraction, delta_s=None):
 		"""Write wavefunction function mesh to file"""
-		filename = self.propagated_psi_filename(K, E, T, fraction, delta_s)
+		if delta_s is None:
+			delta_s = self.default_delta_s
+		filename = self.propagated_psi_filename(K, E, T, fraction, delta_s=delta_s)
 		psi_file = safe_open(filename, "w")
 		for i, j in np.ndindex(psi.shape):
 			if psi[i, j] != 0:
@@ -941,7 +947,7 @@ class Cell(object):
 		if delta_s is None:
 			delta_s = self.default_delta_s
 
-		filename = self.propagated_psi_filename(K, E, T, fraction, delta_s)
+		filename = self.propagated_psi_filename(K, E, T, fraction, delta_s=delta_s)
 		psi_file = open(filename, "r")
 		psi = np.zeros(self.real_mesh.shape[:2], dtype=complex)
 
@@ -1011,7 +1017,7 @@ class Cell(object):
 
 		if not partial_surface:
 			ldos = self.get_ldos_grid(min_E, max_E, T, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
-			c = self.get_c(ldos, False, fraction, delta_s)
+			c = self.get_c(ldos, False, fraction, delta_s=delta_s)
 		G_conjugate = np.conjugate(self.greens_function_mesh(k, tip_work_func, tip_energy, debug=debug))
 
 		if debug:
@@ -1029,7 +1035,7 @@ class Cell(object):
 					if V > 0:
 						fd = 1 - fd
 
-					if not recalculate and os.path.isfile(self.propagated_psi_filename(K, E, T, fraction, delta_s)):
+					if not recalculate and os.path.isfile(self.propagated_psi_filename(K, E, T, fraction, delta_s=delta_s)):
 						# Read data from file
 						psi = self.read_prop_psi(K, E, T, fraction, delta_s=delta_s, debug=debug)
 						read = True
@@ -1050,7 +1056,7 @@ class Cell(object):
 							sys.stdout.write(debug_str)
 							sys.stdout.flush()
 						if partial_surface:
-							c = self.get_c(raw_psi, True, fraction, delta_s)
+							c = self.get_c(raw_psi, True, fraction, delta_s=delta_s)
 
 						A = self.get_A_mesh(c, raw_psi)
 						B = self.get_B_mesh(c, raw_psi)
@@ -1081,7 +1087,7 @@ class Cell(object):
 								bars_done += 1
 
 						if write:
-							self.write_prop_psi(psi, K, E, T, fraction, delta_s)
+							self.write_prop_psi(psi, K, E, T, fraction, delta_s=delta_s)
 
 					current += fd * (w / total_k_weight) * abs(psi)**2
 
