@@ -29,6 +29,7 @@ class Cell(object):
 	BOLTZMANN = 8.6173303E-5  # Boltzmann's Constant in eV/K
 	ELECTRON_MASS = 9.10938E-31  # Electron Mass in kg
 	H_BAR = 4.135667662E-15  # Reduced Planck's Constant in eV.s
+	DELTA_S_FACTOR = 1.5
 
 	MESH_FOLDER = "meshes/"
 	SUPPORT_FNAME = "supp_"
@@ -80,6 +81,7 @@ class Cell(object):
 		self.bands = {}
 		self.support_mesh = None
 		self.current_group = -1
+		self.default_delta_s = self.delta_s()
 
 		self.psi_vec = np.vectorize(self.calculate_psi_grid_vec)
 
@@ -745,6 +747,10 @@ class Cell(object):
 		# Return unpadded gradient
 		return padded_gradient[pad:-pad, pad:-pad, pad:-pad]
 
+	def delta_s(self):
+		min_delta_s = 2.0 * self.grid_spacing / self.H_BAR * np.sqrt(4.85 * 2.0 * C.ELECTRON_MASS)
+		return self.DELTA_S_FACTOR * min_delta_s
+
 	def kappa_squared(self, tip_work_func, tip_fermi_level):
 		"""Calculate decay constant of tip wavefunction"""
 		return 2*self.ELECTRON_MASS/(self.H_BAR**2)*(tip_work_func - tip_fermi_level)
@@ -757,8 +763,10 @@ class Cell(object):
 			kappa2 = self.kappa_squared(tip_work_func, tip_energy)
 			return np.exp(- kappa2 * distance) / (4*np.pi*distance)
 
-	def broadened_surface(self, surface, delta_s):
+	def broadened_surface(self, surface, delta_s=None):
 		"""Broaden charge density isosurface."""
+		if delta_s is None:
+			delta_s = self.default_delta_s
 		if abs(surface) < delta_s:
 			return 15.0/(16.0*delta_s)*(1.0 - (surface/delta_s)**2)**2
 		else:
@@ -928,8 +936,11 @@ class Cell(object):
 				psi_file.write(str(i)+" "+str(j)+" "+str(p.real)+" "+str(p.imag)+"\n")
 		psi_file.close()
 
-	def read_prop_psi(self, K, E, T, fraction, delta_s, debug=False, debug_file=False):
+	def read_prop_psi(self, K, E, T, fraction, delta_s=None, debug=False, debug_file=False):
 		"""Read wavefunction mesh from file"""
+		if delta_s is None:
+			delta_s = self.default_delta_s
+
 		filename = self.propagated_psi_filename(K, E, T, fraction, delta_s)
 		psi_file = open(filename, "r")
 		psi = np.zeros(self.real_mesh.shape[:2], dtype=complex)
@@ -954,7 +965,7 @@ class Cell(object):
 			psi[i, j] = complex(real, imag)
 		return psi
 
-	def calculate_current_scan_iso(self, z, V, T, tip_work_func, tip_energy, delta_s, fraction=0.025, recalculate=False, write=True, vectorised=True, partial_surface=False, debug=False):
+	def calculate_current_scan_iso(self, z, V, T, tip_work_func, tip_energy, delta_s=None, fraction=0.025, recalculate=False, write=True, vectorised=True, partial_surface=False, debug=False):
 		"""Calculate tunnelling current across plane.
 
 		Args:
@@ -969,6 +980,9 @@ class Cell(object):
 			write (bool, opt.): Write to file
 			debug (bool, opt.): Print extra information during runtime
 		"""
+
+		if delta_s is None:
+			delta_s = self.default_delta_s
 
 		if debug:
 			sys.stdout.write("Calculating I(R)\n")
@@ -1017,7 +1031,7 @@ class Cell(object):
 
 					if not recalculate and os.path.isfile(self.propagated_psi_filename(K, E, T, fraction, delta_s)):
 						# Read data from file
-						psi = self.read_prop_psi(K, E, T, fraction, delta_s, debug=debug)
+						psi = self.read_prop_psi(K, E, T, fraction, delta_s=delta_s, debug=debug)
 						read = True
 					else:
 						read = False
@@ -1269,13 +1283,14 @@ class Cell(object):
 			sys.stdout.flush()
 		return current
 
-	def get_current_scan_iso(self, z, V, T, tip_work_func, tip_energy, delta_s, fraction=0.025, recalculate=False, write=True, vectorised=True, partial_surface=False, debug=False):
-
+	def get_current_scan_iso(self, z, V, T, tip_work_func, tip_energy, delta_s=None, fraction=0.025, recalculate=False, write=True, vectorised=True, partial_surface=False, debug=False):
+		if delta_s is None:
+			delta_s = self.default_delta_s
 		if not recalculate and os.path.isfile(self.current_filename(z, V, T)):
 			# Read data from file
 			current = self.read_current(z, V, T, debug=debug)
 		else:
-			current = self.calculate_current_scan_iso(z, V, T, tip_work_func, tip_energy, delta_s, fraction=fraction, recalculate=recalculate, write=write, vectorised=vectorised, partial_surface=partial_surface, debug=debug)
+			current = self.calculate_current_scan_iso(z, V, T, tip_work_func, tip_energy, delta_s=delta_s, fraction=fraction, recalculate=recalculate, write=write, vectorised=vectorised, partial_surface=partial_surface, debug=debug)
 			if write:
 				self.write_current(current, z, V, T)
 		return current
