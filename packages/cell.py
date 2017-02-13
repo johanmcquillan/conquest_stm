@@ -1289,3 +1289,81 @@ class Cell(object):
 			if write:
 				self.write_current_plane(current, z, wf_height, V, T)
 		return current
+
+	def get_spectrum(self, x, y, z, min_V, max_V, T, dE=0.005, debug=False):
+
+		min_E = min_V + self.fermi_level
+		max_E = max_V + self.fermi_level
+
+		x, i = self.get_nearest_mesh_value(x, indices=True, points=self.real_mesh.shape[0])
+		y, j = self.get_nearest_mesh_value(y, indices=True, points=self.real_mesh.shape[1])
+		z, k = self.get_nearest_mesh_value(z, indices=True, points=self.real_mesh.shape[2])
+
+		sigma = self.BOLTZMANN * T
+
+		Es = []
+		psis = []
+		weights = []
+		for K in self.bands:
+			for E in self.bands[K]:
+				if min_E - 3*sigma < E < max_E + 3*sigma:
+					Es.append(E)
+					weights.append(K.weight)
+					psi = self.get_psi_grid(K, E, debug=debug)[i, j, k]
+					psis.append(abs(psi)**2)
+
+		Es = np.array(Es)
+		psis = np.array(psis)
+		weights = np.array(weights)
+
+		E_range = np.arange(min_E, max_E, dE)
+		LDOS = np.zeros_like(E_range)
+
+		for u in range(len(E_range)):
+			LDOS[u] = np.sum(weights * psis * np.exp(- (((E_range[u] - Es) / sigma)**2) / 2))
+		V_range = E_range - self.fermi_level
+		return V_range, LDOS
+
+	def get_line_cut(self, axis, value, z, min_V, max_V, T, dE=0.0005, debug=False):
+
+		if axis == 'x':
+			i = np.arange(self.real_mesh.shape[0])
+			y, j = self.get_nearest_mesh_value(value, indices=True, points=self.real_mesh.shape[1])
+		elif axis == 'y':
+			j = np.arange(self.real_mesh.shape[1])
+			x, i = self.get_nearest_mesh_value(value, indices=True, points=self.real_mesh.shape[0])
+		else:
+			raise ValueError('Axis must be x or y')
+		z, k = self.get_nearest_mesh_value(z, indices=True, points=self.real_mesh.shape[2])
+
+		min_E = min_V + self.fermi_level
+		max_E = max_V + self.fermi_level
+
+		sigma = self.BOLTZMANN * T
+
+		Es = []
+		psis = []
+		weights = []
+		for K in self.bands:
+			for E in self.bands[K]:
+				if min_E - 3 * sigma < E < max_E + 3 * sigma:
+					Es.append(E)
+					weights.append(K.weight)
+					psi = self.get_psi_grid(K, E, debug=debug)[i, j, k]
+					psis.append(abs(psi) ** 2)
+
+		Es = np.array(Es)
+		psis = np.array(psis)
+		print psis.shape
+		weights = np.array(weights)
+
+		E_range = np.arange(min_E, max_E, dE)
+		LDOS = np.zeros((E_range.shape[0], psis.shape[1]))
+
+		for u in range(len(E_range)):
+			for v in range(LDOS.shape[1]):
+				LDOS[u, v] = np.sum(weights * psis[:, v] * np.exp(- (((E_range[u] - Es) / sigma)**2) / 2))
+
+		V_range = E_range - self.fermi_level
+
+		return V_range, LDOS

@@ -55,7 +55,7 @@ def plot_2d(cell, mesh_3d, title, save_name, axis, plane_value):
 		plt.close()
 
 
-def plot_3d_scatter_mask(title, mesh, delta=0.0, zero_surf=False):
+def plot_3d_scatter_mask(title, mesh, delta=0.0, zero_surf=False, z_max=0.0, atoms=None, grid_spacing=0.0):
 
 	fig = plt.figure()
 	ax = fig.gca(projection='3d')
@@ -64,11 +64,9 @@ def plot_3d_scatter_mask(title, mesh, delta=0.0, zero_surf=False):
 	points = []
 
 	for ijk in np.ndindex(mesh.shape):
-		# print ijk, mesh[ijk], (type(mesh) is not np.ma.MaskedArray or mesh[ijk] is not np.ma.masked), (delta == 0.0 or abs(mesh[ijk]) <= delta), (zero_surf or mesh[ijk] != 0)
 		if (type(mesh) is not np.ma.MaskedArray or mesh[ijk] is not np.ma.masked) and (delta == 0.0 or abs(mesh[ijk]) <= delta) and (zero_surf or mesh[ijk] != 0):
 			i, j, k = ijk
 			points.append([i, j, k, mesh[ijk]])
-			print (i, j, k), mesh[ijk]
 			#print i, j, k, mesh[ijk], delta
 
 	np_points = np.transpose(np.array(points))
@@ -78,11 +76,17 @@ def plot_3d_scatter_mask(title, mesh, delta=0.0, zero_surf=False):
 	else:
 		print np_points.shape, np.max(np_points[3])
 
-	#colmap = cm.ScalarMappable()
-	#colmap.set_array(np_points[3])
+	if z_max > 0:
+		ax.set_zlim(0, z_max)
 
 	ax.scatter(np_points[0], np_points[1], np_points[2], c=cm.Reds(abs(np_points[3])/np.max(np_points[3])))
 
+	if atoms is not None and grid_spacing > 0:
+		x = [atoms[a].atom_pos.x/grid_spacing for a in atoms]
+		y = [atoms[a].atom_pos.y/grid_spacing for a in atoms]
+		z = [atoms[a].atom_pos.z/grid_spacing for a in atoms]
+
+		ax.scatter(x, y, z)
 	plt.show()
 
 
@@ -139,7 +143,6 @@ def plot_vector_field(cell, vector_field):
 	# 			print vector_field[i, j, k]
 
 	ax.quiver(cell.x_mesh, cell.y_mesh, cell.z_mesh, vector_field[0], vector_field[1], vector_field[2])
-
 	plt.show()
 
 
@@ -310,8 +313,8 @@ def plot_sph_3d(l, m):
 	ax.set_zlim3d(-1.0, 1.0)
 	title = "Real Spherical Harmonic for Degree $l="+str(l)+"$ and Order $m="+str(m)+"$"
 	plt.title(title)
-	ax.plot_surface(X, Y, Z, rstride=1, cstride=1)
 
+	ax.plot_surface(X, Y, Z, rstride=1, cstride=1)
 	plt.show()
 	plt.close()
 
@@ -523,7 +526,7 @@ def plot_ldos_3d(
 	plot_3d_isosurface(title, ldos, fraction, x_range, y_range, z_range, step, save_name=save_name, show=show, top_down=top_down)
 
 def plot_current_2d_iso(
-		cell, z, V, T, tip_work_func, tip_energy, delta_s, interpolation='cubic',
+		cell, z, V, T, tip_work_func, tip_energy, fraction, delta_s, interpolation='cubic',
 		print_status=False, recalculate=False, show=True, partial_surface=False, debug=False):
 	"""Plots cross-section of charge density to pdf.
 
@@ -538,7 +541,7 @@ def plot_current_2d_iso(
 		print_status (bool, opt.): If true, print update when file is saved
 		debug (bool, opt.): If true, print extra information during runtime
 	"""
-	current = cell.get_current_scan_iso(z, V, T, tip_work_func, tip_energy, delta_s, recalculate=recalculate, debug=debug, partial_surface=partial_surface)
+	current = cell.get_current_scan_iso(z, V, T, tip_work_func, tip_energy, delta_s, fraction=fraction, recalculate=recalculate, debug=debug, partial_surface=partial_surface)
 
 	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
 	save_name = cell.name + '_current_' + str(z) +'_' + str(V) + '_' + str(T) + timeStamp
@@ -602,3 +605,25 @@ def plot_current_2d_plane(
 
 	if print_status:
 		print 'Finished ' + save_name + '.pdf'
+
+
+def plot_differential_spectrum(cell, x, y, z, min_V, max_V, T, dE=0.005, debug=False):
+
+	E, LDOS = cell.get_spectrum(x, y, z, min_V, max_V, T, dE=dE, debug=debug)
+
+	plt.plot(E, LDOS)
+	plt.xlim(min_V, max_V)
+	plt.xlabel('E / eV')
+
+	plt.show()
+
+
+def plot_line_cut(cell, axis, value, z, min_V, max_V, T, dE=0.005, debug=False):
+
+	E, LDOS = cell.get_line_cut(axis, value, z, min_V, max_V, T, dE=dE, debug=debug)
+
+	plt.plot(E, LDOS)
+	plt.xlim(min_V, max_V)
+	plt.xlabel('E / eV')
+
+	plt.show()
