@@ -772,7 +772,7 @@ class Cell(object):
 		else:
 			return 0.0
 
-	def get_c(self, input_mesh, partial, fraction, delta_s=None):
+	def get_c(self, input_mesh, partial, fraction, tip_height_index, delta_s=None):
 		"""Return c mesh for broadened surface integration."""
 		if delta_s is None:
 			delta_s = self.default_delta_s
@@ -800,7 +800,7 @@ class Cell(object):
 			on_surface = False
 			past_surface = False
 			# Iterate over z, starting from top
-			for k in reversed(range(broadened_mesh.shape[2])):
+			for k in reversed(range(tip_height_index)):
 				if past_surface:
 					# First surface has been traversed, so replace subsequent elements with zeros
 					broadened_mesh[i, j, k] = 0
@@ -1017,7 +1017,7 @@ class Cell(object):
 
 		if not partial_surface:
 			ldos = self.get_ldos_grid(min_E, max_E, T, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
-			c = self.get_c(ldos, False, fraction, delta_s=delta_s)
+			c = self.get_c(ldos, False, fraction, k, delta_s=delta_s)
 		G_conjugate = np.conjugate(self.greens_function_mesh(k, tip_work_func, tip_energy, debug=debug))
 
 		if debug:
@@ -1056,7 +1056,7 @@ class Cell(object):
 							sys.stdout.write(debug_str)
 							sys.stdout.flush()
 						if partial_surface:
-							c = self.get_c(raw_psi, True, fraction, delta_s=delta_s)
+							c = self.get_c(raw_psi, True, fraction, k, delta_s=delta_s)
 
 						A = self.get_A_mesh(c, raw_psi)
 						B = self.get_B_mesh(c, raw_psi)
