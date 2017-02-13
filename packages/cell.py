@@ -30,7 +30,6 @@ class Cell(object):
 	ELECTRON_MASS = 9.10938E-31  # Electron Mass in kg
 	H_BAR = 4.135667662E-15  # Reduced Planck's Constant in eV.s
 
-	ATOM_GROUP_SIZE = 50
 	MESH_FOLDER = "meshes/"
 	SUPPORT_FNAME = "supp_"
 	LDOS_FNAME = "ldos_"
@@ -44,7 +43,7 @@ class Cell(object):
 	PROG_BAR_INTERVALS = 20
 	PROG_BAR_CHARACTER = ">"
 
-	def __init__(self, name, fermi_level, x_length, y_length, z_length, grid_spacing=0.5):
+	def __init__(self, name, fermi_level, x_length, y_length, z_length, grid_spacing=0.5, group_size=150):
 		"""Constructs 3D cell with given dimensional.
 
 		All lengths measured in Bohr radii (a0);
@@ -62,6 +61,7 @@ class Cell(object):
 		self.name = name
 		self.fermi_level = fermi_level
 		self.grid_spacing = grid_spacing
+		self.atom_group_size = group_size
 
 		vector_x = int(x_length / grid_spacing) * grid_spacing
 		vector_y = int(y_length / grid_spacing) * grid_spacing
@@ -234,8 +234,8 @@ class Cell(object):
 		support_grid = np.empty(self.real_mesh.shape[:3], dtype=SmartDict)
 
 		# Iterate over all atoms
-		lower_bound = group * self.ATOM_GROUP_SIZE
-		upper_bound = (group + 1) * self.ATOM_GROUP_SIZE
+		lower_bound = group * self.atom_group_size
+		upper_bound = (group + 1) * self.atom_group_size
 		atom_list = sorted([a for a in self.atoms.keys() if lower_bound <= a < upper_bound])
 		for atom_key in atom_list:
 			atom = self.atoms[atom_key]
@@ -326,7 +326,7 @@ class Cell(object):
 
 	def support_group_filename(self, group):
 		"""Return standardised filename for relevant support function file"""
-		return self.MESH_FOLDER+self.SUPPORT_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(self.ATOM_GROUP_SIZE)+"_"+str(group)+self.EXT
+		return self.MESH_FOLDER+self.SUPPORT_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(self.atom_group_size) + "_" + str(group) + self.EXT
 
 	def write_support_group(self, group, support_mesh, debug=False):
 		"""Write support function mesh to file"""
@@ -496,7 +496,7 @@ class Cell(object):
 		support_grid = self.get_support_group(0, debug=debug)
 		for atom_key in sorted(self.atoms.iterkeys()):
 			atom = self.atoms[atom_key]
-			group = atom_key / self.ATOM_GROUP_SIZE
+			group = atom_key / self.atom_group_size
 			if group != previous_group:
 				support_grid = self.get_support_group(group, debug=debug)
 				previous_group = group

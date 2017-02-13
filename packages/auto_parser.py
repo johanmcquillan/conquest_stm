@@ -67,7 +67,7 @@ class Parser(object):
 			print self.ion_folder+ion_name+'.ion does not exist'
 			sys.exit(1)
 
-	def make_cell(self, conquest_out, grid_spacing=0.5, debug=False):
+	def make_cell(self, conquest_out, grid_spacing=0.5, group_size=150, debug=False):
 		# Open Conquest_out file
 		if debug:
 			sys.stdout.write("Building simulation cell\n")
@@ -203,7 +203,7 @@ class Parser(object):
 				data = line.split()
 				fermi_lvl = float(data[2]) * HA_TO_EV
 
-				cell = Cell(conquest_out, fermi_lvl, cell_length_x, cell_length_y, cell_length_z, grid_spacing=grid_spacing)
+				cell = Cell(conquest_out, fermi_lvl, cell_length_x, cell_length_y, cell_length_z, grid_spacing=grid_spacing, group_size=group_size)
 
 				for atom_key in atoms:
 					atoms[atom_key].bands.lock()
