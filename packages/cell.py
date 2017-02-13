@@ -748,7 +748,7 @@ class Cell(object):
 		return padded_gradient[pad:-pad, pad:-pad, pad:-pad]
 
 	def delta_s(self):
-		min_delta_s = 2.0 * self.grid_spacing / self.H_BAR * np.sqrt(4.85 * 2.0 * C.ELECTRON_MASS)
+		min_delta_s = 2.0 * self.grid_spacing / self.H_BAR * np.sqrt(4.85 * 2.0 * self.ELECTRON_MASS)
 		return self.DELTA_S_FACTOR * min_delta_s
 
 	def kappa_squared(self, tip_work_func, tip_fermi_level):
