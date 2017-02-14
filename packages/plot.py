@@ -526,7 +526,7 @@ def plot_ldos_3d(
 	plot_3d_isosurface(title, ldos, fraction, x_range, y_range, z_range, step, save_name=save_name, show=show, top_down=top_down)
 
 def plot_current_2d_iso(
-		cell, z, V, T, tip_work_func, tip_energy, fraction, delta_s, interpolation='cubic',
+		cell, z, V, T, tip_work_func, tip_energy, fraction, delta_s=None, interpolation='cubic',
 		print_status=False, recalculate=False, show=True, partial_surface=False, debug=False):
 	"""Plots cross-section of charge density to pdf.
 
@@ -541,6 +541,9 @@ def plot_current_2d_iso(
 		print_status (bool, opt.): If true, print update when file is saved
 		debug (bool, opt.): If true, print extra information during runtime
 	"""
+	if delta_s is None:
+		delta_s = cell.default_delta_s
+
 	current = cell.get_current_scan_iso(z, V, T, tip_work_func, tip_energy, delta_s, fraction=fraction, recalculate=recalculate, debug=debug, partial_surface=partial_surface)
 
 	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
