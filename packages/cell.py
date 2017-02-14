@@ -800,18 +800,20 @@ class Cell(object):
 			on_surface = False
 			past_surface = False
 			# Iterate over z, starting from top
-			for k in reversed(range(tip_height_index)):
-				if past_surface:
-					# First surface has been traversed, so replace subsequent elements with zeros
+			for k in reversed(range(broadened_mesh.shape[2])):
+				if k < tip_height_index:
+					if past_surface:
+						# First surface has been traversed, so replace subsequent elements with zeros
+						broadened_mesh[i, j, k] = 0
+					elif broadened_mesh[i, j, k] != 0 and not on_surface:
+						# Highest surface has been reached
+						on_surface = True
+					elif on_surface and broadened_mesh[i, j, k] == 0:
+						# Was on surface, now just below
+						on_surface = False
+						past_surface = True
+				else:
 					broadened_mesh[i, j, k] = 0
-				elif broadened_mesh[i, j, k] != 0 and not on_surface:
-					# Highest surface has been reached
-					on_surface = True
-				elif on_surface and broadened_mesh[i, j, k] == 0:
-					# Was on surface, now just below
-					on_surface = False
-					past_surface = True
-
 		# Get direction of gradient of isosurface
 		gradient_surface = self.periodic_gradient(charge_density_mesh)
 

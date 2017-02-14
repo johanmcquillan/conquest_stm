@@ -615,6 +615,8 @@ def plot_differential_spectrum(cell, x, y, z, min_V, max_V, T, dE=0.005, debug=F
 	plt.xlim(min_V, max_V)
 	plt.xlabel('E / eV')
 
+	title = r"{} {} Spectrum at $({}, {}, {}) a_0$, $T = {}K$".format(cell.name, r"$\frac{dI}{dV}$", x, y, z, T)
+	plt.title(title)
 	plt.show()
 
 
