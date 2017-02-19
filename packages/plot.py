@@ -605,7 +605,7 @@ def plot_current_2d_plane(
 		print 'Finished ' + save_name + '.pdf'
 
 
-def plot_differential_spectrum(cell, x, y, z, min_V, max_V, sigma, dE=0.005, debug=False):
+def plot_differential_spectrum(cell, x, y, z, min_V, max_V, sigma, dE=0.005, show=True, debug=False):
 
 	E, LDOS = cell.get_spectrum(x, y, z, min_V, max_V, sigma, dE=dE, debug=debug)
 
@@ -615,8 +615,10 @@ def plot_differential_spectrum(cell, x, y, z, min_V, max_V, sigma, dE=0.005, deb
 
 	title = r"{} {} Spectrum at $({}, {}, {}) a_0$, $\sigma = {}eV$".format(cell.name, r"$\frac{dI}{dV}$", x, y, z, sigma)
 	plt.title(title)
-	plt.show()
 
+	if show:
+		plt.show()
+	plt.close()
 
 def plot_line_cut(cell, axis, value, z, min_V, max_V, sigma, dE=0.005, debug=False):
 
@@ -626,15 +628,16 @@ def plot_line_cut(cell, axis, value, z, min_V, max_V, sigma, dE=0.005, debug=Fal
 	plt.xlim(min_V, max_V)
 	plt.xlabel('E / eV')
 
+	if
 	plt.show()
 
 
-def plot_cits(cell, V, T, fraction, sigma, z=None, delta_s=None, debug=True):
+def plot_cits(cell, V, T, fraction, sigma, z=None, delta_s=None, method='none', debug=True):
 
 	if z is None:
 		z = cell.real_mesh[0, 0, -1, 2]
 
-	scan = cell.get_cits(z, V, T, fraction, sigma, delta_s=delta_s, debug=debug)
+	scan = cell.get_cits(z, V, T, fraction, sigma, delta_s=delta_s, method=method, debug=debug)
 
 	plt.imshow(scan, interpolation='bilinear', origin='lower left', aspect='auto', cmap=cm.afmhot)
 	plt.show()

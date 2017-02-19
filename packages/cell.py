@@ -445,6 +445,7 @@ class Cell(object):
 		Returns:
 			array(SmartDict): Mesh of support function values, indexed by [x, y, z][atom_key][l][zeta][m]
 		"""
+
 		if group == self.current_group and self.support_mesh is not None:
 			return self.support_mesh
 		else:
@@ -1066,6 +1067,8 @@ class Cell(object):
 						A = self.get_A_mesh(c, raw_psi)
 						B = self.get_B_mesh(c, raw_psi)
 
+
+
 						for i, j in np.ndindex(current.shape):
 
 							G_conjugate_rolled = np.roll(G_conjugate, (i - G_centre), 0)
@@ -1390,7 +1393,7 @@ class Cell(object):
 
 		return V_range, LDOS
 
-	def get_cits(self, z, V, T, fraction, sigma, delta_s=None, debug=False):
+	def get_cits(self, z, V, T, fraction, sigma, delta_s=None, debug=False, method='none'):
 
 		if delta_s is None:
 			delta_s = self.default_delta_s
@@ -1398,7 +1401,7 @@ class Cell(object):
 		min_E, max_E = self.bias_to_energy_range(V)
 		z, z_index = self.get_nearest_mesh_value(z, indices=True, points=self.real_mesh.shape[2])
 
-		if False:
+		if method == 'flat':
 
 			scan = np.zeros(self.real_mesh.shape[:2])
 			for K in self.bands:
@@ -1409,7 +1412,7 @@ class Cell(object):
 						psi = self.get_psi_grid(K, E, debug=debug)[..., z_index]
 						scan += w * exp * abs(psi)**2
 
-		elif False:
+		elif method == 'broadened':
 
 			ldos = self.get_ldos_grid(min_E, max_E, T, debug=debug)
 			b = self.broadened_surface(ldos, fraction, z_index, delta_s=delta_s)
@@ -1427,7 +1430,7 @@ class Cell(object):
 						for i, j in np.ndindex(scan.shape):
 							scan[i, j] += w * exp * np.sum(b_psi[i, j])
 
-		else:
+		elif method == 'dirac':
 			ldos = self.get_ldos_grid(min_E, max_E, T, debug=debug)
 			b = self.broadened_surface(ldos, fraction, z_index, delta_s=delta_s)
 			bool_mesh = np.zeros(b.shape, dtype=bool)
