@@ -628,7 +628,6 @@ def plot_line_cut(cell, axis, value, z, min_V, max_V, sigma, dE=0.005, debug=Fal
 	plt.xlim(min_V, max_V)
 	plt.xlabel('E / eV')
 
-	if
 	plt.show()
 
 
