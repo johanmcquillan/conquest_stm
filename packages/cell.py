@@ -135,6 +135,15 @@ class Cell(object):
 			f = 1.0 / (np.exp((energy - self.fermi_level) / (self.BOLTZMANN * temperature)) + 1)
 		return f
 
+	def bias_to_energy_range(self, V):
+		if V > 0:
+			min_E = self.fermi_level
+			max_E = self.fermi_level + V
+		else:
+			min_E = self.fermi_level + V
+			max_E = self.fermi_level
+		return min_E, max_E
+
 	def get_nearest_mesh_value(self, x, indices=False, points=None):
 		"""Return nearest mesh point to x. Not constrained within simulation cell.
 
@@ -763,36 +772,25 @@ class Cell(object):
 			kappa2 = self.kappa_squared(tip_work_func, tip_energy)
 			return np.exp(- kappa2 * distance) / (4*np.pi*distance)
 
-	def broadened_surface(self, surface, delta_s=None):
-		"""Broaden charge density isosurface."""
+	def broadened_surface(self, input_mesh, fraction, max_height_index, delta_s=None):
+
 		if delta_s is None:
 			delta_s = self.default_delta_s
-		if abs(surface) < delta_s:
-			return 15.0/(16.0*delta_s)*(1.0 - (surface/delta_s)**2)**2
-		else:
-			return 0.0
 
-	def get_c(self, input_mesh, partial, fraction, tip_height_index, delta_s=None):
-		"""Return c mesh for broadened surface integration."""
-		if delta_s is None:
-			delta_s = self.default_delta_s
-		if partial:
-			charge_density_mesh = abs(input_mesh)**2
-		else:
-			charge_density_mesh = input_mesh
-		max_density = np.max(charge_density_mesh)
-		isovalue = fraction * max_density
+		max_value = np.max(input_mesh)
+		isovalue = fraction * max_value
 
-		log_mesh = np.empty(charge_density_mesh.shape, dtype=float)
+		log_mesh = np.empty(input_mesh.shape, dtype=float)
 
-		cd_zeros = charge_density_mesh == 0
+		zero_points = input_mesh == 0
 
 		# Evaluate logarithm on unmasked entries
-		log_mesh[~cd_zeros] = np.log(charge_density_mesh[charge_density_mesh != 0] / isovalue)
-		log_mesh[cd_zeros] = np.inf
+		log_mesh[~zero_points] = np.log(input_mesh[input_mesh != 0] / isovalue)
+		log_mesh[zero_points] = np.inf
 
 		# Apply broadening to surface
-		broadened_mesh = np.where(abs(log_mesh) < delta_s, 15.0/(16.0*delta_s)*(1.0 - (log_mesh/delta_s)**2)**2, 0)
+		broadened_mesh = np.where(abs(log_mesh) < delta_s,
+		                          15.0 / (16.0 * delta_s) * (1.0 - (log_mesh / delta_s) ** 2) ** 2, 0)
 
 		# Remove overlapping layers of surface
 		# Iterate over x and y
@@ -801,7 +799,7 @@ class Cell(object):
 			past_surface = False
 			# Iterate over z, starting from top
 			for k in reversed(range(broadened_mesh.shape[2])):
-				if k < tip_height_index:
+				if k < max_height_index:
 					if past_surface:
 						# First surface has been traversed, so replace subsequent elements with zeros
 						broadened_mesh[i, j, k] = 0
@@ -814,16 +812,28 @@ class Cell(object):
 						past_surface = True
 				else:
 					broadened_mesh[i, j, k] = 0
+		return broadened_mesh
+
+	def get_c(self, input_mesh, partial, fraction, tip_height_index, delta_s=None):
+		"""Return c mesh for broadened surface integration."""
+		if delta_s is None:
+			delta_s = self.default_delta_s
+		if partial:
+			charge_density_mesh = abs(input_mesh)**2
+		else:
+			charge_density_mesh = input_mesh
+
+		zero_points = charge_density_mesh == 0
+		broadened_mesh = self.broadened_surface(charge_density_mesh, fraction, tip_height_index, delta_s=delta_s)
+
 		# Get direction of gradient of isosurface
 		gradient_surface = self.periodic_gradient(charge_density_mesh)
 
-		# for i in range(3):
-		# 	unit_vector_surface[i, gradient_magnitude_surface != 0] = gradient_surface[i, gradient_magnitude_surface != 0] / gradient_magnitude_surface[gradient_magnitude_surface != 0]
 		vector_surface = np.zeros(gradient_surface.shape, dtype=float)
 
 		for i in range(3):
-			gradient_surface[~cd_zeros, i] = gradient_surface[~cd_zeros, i] / charge_density_mesh[~cd_zeros]
-			gradient_surface[cd_zeros, i] = 0
+			gradient_surface[~zero_points, i] = gradient_surface[~zero_points, i] / charge_density_mesh[~zero_points]
+			gradient_surface[zero_points, i] = 0
 			vector_surface[..., i] = np.multiply(broadened_mesh, gradient_surface[..., i])
 
 		return vector_surface
@@ -877,8 +887,6 @@ class Cell(object):
 
 		G_shape = (plane_length_full, plane_length_full, self.real_mesh.shape[2])
 		G_mesh = np.zeros(G_shape, dtype=float)
-
-		print self.real_mesh.shape, plane_length_half, plane_length_full, G_shape
 
 		debug_str = "Calculating G(r - R): "
 		if debug:
@@ -996,12 +1004,7 @@ class Cell(object):
 			sys.stdout.write("Calculating I(R)\n")
 			sys.stdout.flush()
 
-		if V > 0:
-			min_E = self.fermi_level
-			max_E = self.fermi_level + V
-		else:
-			min_E = self.fermi_level + V
-			max_E = self.fermi_level
+		min_E, max_E = self.bias_to_energy_range(V)
 
 		total_k_weight = 0
 		total_energies = 0
@@ -1313,7 +1316,7 @@ class Cell(object):
 				self.write_current_plane(current, z, wf_height, V, T)
 		return current
 
-	def get_spectrum(self, x, y, z, min_V, max_V, T, dE=0.005, debug=False):
+	def get_spectrum(self, x, y, z, min_V, max_V, sigma, dE=0.005, debug=False):
 
 		min_E = min_V + self.fermi_level
 		max_E = max_V + self.fermi_level
@@ -1321,8 +1324,6 @@ class Cell(object):
 		x, i = self.get_nearest_mesh_value(x, indices=True, points=self.real_mesh.shape[0])
 		y, j = self.get_nearest_mesh_value(y, indices=True, points=self.real_mesh.shape[1])
 		z, k = self.get_nearest_mesh_value(z, indices=True, points=self.real_mesh.shape[2])
-
-		sigma = self.BOLTZMANN * T
 
 		Es = []
 		psis = []
@@ -1347,7 +1348,7 @@ class Cell(object):
 		V_range = E_range - self.fermi_level
 		return V_range, LDOS
 
-	def get_line_cut(self, axis, value, z, min_V, max_V, T, dE=0.0005, debug=False):
+	def get_line_cut(self, axis, value, z, min_V, max_V, sigma, dE=0.0005, debug=False):
 
 		if axis == 'x':
 			i = np.arange(self.real_mesh.shape[0])
@@ -1361,8 +1362,6 @@ class Cell(object):
 
 		min_E = min_V + self.fermi_level
 		max_E = max_V + self.fermi_level
-
-		sigma = self.BOLTZMANN * T
 
 		Es = []
 		psis = []
@@ -1390,3 +1389,61 @@ class Cell(object):
 		V_range = E_range - self.fermi_level
 
 		return V_range, LDOS
+
+	def get_cits(self, z, V, T, fraction, sigma, delta_s=None, debug=False):
+
+		if delta_s is None:
+			delta_s = self.default_delta_s
+
+		min_E, max_E = self.bias_to_energy_range(V)
+		z, z_index = self.get_nearest_mesh_value(z, indices=True, points=self.real_mesh.shape[2])
+
+		if False:
+
+			scan = np.zeros(self.real_mesh.shape[:2])
+			for K in self.bands:
+				w = K.weight
+				for E in self.bands[K]:
+					if -3 * sigma < E - V - self.fermi_level < 3 * sigma:
+						exp = np.exp(-(((E - V - self.fermi_level) / sigma) ** 2) / 2)
+						psi = self.get_psi_grid(K, E, debug=debug)[..., z_index]
+						scan += w * exp * abs(psi)**2
+
+		elif False:
+
+			ldos = self.get_ldos_grid(min_E, max_E, T, debug=debug)
+			b = self.broadened_surface(ldos, fraction, z_index, delta_s=delta_s)
+
+			scan = np.zeros(b.shape[:2])
+
+			for K in self.bands:
+				w = K.weight
+				for E in self.bands[K]:
+					if -3*sigma < E - V - self.fermi_level < 3*sigma:
+						exp = np.exp(-(((E - V - self.fermi_level) / sigma)**2) / 2)
+						psi = self.get_psi_grid(K, E, debug=debug)
+						b_psi = b * abs(psi)**2
+
+						for i, j in np.ndindex(scan.shape):
+							scan[i, j] += w * exp * np.sum(b_psi[i, j])
+
+		else:
+			ldos = self.get_ldos_grid(min_E, max_E, T, debug=debug)
+			b = self.broadened_surface(ldos, fraction, z_index, delta_s=delta_s)
+			bool_mesh = np.zeros(b.shape, dtype=bool)
+
+			for i, j in np.ndindex(b.shape[:2]):
+				k = np.argmax(b[i, j])
+				bool_mesh[i, j, k] = True
+
+			scan = np.zeros(b.shape[:2]).flatten()
+
+			for K in self.bands:
+				w = K.weight
+				for E in self.bands[K]:
+					if -3 * sigma < E - V - self.fermi_level < 3 * sigma:
+						exp = np.exp(-(((E - V - self.fermi_level) / sigma) ** 2) / 2)
+						psi = self.get_psi_grid(K, E, debug=debug)
+						scan += w * exp * abs(psi[bool_mesh])**2
+			scan = scan.reshape(b.shape[:2])
+		return scan

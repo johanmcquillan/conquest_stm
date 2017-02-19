@@ -483,9 +483,6 @@ def plot_ldos_3d(
 		cell (Cell): Simulation cell to plot
 		min_E (float): Minimum of energy range
 		max_E (float): Maximum of energy range
-		x_range((float), opt.): Limits of x axis
-		y_range((float), opt.): Limits of y axis
-		z_range((float), opt.): Limits of z axis
 		step (float, opt.): Interval between Cartesian mgrid points; Default is cell.gridSpacing
 		fraction (float, opt.): Sets value of isosurface to this fraction of max charge density
 		alpha (float, opt.): Transparency of plot surfaces
@@ -541,15 +538,13 @@ def plot_current_2d_iso(
 		print_status (bool, opt.): If true, print update when file is saved
 		debug (bool, opt.): If true, print extra information during runtime
 	"""
-	if delta_s is None:
-		delta_s = cell.default_delta_s
 
 	current = cell.get_current_scan_iso(z, V, T, tip_work_func, tip_energy, delta_s, fraction=fraction, recalculate=recalculate, debug=debug, partial_surface=partial_surface)
 
 	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
 	save_name = cell.name + '_current_' + str(z) +'_' + str(V) + '_' + str(T) + timeStamp
 
-	title = cell.name+' STM scan at $V={:.2}V$ at $z={}a_0$'.format(V, z)
+	title = cell.name+' STM scan at $V={:.2f}V$ at $z={}a_0$'.format(V, z)
 
 	with PdfPages('figures2D/'+save_name+'.pdf') as pdf:
 		plt.imshow(current, interpolation='bilinear', origin='lower', cmap=cm.afmhot)
@@ -610,25 +605,36 @@ def plot_current_2d_plane(
 		print 'Finished ' + save_name + '.pdf'
 
 
-def plot_differential_spectrum(cell, x, y, z, min_V, max_V, T, dE=0.005, debug=False):
+def plot_differential_spectrum(cell, x, y, z, min_V, max_V, sigma, dE=0.005, debug=False):
 
-	E, LDOS = cell.get_spectrum(x, y, z, min_V, max_V, T, dE=dE, debug=debug)
+	E, LDOS = cell.get_spectrum(x, y, z, min_V, max_V, sigma, dE=dE, debug=debug)
 
 	plt.plot(E, LDOS)
 	plt.xlim(min_V, max_V)
 	plt.xlabel('E / eV')
 
-	title = r"{} {} Spectrum at $({}, {}, {}) a_0$, $T = {}K$".format(cell.name, r"$\frac{dI}{dV}$", x, y, z, T)
+	title = r"{} {} Spectrum at $({}, {}, {}) a_0$, $\sigma = {}eV$".format(cell.name, r"$\frac{dI}{dV}$", x, y, z, sigma)
 	plt.title(title)
 	plt.show()
 
 
-def plot_line_cut(cell, axis, value, z, min_V, max_V, T, dE=0.005, debug=False):
+def plot_line_cut(cell, axis, value, z, min_V, max_V, sigma, dE=0.005, debug=False):
 
-	E, LDOS = cell.get_line_cut(axis, value, z, min_V, max_V, T, dE=dE, debug=debug)
+	E, LDOS = cell.get_line_cut(axis, value, z, min_V, max_V, sigma, dE=dE, debug=debug)
 
 	plt.plot(E, LDOS)
 	plt.xlim(min_V, max_V)
 	plt.xlabel('E / eV')
 
+	plt.show()
+
+
+def plot_cits(cell, V, T, fraction, sigma, z=None, delta_s=None, debug=True):
+
+	if z is None:
+		z = cell.real_mesh[0, 0, -1, 2]
+
+	scan = cell.get_cits(z, V, T, fraction, sigma, delta_s=delta_s, debug=debug)
+
+	plt.imshow(scan, interpolation='bilinear', origin='lower left', aspect='auto', cmap=cm.afmhot)
 	plt.show()
