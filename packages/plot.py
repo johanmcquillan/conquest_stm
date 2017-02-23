@@ -90,7 +90,7 @@ def plot_3d_scatter_mask(title, mesh, delta=0.0, zero_surf=False, z_max=0.0, ato
 	plt.show()
 
 
-def plot_3d_isosurface(title, mesh, fraction, x_range, y_range, z_range, step, save_name=None, show=True, top_down=False):
+def plot_3d_isosurface(title, mesh, fraction, x_range, y_range, z_range, step, atoms=None, grid_spacing=0, save_name=None, show=True, top_down=False):
 	"""Plot isosurface of 3D mesh.
 
 	Args:
@@ -121,13 +121,70 @@ def plot_3d_isosurface(title, mesh, fraction, x_range, y_range, z_range, step, s
 		ax.set_xlabel("x")
 		ax.set_ylabel("y")
 		ax.set_zlabel("z")
-		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Spectral, antialiased=True, lw=0.1)
+		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Spectral, antialiased=True, lw=0.1, alpha=0.6)
+
+	if atoms is not None and grid_spacing > 0:
+		x = [atoms[a].atom_pos.x/grid_spacing for a in atoms]
+		y = [atoms[a].atom_pos.y/grid_spacing for a in atoms]
+		z = [atoms[a].atom_pos.z/grid_spacing for a in atoms]
+
+		print x, y, z
+		ax.scatter(x, y, z, c='r', s=20)
 
 	if save_name:
 		plt.savefig("figures3D/"+save_name+".png")
 	if show:
 		plt.show()
 	plt.close()
+
+
+def plot_pao_3d(cell):
+
+	x_range = (0.0, cell.vector.x)
+	y_range = (0.0, cell.vector.y)
+	z_range = (0.0, cell.vector.z)
+
+	fig = plt.figure()
+	ax = fig.gca(projection='3d')
+
+	supp_mesh = cell.get_support_group(0, recalculate=True, debug=True)
+	mesh = np.zeros(supp_mesh.shape)
+	from packages.smart_dict import SmartDict
+	for a in cell.atoms:
+		atom = cell.atoms[a]
+		coeffs = SmartDict()
+		for l in atom.radials:
+			for zeta in atom.radials[l]:
+				for m in range(-l, l+1):
+					coeffs[l][zeta][m] = 0
+
+		for K in atom.bands:
+			for E in atom.bands[K]:
+				if cell.fermi_level - 2 <= E <= cell.fermi_level:
+					for l in atom.radials:
+						for zeta in atom.radials[l]:
+							for m in range(-l, l + 1):
+								coeffs[l][zeta][m] += abs(atom.get_coefficient(K, E, l, zeta, m))**2
+
+		for l in atom.radials:
+			for zeta in atom.radials[l]:
+				for m in range(-l, l+1):
+					for ijk in np.ndindex(mesh.shape):
+						if supp_mesh[ijk] is not None:
+							mesh[ijk] += coeffs[l][zeta][m]*supp_mesh[ijk][a][l][zeta][m]
+					mes = measure.marching_cubes(mesh, 0.01 * np.max(mesh))
+	verts = mes[0]
+	faces = mes[1]
+	ax.set_xlabel("x")
+	ax.set_ylabel("y")
+	ax.set_zlabel("z")
+	step = cell.grid_spacing
+	ax.set_xlim3d(x_range[0] / step, x_range[1] / step)
+	ax.set_ylim3d(y_range[0] / step, y_range[1] / step)
+	ax.set_zlim3d(z_range[0] / step, z_range[1] / step)
+	ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], antialiased=True,
+	                lw=0.1, alpha=0.6)
+	plt.show()
 
 
 def plot_vector_field(cell, vector_field):
@@ -432,7 +489,7 @@ def plot_ldos_2d(
 		maximum (int): Maximum value of coordinates
 		planeValue (float, opt.): Constant value assigned to Cartesian coordinate given by axis; Default is 0.0
 		step (float, opt.): Interval between Cartesian mgrid points, measured in a0;
-							Default is cell.gridSpacing
+							Default is cell.grid_spacing
 		interpolation (string, opt.): Method of interpolation; possible arguments are 'cubic' (default) and 'linear'
 		print_status (bool, opt.): If true, print update when file is saved
 		debug (bool, opt.): If true, print extra information during runtime
@@ -520,7 +577,7 @@ def plot_ldos_3d(
 	else:
 		save_name = None
 
-	plot_3d_isosurface(title, ldos, fraction, x_range, y_range, z_range, step, save_name=save_name, show=show, top_down=top_down)
+	plot_3d_isosurface(title, ldos, fraction, x_range, y_range, z_range, step, atoms=cell.atoms, grid_spacing=cell.grid_spacing, save_name=save_name, show=show, top_down=top_down)
 
 def plot_current_2d_iso(
 		cell, z, V, T, tip_work_func, tip_energy, fraction, delta_s=None, interpolation='cubic',
@@ -618,7 +675,7 @@ def plot_differential_spectrum(cell, x, y, z, min_V, max_V, sigma, dE=0.005, sho
 
 	if show:
 		plt.show()
-	plt.close()
+
 
 def plot_line_cut(cell, axis, value, z, min_V, max_V, sigma, dE=0.005, debug=False):
 
@@ -638,5 +695,5 @@ def plot_cits(cell, V, T, fraction, sigma, z=None, delta_s=None, method='none', 
 
 	scan = cell.get_cits(z, V, T, fraction, sigma, delta_s=delta_s, method=method, debug=debug)
 
-	plt.imshow(scan, interpolation='bilinear', origin='lower left', aspect='auto', cmap=cm.afmhot)
+	plt.imshow(scan, interpolation='spline16', origin='lower left', aspect='auto', cmap=cm.afmhot)
 	plt.show()

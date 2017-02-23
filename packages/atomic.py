@@ -108,7 +108,7 @@ class Ion(object):
 
 	def sorted_pao(self):
 		"""Sort pseudo-atomic orbitals into order according to .dat files.
-		
+
 		Returns:
 			list: Ordered list of PAO data;
 					Each element is a list containing [l, zeta, m] for the PAO
@@ -122,7 +122,7 @@ class Ion(object):
 			zeta_list = sorted(self.radials[l])
 			for zeta in zeta_list:
 				for m in range(-l, l + 1):
-					pao_list.append([l, zeta, m])
+					pao_list.append((l, zeta, m))
 		return pao_list
 
 	def has_radial(self, l, zeta):
