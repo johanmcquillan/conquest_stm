@@ -261,7 +261,6 @@ class Cell(object):
 
 			# Get nearest mesh point to atom position
 			atom_pos_on_mesh = self.get_nearest_mesh_vector(atom.atom_pos)
-			print atom_key, atom.atom_pos, atom_pos_on_mesh
 
 			# Get mesh points of maximum range of atoms orbitals in each direction
 			x_lower_lim, i_start = self.get_nearest_mesh_value(atom.atom_pos.x - cut, indices=True, points=self.real_mesh.shape[0])
@@ -516,18 +515,17 @@ class Cell(object):
 				previous_group = group
 			# Iterate over orbitals
 			for l in atom.bands[K][E]:
-				if l == 2:
-					for zeta in atom.bands[K][E][l]:
-						for m in atom.bands[K][E][l][zeta]:
-							# Evaluate wavefunction contribution over mesh
-							coefficient = atom.get_coefficient(K, E, l, zeta, m)
-							if vectorised:
-								psi_grid += self.psi_vec(support_grid, atom_key, l, zeta, m, coefficient)
-							else:
-								for ijk in np.ndindex(self.real_mesh.shape[:3]):
-									if support_grid[ijk]:
-										if atom_key in support_grid[ijk]:
-											psi_grid[ijk] += coefficient*support_grid[ijk][atom_key][l][zeta][m]
+				for zeta in atom.bands[K][E][l]:
+					for m in atom.bands[K][E][l][zeta]:
+						# Evaluate wavefunction contribution over mesh
+						coefficient = atom.get_coefficient(K, E, l, zeta, m)
+						if vectorised:
+							psi_grid += self.psi_vec(support_grid, atom_key, l, zeta, m, coefficient)
+						else:
+							for ijk in np.ndindex(self.real_mesh.shape[:3]):
+								if support_grid[ijk]:
+									if atom_key in support_grid[ijk]:
+										psi_grid[ijk] += coefficient*support_grid[ijk][atom_key][l][zeta][m]
 			# Print progress bar
 			atoms_done += 1
 			prog = float(atoms_done) / total_atoms
@@ -1382,7 +1380,6 @@ class Cell(object):
 
 		Es = np.array(Es)
 		psis = np.array(psis)
-		print psis.shape
 		weights = np.array(weights)
 
 		E_range = np.arange(min_E, max_E, dE)

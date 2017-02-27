@@ -90,7 +90,7 @@ def plot_3d_scatter_mask(title, mesh, delta=0.0, zero_surf=False, z_max=0.0, ato
 	plt.show()
 
 
-def plot_3d_isosurface(title, mesh, fraction, x_range, y_range, z_range, step, atoms=None, grid_spacing=0, save_name=None, show=True, top_down=False):
+def plot_3d_isosurface(title, mesh, fraction, x_range, y_range, z_range, step, atoms=None, grid_spacing=0, alpha=1, save_name=None, show=True, top_down=False):
 	"""Plot isosurface of 3D mesh.
 
 	Args:
@@ -115,20 +115,19 @@ def plot_3d_isosurface(title, mesh, fraction, x_range, y_range, z_range, step, a
 
 	if top_down:
 		ax.view_init(elev=90, azim=-90)
-		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Greys_r, antialiased=False, lw=0.0, vmin=55)
+		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Greys_r, antialiased=False, lw=0.0, vmin=55, alpha=alpha)
 	else:
 		# Set axes
 		ax.set_xlabel("x")
 		ax.set_ylabel("y")
 		ax.set_zlabel("z")
-		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Spectral, antialiased=True, lw=0.1, alpha=0.6)
+		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Spectral, antialiased=False, lw=0.0, alpha=alpha)
 
 	if atoms is not None and grid_spacing > 0:
 		x = [atoms[a].atom_pos.x/grid_spacing for a in atoms]
 		y = [atoms[a].atom_pos.y/grid_spacing for a in atoms]
 		z = [atoms[a].atom_pos.z/grid_spacing for a in atoms]
 
-		print x, y, z
 		ax.scatter(x, y, z, c='r', s=20)
 
 	if save_name:
