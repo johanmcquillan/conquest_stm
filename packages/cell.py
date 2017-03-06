@@ -85,6 +85,12 @@ class Cell(object):
 
 		self.psi_vec = np.vectorize(self.calculate_psi_grid_vec)
 
+	def energy_list(self):
+		energies = []
+		for K in self.bands:
+			energies.extend(self.bands[K])
+		return sorted(energies)
+
 	def has_band(self, K, E):
 		"""Check if cell stores specified band.
 
@@ -606,6 +612,77 @@ class Cell(object):
 			psi_grid = self.calculate_psi_grid(K, E, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
 			if write:
 				self.write_psi_grid(psi_grid, K, E)
+		return psi_grid
+
+	def calculate_psi_range(self, min_E, max_E, recalculate=False, write=True, vectorised=True, debug=False):
+		"""Evaluate wavefunction on mesh.
+
+		Args:
+			K (KVector): K-point
+			E (float): Band energy
+			recalculate (bool, opt.): Force recalculation, even if already stored
+			write (bool, opt.): Write to file
+			vectorised (bool, opt.): If true, use NumPy vectorisation
+			debug (bool, opt.): Print extra information during runtime
+
+		Returns:
+			array(complex): Mesh of complex wavefunction values
+		"""
+		atoms_done = 0
+		total_atoms = len(self.atoms)
+		bars_done = 0
+
+		# Initialise mesh
+		psi_grid = np.zeros_like(self.real_mesh[..., 0], dtype=complex)
+
+		# Get basis functions
+		# support_grid = self.get_support_grid(recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
+
+		if self.PRINT_RELATIVE_TO_EF:
+			E_str = str(E - self.fermi_level) + " eV"
+		else:
+			E_str = str(E) + " eV"
+		debug_str = "Calculating psi(r) at k = "+str(K)+", E = "+E_str+": "
+
+		if debug:
+			sys.stdout.write(debug_str)
+			sys.stdout.flush()
+
+		previous_group = 0
+		support_grid = self.get_support_group(0, debug=debug)
+		for atom_key in sorted(self.atoms.iterkeys()):
+			atom = self.atoms[atom_key]
+			group = atom_key / self.atom_group_size
+			if group != previous_group:
+				support_grid = self.get_support_group(group, debug=debug)
+				previous_group = group
+			# Iterate over orbitals
+			for l in atom.bands[K][E]:
+				for zeta in atom.bands[K][E][l]:
+					for m in atom.bands[K][E][l][zeta]:
+						# Evaluate wavefunction contribution over mesh
+						coefficient = atom.get_coefficient(K, E, l, zeta, m)
+						if vectorised:
+							psi_grid += self.psi_vec(support_grid, atom_key, l, zeta, m, coefficient)
+						else:
+							for ijk in np.ndindex(self.real_mesh.shape[:3]):
+								if support_grid[ijk]:
+									if atom_key in support_grid[ijk]:
+										psi_grid[ijk] += coefficient*support_grid[ijk][atom_key][l][zeta][m]
+			# Print progress bar
+			atoms_done += 1
+			prog = float(atoms_done) / total_atoms
+			if debug and prog * self.PROG_BAR_INTERVALS >= bars_done:
+				percent = prog * 100
+				sys.stdout.write('\r')
+				sys.stdout.write(debug_str)
+				sys.stdout.write(" [{:<{}}]".format(self.PROG_BAR_CHARACTER * bars_done, self.PROG_BAR_INTERVALS))
+				sys.stdout.write(" {:3.0f}%".format(percent))
+				sys.stdout.flush()
+				bars_done += 1
+		if debug:
+			sys.stdout.write("\n")
+			sys.stdout.flush()
 		return psi_grid
 
 	def calculate_ldos_grid(self, min_E, max_E, T, recalculate=False, write=True, vectorised=False, debug=False, debug_file=False):
@@ -1200,15 +1277,15 @@ class Cell(object):
 					energies_done += 1
 		return current
 
-	def current_filename(self, z, V, T):
+	def current_filename(self, z, V, T, fraction):
 		"""Return standardised filename for relevant current file"""
-		return self.MESH_FOLDER+self.CURRENT_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(z)+"_"+str(V)+"_"+str(T)+self.EXT
+		return self.MESH_FOLDER+self.CURRENT_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(z)+"_"+str(V)+"_"+str(T)+"_"+str(fraction)+self.EXT
 
 	def current_plane_filename(self, z, wf_height, V, T):
 		"""Return standardised filename for relevant current file"""
 		return self.MESH_FOLDER+self.CURRENT_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(z)+"_"+str(wf_height)+"_"+str(V)+"_"+str(T)+self.EXT
 
-	def write_current(self, current, z, V, T, debug=False):
+	def write_current(self, current, z, V, T, fraction, debug=False):
 		"""Write current to file.
 
 		Args:
@@ -1217,7 +1294,7 @@ class Cell(object):
 			T: Absolute temperature in K
 			debug (bool, opt.): Print extra information during runtime
 		"""
-		filename = self.current_filename(z, V, T)
+		filename = self.current_filename(z, V, T, fraction)
 
 		current_file = safe_open(filename, "w")
 		if debug:
@@ -1229,7 +1306,7 @@ class Cell(object):
 				current_file.write(str(i)+" "+str(j)+" "+str(current[i, j])+"\n")
 		current_file.close()
 
-	def write_current_plane(self, current, z, wf_height, V, T, debug=False):
+	def write_current_plane(self, current, z, wf_height, V, T, fraction, debug=False):
 		"""Write current to file.
 
 		Args:
@@ -1248,9 +1325,9 @@ class Cell(object):
 				current_file.write(str(i)+" "+str(j)+" "+str(current[i, j])+"\n")
 		current_file.close()
 
-	def read_current(self, z, V, T, debug=False):
+	def read_current(self, z, V, T, fraction, debug=False):
 		"""Read current grid from file"""
-		filename = self.current_filename(z, V, T)
+		filename = self.current_filename(z, V, T, fraction)
 		current_file = open(filename, 'r')
 		current = np.zeros(self.real_mesh.shape[:2], dtype=float)
 
@@ -1301,13 +1378,13 @@ class Cell(object):
 	def get_current_scan_iso(self, z, V, T, tip_work_func, tip_energy, delta_s=None, fraction=0.025, recalculate=False, write=True, vectorised=True, partial_surface=False, debug=False):
 		if delta_s is None:
 			delta_s = self.default_delta_s
-		if not recalculate and os.path.isfile(self.current_filename(z, V, T)):
+		if not recalculate and os.path.isfile(self.current_filename(z, V, T, fraction)):
 			# Read data from file
-			current = self.read_current(z, V, T, debug=debug)
+			current = self.read_current(z, V, T, fraction, debug=debug)
 		else:
 			current = self.calculate_current_scan_iso(z, V, T, tip_work_func, tip_energy, delta_s=delta_s, fraction=fraction, recalculate=recalculate, write=write, vectorised=vectorised, partial_surface=partial_surface, debug=debug)
 			if write:
-				self.write_current(current, z, V, T)
+				self.write_current(current, z, V, T, fraction)
 		return current
 
 	def get_current_scan_plane(self, z, wf_height, V, T, tip_work_func, tip_energy, recalculate=False, write=True, vectorised=True, partial_surface=False, debug=False):
@@ -1320,36 +1397,90 @@ class Cell(object):
 				self.write_current_plane(current, z, wf_height, V, T)
 		return current
 
-	def get_spectrum(self, x, y, z, min_V, max_V, sigma, dE=0.005, debug=False):
+	def get_spectrum(self, rs, min_V, max_V, sigma, dE=0.005, debug=False):
 
 		min_E = min_V + self.fermi_level
 		max_E = max_V + self.fermi_level
 
-		x, i = self.get_nearest_mesh_value(x, indices=True, points=self.real_mesh.shape[0])
-		y, j = self.get_nearest_mesh_value(y, indices=True, points=self.real_mesh.shape[1])
-		z, k = self.get_nearest_mesh_value(z, indices=True, points=self.real_mesh.shape[2])
+		mesh_positions = []
+		mesh_indices = []
+
+		for l in range(len(rs)):
+			x, i = self.get_nearest_mesh_value(rs[l][0], indices=True, points=self.real_mesh.shape[0])
+			y, j = self.get_nearest_mesh_value(rs[l][1], indices=True, points=self.real_mesh.shape[1])
+			z, k = self.get_nearest_mesh_value(rs[l][2], indices=True, points=self.real_mesh.shape[2])
+			mesh_positions.append((x, y, z))
+			mesh_indices.append((i, j, k))
 
 		Es = []
 		psis = []
 		weights = []
+		l = 0
 		for K in self.bands:
 			for E in self.bands[K]:
 				if min_E - 3*sigma < E < max_E + 3*sigma:
 					Es.append(E)
 					weights.append(K.weight)
-					psi = self.get_psi_grid(K, E, debug=debug)[i, j, k]
-					psis.append(abs(psi)**2)
+					psi = self.get_psi_grid(K, E, debug=debug)
+					psis.append([])
+					for m in range(len(mesh_positions)):
+						psis[l].append(abs(psi[mesh_indices[m]])**2)
+					l += 1
 
 		Es = np.array(Es)
 		psis = np.array(psis)
 		weights = np.array(weights)
 
 		E_range = np.arange(min_E, max_E, dE)
-		LDOS = np.zeros_like(E_range)
+		LDOS = np.zeros((E_range.shape[0], len(rs)))
 
 		for u in range(len(E_range)):
-			LDOS[u] = np.sum(weights * psis * np.exp(- (((E_range[u] - Es) / sigma)**2) / 2))
+			LDOS[u] = np.sum(weights[..., None] * psis * np.exp(- (((E_range[u] - Es[..., None]) / sigma)**2) / 2), axis=0)
 		V_range = E_range - self.fermi_level
+
+		return V_range, LDOS
+
+	def get_spectrum(self, xy, z, min_V, max_V, sigma, dE=0.005, debug=False):
+
+		min_E = min_V + self.fermi_level
+		max_E = max_V + self.fermi_level
+
+		mesh_positions = []
+		mesh_indices = []
+
+		for l in range(len(rs)):
+			x, i = self.get_nearest_mesh_value(rs[l][0], indices=True, points=self.real_mesh.shape[0])
+			y, j = self.get_nearest_mesh_value(rs[l][1], indices=True, points=self.real_mesh.shape[1])
+			z, k = self.get_nearest_mesh_value(rs[l][2], indices=True, points=self.real_mesh.shape[2])
+			mesh_positions.append((x, y, z))
+			mesh_indices.append((i, j, k))
+
+		Es = []
+		psis = []
+		weights = []
+		l = 0
+		for K in self.bands:
+			for E in self.bands[K]:
+				if min_E - 3*sigma < E < max_E + 3*sigma:
+					Es.append(E)
+					weights.append(K.weight)
+					psi = self.get_p(K, E, debug=debug)
+					psis.append([])
+					for m in range(len(mesh_positions)):
+						psis[l].append(abs(psi[mesh_indices[m]])**2)
+					l += 1
+
+		Es = np.array(Es)
+		psis = np.array(psis)
+		weights = np.array(weights)
+
+		E_range = np.arange(min_E, max_E, dE)
+		LDOS = np.zeros((E_range.shape[0], len(rs)))
+
+		for u in range(len(E_range)):
+			LDOS[u] = np.sum(weights[..., None] * psis * np.exp(- (((E_range[u] - Es[..., None]) / sigma)**2) / 2), axis=0)
+		V_range = E_range - self.fermi_level
+
 		return V_range, LDOS
 
 	def get_line_cut(self, axis, value, z, min_V, max_V, sigma, dE=0.0005, debug=False):
@@ -1417,6 +1548,16 @@ class Cell(object):
 			ldos = self.get_ldos_grid(min_E, max_E, T, debug=debug)
 			b = self.broadened_surface(ldos, fraction, z_index, delta_s=delta_s)
 
+			# import matplotlib.pyplot as plt
+			#
+			# fig = plt.figure()
+			# ax = fig.gca(projection='3d')
+			#
+			# for i, j, k in np.ndindex(b.shape):
+			# 	if b[i, j, k] not in [-np.inf, np.inf, 0]:
+			# 		ax.scatter(i, j, k)
+			# plt.show()
+
 			scan = np.zeros(b.shape[:2])
 
 			for K in self.bands:
@@ -1439,7 +1580,19 @@ class Cell(object):
 				k = np.argmax(b[i, j])
 				bool_mesh[i, j, k] = True
 
-			scan = np.zeros(b.shape[:2]).flatten()
+			import matplotlib.pyplot as plt
+
+			fig = plt.figure()
+			ax = fig.gca(projection='3d')
+
+
+			for i, j, k in np.ndindex(bool_mesh.shape):
+				if bool_mesh[i, j, k]:
+					ax.scatter(i, j, k)
+
+			plt.show()
+
+			scan = np.zeros(b.shape[:2])
 
 			for K in self.bands:
 				w = K.weight
@@ -1447,6 +1600,9 @@ class Cell(object):
 					if -3 * sigma < E - V - self.fermi_level < 3 * sigma:
 						exp = np.exp(-(((E - V - self.fermi_level) / sigma) ** 2) / 2)
 						psi = self.get_psi_grid(K, E, debug=debug)
-						scan += w * exp * abs(psi[bool_mesh])**2
+						for i, j, k in np.ndindex(bool_mesh.shape):
+							if bool_mesh[i, j, k]:
+								scan[i, j] += w * exp * abs(psi[i, j, k])**2
 			scan = scan.reshape(b.shape[:2])
+
 		return scan

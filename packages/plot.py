@@ -55,14 +55,13 @@ def plot_2d(cell, mesh_3d, title, save_name, axis, plane_value):
 		plt.close()
 
 
-def plot_3d_scatter_mask(title, mesh, delta=0.0, zero_surf=False, z_max=0.0, atoms=None, grid_spacing=0.0):
+def plot_3d_scatter_mask(C, title, mesh, delta=0.0, zero_surf=False, atoms=True):
 
 	fig = plt.figure()
 	ax = fig.gca(projection='3d')
 	plt.title(title)
 
 	points = []
-
 	for ijk in np.ndindex(mesh.shape):
 		if (type(mesh) is not np.ma.MaskedArray or mesh[ijk] is not np.ma.masked) and (delta == 0.0 or abs(mesh[ijk]) <= delta) and (zero_surf or mesh[ijk] != 0):
 			i, j, k = ijk
@@ -76,15 +75,16 @@ def plot_3d_scatter_mask(title, mesh, delta=0.0, zero_surf=False, z_max=0.0, ato
 	else:
 		print np_points.shape, np.max(np_points[3])
 
-	if z_max > 0:
-		ax.set_zlim(0, z_max)
+	ax.set_xlim(0, C.vector.x / C.grid_spacing)
+	ax.set_ylim(0, C.vector.y / C.grid_spacing)
+	ax.set_zlim(0, C.vector.z / C.grid_spacing)
 
 	ax.scatter(np_points[0], np_points[1], np_points[2], c=cm.Reds(abs(np_points[3])/np.max(np_points[3])))
 
-	if atoms is not None and grid_spacing > 0:
-		x = [atoms[a].atom_pos.x/grid_spacing for a in atoms]
-		y = [atoms[a].atom_pos.y/grid_spacing for a in atoms]
-		z = [atoms[a].atom_pos.z/grid_spacing for a in atoms]
+	if atoms:
+		x = [C.atoms[a].atom_pos.x/C.grid_spacing for a in C.atoms]
+		y = [C.atoms[a].atom_pos.y/C.grid_spacing for a in C.atoms]
+		z = [C.atoms[a].atom_pos.z/C.grid_spacing for a in C.atoms]
 
 		ax.scatter(x, y, z)
 	plt.show()
@@ -115,9 +115,13 @@ def plot_3d_isosurface(title, mesh, fraction, x_range, y_range, z_range, step, a
 
 	if top_down:
 		ax.view_init(elev=90, azim=-90)
-		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Greys_r, antialiased=False, lw=0.0, vmin=55, alpha=alpha)
+		ax.set_xlabel("x")
+		ax.set_ylabel("y")
+		ax.set_zlabel("z")
+		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.afmhot, antialiased=False, lw=0.0, vmin=65, alpha=alpha)
 	else:
 		# Set axes
+		ax.view_init(elev=90, azim=-90)
 		ax.set_xlabel("x")
 		ax.set_ylabel("y")
 		ax.set_zlabel("z")
@@ -530,7 +534,7 @@ def plot_ldos_2d(
 
 def plot_ldos_3d(
 		cell, min_E, max_E, T, step=0.0, fraction=0.8,
-		show=True, save=False, recalculate=False, vectorised=True, top_down=False, debug=False):
+		show=True, save=False, recalculate=False, vectorised=True, top_down=False, atoms=False, debug=False):
 	"""Plots charge density isosurface.
 
 	All lengths measured in Bohr radii (a0).
@@ -576,11 +580,15 @@ def plot_ldos_3d(
 	else:
 		save_name = None
 
-	plot_3d_isosurface(title, ldos, fraction, x_range, y_range, z_range, step, atoms=cell.atoms, grid_spacing=cell.grid_spacing, save_name=save_name, show=show, top_down=top_down)
+	if atoms:
+		a = atoms
+	else:
+		a = None
+	plot_3d_isosurface(title, ldos, fraction, x_range, y_range, z_range, step, atoms=a, grid_spacing=cell.grid_spacing, save_name=save_name, show=show, top_down=top_down)
 
 def plot_current_2d_iso(
 		cell, z, V, T, tip_work_func, tip_energy, fraction, delta_s=None, interpolation='cubic',
-		print_status=False, recalculate=False, show=True, partial_surface=False, debug=False):
+		print_status=False, recalculate=False, save=False, show=True, partial_surface=False, debug=False):
 	"""Plots cross-section of charge density to pdf.
 
 	All lengths measured in bohr radii (a0).
@@ -598,9 +606,10 @@ def plot_current_2d_iso(
 	current = cell.get_current_scan_iso(z, V, T, tip_work_func, tip_energy, delta_s, fraction=fraction, recalculate=recalculate, debug=debug, partial_surface=partial_surface)
 
 	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
-	save_name = cell.name + '_current_' + str(z) +'_' + str(V) + '_' + str(T) + timeStamp
+	save_name = cell.name + '_current_' + str(z) +'_' + str(V) + '_' + str(T) + '_' + str(fraction) + '_' + timeStamp
 
-	title = cell.name+' STM scan at $V={:.2f}V$ at $z={}a_0$'.format(V, z)
+	title = cell.name + ' STM scan at $V={:.2f}V$ at $z={}a_0$'.format(V, z)
+	title = cell.name + ' STM scan at $V={:.2f}V$ at fraction of {}'.format(V, fraction)
 
 	with PdfPages('figures2D/'+save_name+'.pdf') as pdf:
 		plt.imshow(current, interpolation='bilinear', origin='lower', cmap=cm.afmhot)
@@ -609,9 +618,8 @@ def plot_current_2d_iso(
 		plt.xlabel('y')
 		plt.ylabel('x')
 
-		# Save to pdf
-		pdf.savefig()
-
+		if save:
+			pdf.savefig()
 		if show:
 			plt.show()
 
@@ -661,15 +669,22 @@ def plot_current_2d_plane(
 		print 'Finished ' + save_name + '.pdf'
 
 
-def plot_differential_spectrum(cell, x, y, z, min_V, max_V, sigma, dE=0.005, show=True, debug=False):
+def plot_differential_spectrum(cell, rs, min_V, max_V, sigma, dE=0.005, show=True, normalised=False, debug=False):
 
-	E, LDOS = cell.get_spectrum(x, y, z, min_V, max_V, sigma, dE=dE, debug=debug)
+	E, LDOS = cell.get_spectrum(rs, min_V, max_V, sigma, dE=dE, debug=debug)
 
-	plt.plot(E, LDOS)
+	if normalised:
+		maxes = LDOS.max(axis=0)
+		LDOS *= 1.0 / maxes
+
+	for i in range(len(rs)):
+		r = rs[i]
+		plt.plot(E, LDOS[:, i], label=r"$({:.2f}, {:.2f}, {:.2f})$".format(r[0], r[1], r[2]))
+
 	plt.xlim(min_V, max_V)
 	plt.xlabel('E / eV')
-
-	title = r"{} {} Spectrum at $({}, {}, {}) a_0$, $\sigma = {}eV$".format(cell.name, r"$\frac{dI}{dV}$", x, y, z, sigma)
+	plt.legend(loc='upper right')
+	title = r"{} {} Spectrum at $ a_0$, $\sigma = {}eV$".format(cell.name, r"$\frac{dI}{dV}$", sigma)
 	plt.title(title)
 
 	if show:
@@ -694,5 +709,7 @@ def plot_cits(cell, V, T, fraction, sigma, z=None, delta_s=None, method='none', 
 
 	scan = cell.get_cits(z, V, T, fraction, sigma, delta_s=delta_s, method=method, debug=debug)
 
+	title = r"{} CITS at $V = {}V$, $\sigma = {}eV$, using ".format(cell.name, V, sigma)
+	plt.title(title)
 	plt.imshow(scan, interpolation='spline16', origin='lower left', aspect='auto', cmap=cm.afmhot)
 	plt.show()
