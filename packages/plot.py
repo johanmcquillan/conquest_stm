@@ -121,7 +121,7 @@ def plot_3d_isosurface(title, mesh, fraction, x_range, y_range, z_range, step, a
 		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.afmhot, antialiased=False, lw=0.0, vmin=65, alpha=alpha)
 	else:
 		# Set axes
-		ax.view_init(elev=90, azim=-90)
+		# ax.view_init(elev=90, azim=-90)
 		ax.set_xlabel("x")
 		ax.set_ylabel("y")
 		ax.set_zlabel("z")
@@ -345,7 +345,7 @@ def plot_sph_3d(l, m):
 	"""
 
 	# Get mesh of angles
-	THETA, PHI = np.mgrid[0:2*np.pi:50j, 0:np.pi:50j]
+	THETA, PHI = np.mgrid[0:2*np.pi:100j, 0:np.pi:100j]
 	# Initialise mesh of 
 	SPH = np.zeros_like(PHI, dtype=float)
 
@@ -374,7 +374,7 @@ def plot_sph_3d(l, m):
 	title = "Real Spherical Harmonic for Degree $l="+str(l)+"$ and Order $m="+str(m)+"$"
 	plt.title(title)
 
-	ax.plot_surface(X, Y, Z, rstride=1, cstride=1)
+	ax.plot_surface(X, Y, Z, rstride=1, cstride=1, edgecolors=None, linewidth=0)
 	plt.show()
 	plt.close()
 
@@ -677,15 +677,19 @@ def plot_differential_spectrum(cell, rs, min_V, max_V, sigma, dE=0.005, show=Tru
 		maxes = LDOS.max(axis=0)
 		LDOS *= 1.0 / maxes
 
+	fig, ax = plt.subplots(1)
+
 	for i in range(len(rs)):
 		r = rs[i]
-		plt.plot(E, LDOS[:, i], label=r"$({:.2f}, {:.2f}, {:.2f})$".format(r[0], r[1], r[2]))
+		ax.plot(E, LDOS[:, i], label=r"$({:.2f}, {:.2f}, {:.2f})$".format(r[0], r[1], r[2]))
 
-	plt.xlim(min_V, max_V)
-	plt.xlabel('E / eV')
-	plt.legend(loc='upper right')
-	title = r"{} {} Spectrum at $ a_0$, $\sigma = {}eV$".format(cell.name, r"$\frac{dI}{dV}$", sigma)
-	plt.title(title)
+	ax.set_xlim(min_V, max_V)
+	ax.set_xlabel('V / V')
+	# plt.legend(loc='upper right')
+	# title = r"{} {} Spectrum at $ a_0$, $\sigma = {}eV$".format(cell.name, r"$\frac{dI}{dV}$", sigma)
+	# plt.title(title)
+
+	ax.get_yaxis().set_ticks([])
 
 	if show:
 		plt.show()

@@ -1012,18 +1012,18 @@ class Cell(object):
 			sys.stdout.flush()
 		return G_mesh
 
-	def propagated_psi_filename(self, K, E, T, fraction, delta_s=None):
+	def propagated_psi_filename(self, K, E, T, fraction, z, delta_s=None):
 		"""Return standardised filename for relevant propagated wavefunction file"""
 		if delta_s is None:
 			delta_s = self.default_delta_s
 		return (self.MESH_FOLDER+self.PROP_PSI_FNAME+self.name+"_"+str(self.grid_spacing)+"_"
-				+str(K.x)+"_"+str(K.y)+"_"+str(K.z)+"_"+str(E)+"_"+str(T)+"_"+str(fraction)+"_"+str(delta_s)+self.EXT)
+				+str(K.x)+"_"+str(K.y)+"_"+str(K.z)+"_"+str(E)+"_"+str(T)+"_"+str(fraction)+"_"+str(z)+"_"+str(delta_s)+self.EXT)
 
-	def write_prop_psi(self, psi, K, E, T, fraction, delta_s=None):
+	def write_prop_psi(self, psi, K, E, T, fraction, z, delta_s=None):
 		"""Write wavefunction function mesh to file"""
 		if delta_s is None:
 			delta_s = self.default_delta_s
-		filename = self.propagated_psi_filename(K, E, T, fraction, delta_s=delta_s)
+		filename = self.propagated_psi_filename(K, E, T, fraction, z, delta_s=delta_s)
 		psi_file = safe_open(filename, "w")
 		for i, j in np.ndindex(psi.shape):
 			if psi[i, j] != 0:
@@ -1031,12 +1031,12 @@ class Cell(object):
 				psi_file.write(str(i)+" "+str(j)+" "+str(p.real)+" "+str(p.imag)+"\n")
 		psi_file.close()
 
-	def read_prop_psi(self, K, E, T, fraction, delta_s=None, debug=False, debug_file=False):
+	def read_prop_psi(self, K, E, T, fraction, z, delta_s=None, debug=False, debug_file=False):
 		"""Read wavefunction mesh from file"""
 		if delta_s is None:
 			delta_s = self.default_delta_s
 
-		filename = self.propagated_psi_filename(K, E, T, fraction, delta_s=delta_s)
+		filename = self.propagated_psi_filename(K, E, T, fraction, z, delta_s=delta_s)
 		psi_file = open(filename, "r")
 		psi = np.zeros(self.real_mesh.shape[:2], dtype=complex)
 
@@ -1119,7 +1119,7 @@ class Cell(object):
 					if V > 0:
 						fd = 1 - fd
 
-					if not recalculate and os.path.isfile(self.propagated_psi_filename(K, E, T, fraction, delta_s=delta_s)):
+					if not recalculate and os.path.isfile(self.propagated_psi_filename(K, E, T, fraction, z, delta_s=delta_s)):
 						# Read data from file
 						psi = self.read_prop_psi(K, E, T, fraction, delta_s=delta_s, debug=debug)
 						read = True
@@ -1422,49 +1422,6 @@ class Cell(object):
 					Es.append(E)
 					weights.append(K.weight)
 					psi = self.get_psi_grid(K, E, debug=debug)
-					psis.append([])
-					for m in range(len(mesh_positions)):
-						psis[l].append(abs(psi[mesh_indices[m]])**2)
-					l += 1
-
-		Es = np.array(Es)
-		psis = np.array(psis)
-		weights = np.array(weights)
-
-		E_range = np.arange(min_E, max_E, dE)
-		LDOS = np.zeros((E_range.shape[0], len(rs)))
-
-		for u in range(len(E_range)):
-			LDOS[u] = np.sum(weights[..., None] * psis * np.exp(- (((E_range[u] - Es[..., None]) / sigma)**2) / 2), axis=0)
-		V_range = E_range - self.fermi_level
-
-		return V_range, LDOS
-
-	def get_spectrum(self, xy, z, min_V, max_V, sigma, dE=0.005, debug=False):
-
-		min_E = min_V + self.fermi_level
-		max_E = max_V + self.fermi_level
-
-		mesh_positions = []
-		mesh_indices = []
-
-		for l in range(len(rs)):
-			x, i = self.get_nearest_mesh_value(rs[l][0], indices=True, points=self.real_mesh.shape[0])
-			y, j = self.get_nearest_mesh_value(rs[l][1], indices=True, points=self.real_mesh.shape[1])
-			z, k = self.get_nearest_mesh_value(rs[l][2], indices=True, points=self.real_mesh.shape[2])
-			mesh_positions.append((x, y, z))
-			mesh_indices.append((i, j, k))
-
-		Es = []
-		psis = []
-		weights = []
-		l = 0
-		for K in self.bands:
-			for E in self.bands[K]:
-				if min_E - 3*sigma < E < max_E + 3*sigma:
-					Es.append(E)
-					weights.append(K.weight)
-					psi = self.get_p(K, E, debug=debug)
 					psis.append([])
 					for m in range(len(mesh_positions)):
 						psis[l].append(abs(psi[mesh_indices[m]])**2)
