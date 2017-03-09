@@ -1173,7 +1173,7 @@ class Cell(object):
 								bars_done += 1
 
 						if write:
-							self.write_prop_psi(psi, K, E, T, fraction, delta_s=delta_s)
+							self.write_prop_psi(psi, K, E, T, fraction, z, delta_s=delta_s)
 
 					current += fd * (w / total_k_weight) * abs(psi)**2
 
