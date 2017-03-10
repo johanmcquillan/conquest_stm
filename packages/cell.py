@@ -1121,7 +1121,7 @@ class Cell(object):
 
 					if not recalculate and os.path.isfile(self.propagated_psi_filename(K, E, T, fraction, z, delta_s=delta_s)):
 						# Read data from file
-						psi = self.read_prop_psi(K, E, T, fraction, delta_s=delta_s, debug=debug)
+						psi = self.read_prop_psi(K, E, T, fraction, z, delta_s=delta_s, debug=debug)
 						read = True
 					else:
 						read = False
