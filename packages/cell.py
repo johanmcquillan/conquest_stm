@@ -1080,7 +1080,7 @@ class Cell(object):
 			delta_s = self.default_delta_s
 
 		if debug:
-			sys.stdout.write("Calculating I(R)\n")
+			sys.stdout.write("Calculating I(R) at V={}V\n".format(V))
 			sys.stdout.flush()
 
 		min_E, max_E = self.bias_to_energy_range(V)
@@ -1433,6 +1433,49 @@ class Cell(object):
 
 		E_range = np.arange(min_E, max_E, dE)
 		LDOS = np.zeros((E_range.shape[0], len(rs)))
+
+		for u in range(len(E_range)):
+			LDOS[u] = np.sum(weights[..., None] * psis * np.exp(- (((E_range[u] - Es[..., None]) / sigma)**2) / 2), axis=0)
+		V_range = E_range - self.fermi_level
+
+		return V_range, LDOS
+
+	def get_spectrum_th(self, xy, min_V, max_V, sigma, T, fraction, z, delta_s=None, dE=0.005, debug=False):
+
+		min_E = min_V + self.fermi_level
+		max_E = max_V + self.fermi_level
+
+		mesh_positions = []
+		mesh_indices = []
+
+		for l in range(len(xy)):
+			x, i = self.get_nearest_mesh_value(xy[l][0], indices=True, points=self.real_mesh.shape[0])
+			y, j = self.get_nearest_mesh_value(xy[l][1], indices=True, points=self.real_mesh.shape[1])
+			mesh_positions.append((x, y))
+			mesh_indices.append((i, j))
+
+		Es = []
+		psis = []
+		weights = []
+		l = 0
+		for K in self.bands:
+			for E in self.bands[K]:
+				if min_E - 3*sigma < E < max_E + 3*sigma:
+					Es.append(E)
+					weights.append(K.weight)
+					# psi = self.get_psi_grid(K, E, debug=debug)
+					psi = self.read_prop_psi(K, E, T, fraction, z, delta_s=delta_s, debug=debug)
+					psis.append([])
+					for m in range(len(mesh_positions)):
+						psis[l].append(abs(psi[mesh_indices[m]])**2)
+					l += 1
+
+		Es = np.array(Es)
+		psis = np.array(psis)
+		weights = np.array(weights)
+
+		E_range = np.arange(min_E, max_E, dE)
+		LDOS = np.zeros((E_range.shape[0], len(xy)))
 
 		for u in range(len(E_range)):
 			LDOS[u] = np.sum(weights[..., None] * psis * np.exp(- (((E_range[u] - Es[..., None]) / sigma)**2) / 2), axis=0)

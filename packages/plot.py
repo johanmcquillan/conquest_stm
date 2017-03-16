@@ -586,6 +586,7 @@ def plot_ldos_3d(
 		a = None
 	plot_3d_isosurface(title, ldos, fraction, x_range, y_range, z_range, step, atoms=a, grid_spacing=cell.grid_spacing, save_name=save_name, show=show, top_down=top_down)
 
+
 def plot_current_2d_iso(
 		cell, z, V, T, tip_work_func, tip_energy, fraction, delta_s=None, interpolation='cubic',
 		print_status=False, recalculate=False, save=False, show=True, partial_surface=False, debug=False):
@@ -612,7 +613,7 @@ def plot_current_2d_iso(
 	title = cell.name + ' STM scan at $V={:.2f}V$ at fraction of {}'.format(V, fraction)
 
 	with PdfPages('figures2D/'+save_name+'.pdf') as pdf:
-		plt.imshow(current, interpolation='bilinear', origin='lower', cmap=cm.afmhot)
+		plt.imshow(current, interpolation='bilinear', origin='lower', cmap=cm.gray)
 		plt.colorbar()
 		plt.title(title)
 		plt.xlabel('y')
@@ -684,12 +685,42 @@ def plot_differential_spectrum(cell, rs, min_V, max_V, sigma, dE=0.005, show=Tru
 		ax.plot(E, LDOS[:, i], label=r"$({:.2f}, {:.2f}, {:.2f})$".format(r[0], r[1], r[2]))
 
 	ax.set_xlim(min_V, max_V)
-	ax.set_xlabel('V / V')
+	ax.set_xlabel(r'Sample Bias Voltage, $V / V$')
+	ax.set_yticklabels(["{:.1e}".format(t) for t in ax.get_yticks()])
+
+	ax.set_ylabel(r'LDOS (Arbitrary Units)')
 	# plt.legend(loc='upper right')
 	# title = r"{} {} Spectrum at $ a_0$, $\sigma = {}eV$".format(cell.name, r"$\frac{dI}{dV}$", sigma)
 	# plt.title(title)
+	plt.xlim(-1.5, 1.5)
 
-	ax.get_yaxis().set_ticks([])
+	if show:
+		plt.show()
+
+
+def plot_differential_spectrum_th(cell, rs, min_V, max_V, sigma, T, fraction, z, dE=0.005, show=True, normalised=False, debug=False):
+
+	E, LDOS = cell.get_spectrum_th(rs, min_V, max_V, sigma, T, fraction, z, dE=dE, debug=debug)
+
+	if normalised:
+		maxes = LDOS.max(axis=0)
+		LDOS *= 1.0 / maxes
+
+	fig, ax = plt.subplots(1)
+
+	for i in range(len(rs)):
+		r = rs[i]
+		ax.plot(E, LDOS[:, i], label=r"$({:.2f}, {:.2f}, {:.2f})$".format(r[0], r[1], r[2]))
+
+	ax.set_xlim(min_V, max_V)
+	ax.set_xlabel(r'Sample Bias Voltage, $V / V$')
+	ax.set_yticklabels(["{:.1e}".format(t) for t in ax.get_yticks()])
+
+	ax.set_ylabel(r'LDOS (Arbitrary Units)')
+	# plt.legend(loc='upper right')
+	# title = r"{} {} Spectrum at $ a_0$, $\sigma = {}eV$".format(cell.name, r"$\frac{dI}{dV}$", sigma)
+	# plt.title(title)
+	plt.xlim(-1.5, 1.5)
 
 	if show:
 		plt.show()
