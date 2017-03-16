@@ -1,222 +1,211 @@
+
 import math
+import sys
 
 import atomic
 from cell import Cell
 from smart_dict import SmartDict
-from vector import Vector
+from vector import Vector, KVector
 
-HA_TO_EV = 0.03674932  # Factor to convert Hartrees to electron volts
+HA_TO_EV = 27.2114  # Factor to convert Hartrees to electron volts
 
 
-class Parser(object):
+def get_ion(ion_name, ion_folder='ions/'):
+	# Open .ion and initialise entry
+	try:
+		ion_file = open(ion_folder + ion_name+'.ion', 'r')
 
-	"""Parses and stores data from input files.
-	Currently only works for .ion files."""
+		# Skip preamble and first 9 lines
+		line = ion_file.next()
+		while '</preamble>' not in line:
+			line = ion_file.next()
+		for i in range(0, 9):
+			ion_file.next()
 
-	def __init__(self, ionFolder, ionFiles, conqFolder, conqFiles):
-		"""Constructor for Parser.
+		# Create empty dict of radial objects
+		radial_dict = SmartDict()
+		line = ion_file.next()
+		while line.split()[0] != '#':
+			# Read quantum numbers and zeta index
+			metadata = line.split()
+			l = int(metadata[0])
+			n = int(metadata[1])
+			zeta = int(metadata[2])
 
-		Args:
-			ionFolder (string): Relative folder path to .ion files
-			ionFiles ([string]): Ion filenames, excluding '.ion'
-			conqFolder (string): Relative folder path to .dat and Conquest_out files
-			conqFiles ([string]): Conquest ouptut filenames, excluding '.dat'
-		"""
+			# Get number of points for radial and cutoff radius
+			line = ion_file.next()
+			metadata = line.split()
+			pts = int(metadata[0])
+			cutoff = float(metadata[2])
 
-		self.ions = {}
-		self.atoms = SmartDict()
-		self.fermiLevels = {}
-		self.electrons = {}
-		self.cellDimensions = {}
+			# Initialise R(r) function data
+			r = []
+			R = []
+			# Read data into Radial object and add to Ion
+			for i in range(0, pts):
+				line = ion_file.next()
+				x, y = line.split()
+				x = float(x)
+				y = float(y) * math.pow(x, l)
+				r.append(x)
+				R.append(y)
 
-		self.ionFiles = ionFiles
-		self.ionFolder = ionFolder
-		self.conqFiles = conqFiles
-		self.conqFolder = conqFolder
+			# Create Radial object and store in dict
+			radial_dict[l][zeta] = atomic.Radial(n, l, zeta, r, R, cutoff)
+			line = ion_file.next()
+		ion_file.close()
+		# Create Ion with radials
+		return atomic.Ion(ion_name, radial_dict)
+	except IOError:
+		print ion_folder+ion_name+'.ion does not exist'
+		sys.exit(1)
 
-	def parseIons(self):
-		"""Parse data from ionFiles to Ion objects and store in self.ions indexed by ionFile name."""
 
-		for ionName in self.ionFiles:
-			# Open .ion and initialise entry
-			Fion = open(self.ionFolder+ionName+'.ion', 'r')
+def get_cell(conquest_out, conquest_folder='conquest/', ion_folder='ions/', grid_spacing=0.5, group_size=150, debug=False):
+	# Open Conquest_out file
+	if debug:
+		sys.stdout.write("Building simulation cell\n")
+		sys.stdout.flush()
+	try:
+		conquest_out_file = open(conquest_folder + conquest_out, 'r')
+		ions = {}
+		atoms = {}
 
-			# Skip preamble and first 9 lines
-			line = Fion.next()
-			while '</preamble>' not in line:
-				line = Fion.next()
-			for i in range(0, 9):
-				Fion.next()
+		# Skip opening lines
+		line = conquest_out_file.next()
+		while len(line.split()) != 8:
+			line = conquest_out_file.next()
 
-			# Create empty dict of radial objects
-			radialDict = SmartDict()
-			line = Fion.next()
-			while line.split()[0] != '#':
-				# Read quantum numbers and zeta index
-				metadata = line.split()
-				l = int(metadata[0])
-				n = int(metadata[1])
-				zeta = int(metadata[2])
+		# Read atomic positions
+		atom_data = {}
+		while len(line.split()) == 8 and line.split()[0].isdigit():
+			raw_data = line.split()
 
-				# Get number of points for radial and cutoff radius
-				line = Fion.next()
-				metadata = line.split()
-				pts = int(metadata[0])
-				cutoff = float(metadata[2])
+			atom_index = int(raw_data[0])
+			x = float(raw_data[1])
+			y = float(raw_data[2])
+			z = float(raw_data[3])
+			ion_type = int(raw_data[4])
 
-				# Initialise R(r) function data
-				r = []
-				R = []
-				# Read data into Radial object and add to Ion
-				for i in range(0, pts):
-					line = Fion.next()
-					x, y = line.split()
-					x = float(x)
-					y = float(y) * math.pow(x, l)
-					r.append(x)
-					R.append(y)
+			atom_data[atom_index] = [x, y, z, ion_type]
 
-				# Create Radial object and store in dict
-				radialDict[l][zeta] = atomic.Radial(n, l, zeta, r, R, cutoff)
-				line = Fion.next()
-			Fion.close()
+			line = conquest_out_file.next()
 
-			# Create Ion with radials and add to dict
-			self.ions[ionName] = atomic.Ion(ionName, radialDict)
-			del radialDict
+		# Skip lines until cell data
+		while "The simulation box has the following dimensions" not in line:
+			line = conquest_out_file.next()
+		line = conquest_out_file.next()
 
-	def parseConquestOutput(self):
-		"""Parse data from conqFiles to Atom objects and store in self.ions indexed by conqFile name."""
+		# Get cell dimensions
+		raw_data = line.split()
+		cell_length_x = float(raw_data[2])
+		cell_length_y = float(raw_data[5])
+		cell_length_z = float(raw_data[8])
 
-		# Open Conquest_out file
-		for conq in self.conqFiles:
-			Fconq = open(self.conqFolder+conq)
+		# Skip lines until ion data
+		while '------------------------------------------------------------------' not in line:
+			line = conquest_out_file.next()
+		conquest_out_file.next()
+		conquest_out_file.next()
+		line = conquest_out_file.next()
 
-			# Skip opening lines
-			line = Fconq.next()
-			while len(line.split()) != 8:
-				line = Fconq.next()
+		# Get ion species
+		while '------------------------------------------------------------------' not in line:
+			raw_data = line.split()
 
-			# Read atomic positions
-			atomData = {}
-			while len(line.split()) == 8 and line.split()[0].isdigit():
-				rawData = line.split()
+			# Get ion data
+			ion_type = int(raw_data[0])
+			ion_name = raw_data[1]
 
-				atomIndex = int(rawData[0])
-				x = float(rawData[1])
-				y = float(rawData[2])
-				z = float(rawData[3])
-				ionType = int(rawData[4])
+			# Parse ion file and get Io object
+			ions[ion_name] = get_ion(ion_name, ion_folder=ion_folder)
 
-				atomData[atomIndex] = [x, y, z, ionType]
+			# Check for atoms of this ion type
+			for atom_key in atom_data:
+				atom_data_list = atom_data[atom_key]
+				if atom_data_list[3] == ion_type:
+					# Get atom position
+					x, y, z = atom_data_list[:3]
+					r = Vector(x, y, z)
 
-				line = Fconq.next()
+					# Create Atom object
+					atoms[atom_key] = atomic.Atom(ion_name, r)
 
-			# Skip lines until more atom data
+					# Apply Ion type to Atom
+					atoms[atom_key].set_ion(ions[ion_name])
+			conquest_out_file.next()
+			line = conquest_out_file.next()
+		conquest_out_file.close()
 
-			while "The simulation box has the following dimensions" not in line:
-				line = Fconq.next()
-			line = Fconq.next()
-			rawData = line.split()
-			cellLengthX = float(rawData[2])
-			cellLengthY = float(rawData[5])
-			cellLengthZ = float(rawData[8])
-			self.cellDimensions[conq] = [cellLengthX, cellLengthY, cellLengthZ]
+		# Open corresponding .dat file for basis coefficients
+		try:
+			conquest_dat_file = open(conquest_folder + conquest_out + '.dat')
+			line = conquest_dat_file.next()
 
-			# 
-			while '------------------------------------------------------------------' not in line:
-				line = Fconq.next()
-			Fconq.next()
-			Fconq.next()
-			line = Fconq.next()
-
-			# Get ion species
-			while '------------------------------------------------------------------' not in line:
-				rawData = line.split()
-
-				ionType = int(rawData[0])
-				ionName = rawData[1]
-				numberOfElectrons = int(rawData[5])
-
-				for atomKey in atomData:
-					atomDataList = atomData[atomKey]
-					if atomDataList[3] == ionType:
-						x, y, z = atomDataList[:3]
-						v = Vector(x, y, z)
-						self.atoms[conq][atomKey] = atomic.Atom(ionName, v)
-						self.atoms[conq][atomKey].set_ion(self.ions[ionName])
-						if conq not in self.electrons:
-							self.electrons[conq] = 0
-						self.electrons[conq] += numberOfElectrons
-				Fconq.next()
-				line = Fconq.next()
-
-			Fconq.close()
-
-			# Open corresponding .dat file
-			Fcoeff = open(self.conqFolder+conq+'.dat')
-			line = Fcoeff.next()
-
-			endOfFile = False
-			while not endOfFile:
+			# Loop over all lines
+			end_of_file = False
+			while not end_of_file:
 				if '#Kpoint' in line:
-					line = Fcoeff.next()
+					# Get k-point data
+					line = conquest_dat_file.next()
 					data = line.split()
 					Kx = float(data[0])
 					Ky = float(data[1])
 					Kz = float(data[2])
-					K = Vector(Kx, Ky, Kz)
+					line = conquest_dat_file.next()
+					data = line.split()
+					K_weight = float(data[0])
+					K = KVector(Kx, Ky, Kz, K_weight)
 					try:
-						line = Fcoeff.next()
+						line = conquest_dat_file.next()
 						while '#Kpoint' not in line:
+							# Get band energy data
 							data = line.split()
 							bandN = int(data[0])
-							bandE = float(data[1])*HA_TO_EV
-							line = Fcoeff.next()
+							bandE = float(data[1]) * HA_TO_EV
+
+							# Get coefficient data
+							line = conquest_dat_file.next()
 							while len(line.split()) > 2:
 								data = line.split()
 								a = int(data[0])
 								PAO = int(data[1])
-								coeffString = data[2]
-								coeffString = coeffString.replace('(', '')
-								coeffString = coeffString.replace(')', '')
-								complexString = coeffString.split(',')
-								complexCoeff = complex(float(complexString[0]), float(complexString[1]))
-								self.atoms[conq][a].add_coefficient(K, bandE, PAO, complexCoeff)
-								line = Fcoeff.next()
-
+								coeff_string = data[2]
+								coeff_string = coeff_string.replace('(', '')
+								coeff_string = coeff_string.replace(')', '')
+								complex_string = coeff_string.split(',')
+								complex_coeff = complex(float(complex_string[0]), float(complex_string[1]))
+								atoms[a].add_coefficient(K, bandE, PAO, complex_coeff)
+								line = conquest_dat_file.next()
 					except StopIteration:
-						endOfFile = True
+						end_of_file = True
 				else:
 					# Check if end of file
 					try:
-						line = Fcoeff.next()
+						line = conquest_dat_file.next()
 					except StopIteration:
-						endOfFile = True
-			Fcoeff.close()
+						end_of_file = True
+			conquest_dat_file.close()
+		except IOError:
+			print conquest_folder + conquest_out + '.dat does not exist'
 
-			FDoS = open(self.conqFolder+conq+'.dos')
-			line = FDoS.next()
-			FDoS.close()
+		try:
+			conquest_dos_file = open(conquest_folder + conquest_out + '.dos')
+			line = conquest_dos_file.next()
+			conquest_dos_file.close()
 
 			data = line.split()
-			fermiLevel = float(data[2])*HA_TO_EV
+			fermi_lvl = float(data[2]) * HA_TO_EV
 
-			self.fermiLevels[conq] = fermiLevel
+			cell = Cell(conquest_out, fermi_lvl, cell_length_x, cell_length_y, cell_length_z, grid_spacing=grid_spacing, group_size=group_size)
 
-	def getCell(self, conq, gridSpacing=0.5):
-
-		electrons = self.electrons[conq]
-		fermi = self.fermiLevels[conq]
-		x = self.cellDimensions[conq][0]
-		y = self.cellDimensions[conq][1]
-		z = self.cellDimensions[conq][2]
-		
-		C = Cell(conq, fermi, electrons, x, y, z, grid_spacing=gridSpacing)
-
-		for atomKey in self.atoms[conq]:
-			self.atoms[conq][atomKey].bands.lock()
-			C.add_atom(self.atoms[conq][atomKey], atomKey)
-
-		return C
-
+			for atom_key in atoms:
+				atoms[atom_key].bands.lock()
+				cell.add_atom(atoms[atom_key], atom_key)
+			return cell
+		except IOError:
+			print conquest_folder + conquest_out + '.dos does not exist'
+			sys.exit(1)
+	except IOError:
+		print conquest_folder + conquest_out + ' does not exist'
+		sys.exit(1)
