@@ -542,7 +542,7 @@ class Cell(object):
 				sys.stdout.write(" [{:<{}}]".format(self.PROG_BAR_CHARACTER * bars_done, self.PROG_BAR_INTERVALS))
 				sys.stdout.write(" {:3.0f}%".format(percent))
 				sys.stdout.flush()
-				bars_done += 1
+				bars_done = int(prog * self.PROG_BAR_INTERVALS)
 		if debug:
 			sys.stdout.write("\n")
 			sys.stdout.flush()
@@ -612,77 +612,6 @@ class Cell(object):
 			psi_grid = self.calculate_psi_grid(K, E, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
 			if write:
 				self.write_psi_grid(psi_grid, K, E)
-		return psi_grid
-
-	def calculate_psi_range(self, min_E, max_E, recalculate=False, write=True, vectorised=True, debug=False):
-		"""Evaluate wavefunction on mesh.
-
-		Args:
-			K (KVector): K-point
-			E (float): Band energy
-			recalculate (bool, opt.): Force recalculation, even if already stored
-			write (bool, opt.): Write to file
-			vectorised (bool, opt.): If true, use NumPy vectorisation
-			debug (bool, opt.): Print extra information during runtime
-
-		Returns:
-			array(complex): Mesh of complex wavefunction values
-		"""
-		atoms_done = 0
-		total_atoms = len(self.atoms)
-		bars_done = 0
-
-		# Initialise mesh
-		psi_grid = np.zeros_like(self.real_mesh[..., 0], dtype=complex)
-
-		# Get basis functions
-		# support_grid = self.get_support_grid(recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
-
-		if self.PRINT_RELATIVE_TO_EF:
-			E_str = str(E - self.fermi_level) + " eV"
-		else:
-			E_str = str(E) + " eV"
-		debug_str = "Calculating psi(r) at k = "+str(K)+", E = "+E_str+": "
-
-		if debug:
-			sys.stdout.write(debug_str)
-			sys.stdout.flush()
-
-		previous_group = 0
-		support_grid = self.get_support_group(0, debug=debug)
-		for atom_key in sorted(self.atoms.iterkeys()):
-			atom = self.atoms[atom_key]
-			group = atom_key / self.atom_group_size
-			if group != previous_group:
-				support_grid = self.get_support_group(group, debug=debug)
-				previous_group = group
-			# Iterate over orbitals
-			for l in atom.bands[K][E]:
-				for zeta in atom.bands[K][E][l]:
-					for m in atom.bands[K][E][l][zeta]:
-						# Evaluate wavefunction contribution over mesh
-						coefficient = atom.get_coefficient(K, E, l, zeta, m)
-						if vectorised:
-							psi_grid += self.psi_vec(support_grid, atom_key, l, zeta, m, coefficient)
-						else:
-							for ijk in np.ndindex(self.real_mesh.shape[:3]):
-								if support_grid[ijk]:
-									if atom_key in support_grid[ijk]:
-										psi_grid[ijk] += coefficient*support_grid[ijk][atom_key][l][zeta][m]
-			# Print progress bar
-			atoms_done += 1
-			prog = float(atoms_done) / total_atoms
-			if debug and prog * self.PROG_BAR_INTERVALS >= bars_done:
-				percent = prog * 100
-				sys.stdout.write('\r')
-				sys.stdout.write(debug_str)
-				sys.stdout.write(" [{:<{}}]".format(self.PROG_BAR_CHARACTER * bars_done, self.PROG_BAR_INTERVALS))
-				sys.stdout.write(" {:3.0f}%".format(percent))
-				sys.stdout.flush()
-				bars_done += 1
-		if debug:
-			sys.stdout.write("\n")
-			sys.stdout.flush()
 		return psi_grid
 
 	def calculate_ldos_grid(self, min_E, max_E, T, recalculate=False, write=True, vectorised=False, debug=False, debug_file=False):
@@ -1115,8 +1044,8 @@ class Cell(object):
 			w = K.weight
 			for E in self.bands[K]:
 				if min_E <= E <= max_E:
-					fd = self.fermi_dirac(E, T)
-					if V > 0:
+					fd = self.fermi_dirac(E - V, T)
+					if V < 0:
 						fd = 1 - fd
 
 					if not recalculate and os.path.isfile(self.propagated_psi_filename(K, E, T, fraction, z, delta_s=delta_s)):
@@ -1184,108 +1113,13 @@ class Cell(object):
 						sys.stdout.flush()
 		return current
 
-	def calculate_current_scan_flat(self, z, V, T, tip_work_func, tip_energy, wf_height, recalculate=False, write=True, vectorised=True, partial_surface=False, debug=False):
-		"""Calculate tunnelling current across plane.
-
-		Args:
-			z (float): z-value of plane
-			V (float): Bias voltage
-			T (float): Absolute temperature
-			tip_work_func (float): Work function of tip
-			tip_energy (float): Fermi-level of tip
-			recalculate (bool, opt.): Force recalculation, even if already stored
-			write (bool, opt.): Write to file
-			debug (bool, opt.): Print extra information during runtime
-		"""
-
-		if debug:
-			sys.stdout.write("Calculating I(R) at V = {} eV\n".format(V))
-			sys.stdout.flush()
-
-		if V > 0:
-			min_E = self.fermi_level
-			max_E = self.fermi_level + V
-		else:
-			min_E = self.fermi_level + V
-			max_E = self.fermi_level
-
-		total_k_weight = 0
-		total_energies = 0
-		for K in self.bands:
-			total_k_weight += K.weight
-			for E in self.bands[K]:
-				if min_E <= E <= max_E:
-					total_energies += 1
-		if debug:
-			sys.stdout.write("Total Energies = {}\n".format(total_energies))
-			sys.stdout.flush()
-		energies_done = 0
-
-		z, k = self.get_nearest_mesh_value(z, indices=True, points=self.real_mesh.shape[2])
-		wf_height, wf_index = self.get_nearest_mesh_value(wf_height, indices=True, points=self.real_mesh.shape[2])
-		current = np.zeros(self.real_mesh.shape[:2], dtype=float)
-		psi = np.zeros_like(current, dtype=complex)
-
-		G_conjugate = np.conjugate(self.greens_function_mesh(k, tip_work_func, tip_energy, debug=debug))
-
-		if debug:
-			sys.stdout.write("Calculating grad(G)")
-			sys.stdout.flush()
-		G_conjugate_gradient = self.periodic_gradient(G_conjugate)
-
-		G_conjugate = G_conjugate[..., wf_index]
-		G_conjugate_gradient = G_conjugate_gradient[..., wf_index, :]
-		G_centre = G_conjugate.shape[0] / 2
-
-		for K in self.bands:
-			w = K.weight
-			for E in self.bands[K]:
-				if min_E <= E <= max_E:
-					fd = self.fermi_dirac(E, T)
-					if V > 0:
-						fd = 1 - fd
-
-					raw_psi = self.get_psi_grid(K, E, recalculate=recalculate, write=write, vectorised=vectorised, debug=debug)
-					grad_raw_psi = self.periodic_gradient(raw_psi)[..., wf_index, :]
-					raw_psi = raw_psi[..., wf_index]
-
-					prog = float(energies_done) / total_energies * 100
-					if self.PRINT_RELATIVE_TO_EF:
-						E_str = str(E - self.fermi_level) + " eV"
-					else:
-						E_str = str(E) + " eV"
-					debug_str = "Calculating psi(R) at k = {!s}, E = {}; {:5.1f}%\n".format(K, E_str, prog)
-					if debug:
-						sys.stdout.write(debug_str)
-						sys.stdout.flush()
-
-					for i, j in np.ndindex(current.shape):
-
-						G_conjugate_rolled = np.roll(G_conjugate, (i - G_centre), 0)
-						G_conjugate_rolled = np.roll(G_conjugate_rolled, (j - G_centre), 1)[
-						                     :self.real_mesh.shape[0], :self.real_mesh.shape[1]]
-
-						G_conjugate_gradient_rolled = np.roll(G_conjugate_gradient, (i - G_centre), 0)
-						G_conjugate_gradient_rolled = np.roll(G_conjugate_gradient_rolled, (j - G_centre), 1)[
-						                              :self.real_mesh.shape[0], :self.real_mesh.shape[1]]
-
-						integrand = G_conjugate_rolled * raw_psi - self.grid_dot_product(grad_raw_psi, G_conjugate_gradient_rolled)
-						psi[i, j] = np.sum(integrand) * self.grid_spacing ** 2
-
-					current += fd * (w / total_k_weight) * abs(psi)**2
-
-					energies_done += 1
-		return current
-
-	def current_filename(self, z, V, T, fraction):
+	def current_filename(self, z, V, T, fraction, delta_s=None):
 		"""Return standardised filename for relevant current file"""
-		return self.MESH_FOLDER+self.CURRENT_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(z)+"_"+str(V)+"_"+str(T)+"_"+str(fraction)+self.EXT
+		if delta_s is None:
+			delta_s = self.default_delta_s
+		return self.MESH_FOLDER+self.CURRENT_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(z)+"_"+str(V)+"_"+str(T)+"_"+str(fraction)+"_"+str(delta_s)+self.EXT
 
-	def current_plane_filename(self, z, wf_height, V, T):
-		"""Return standardised filename for relevant current file"""
-		return self.MESH_FOLDER+self.CURRENT_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(z)+"_"+str(wf_height)+"_"+str(V)+"_"+str(T)+self.EXT
-
-	def write_current(self, current, z, V, T, fraction, debug=False):
+	def write_current(self, current, z, V, T, fraction, delta_s=None, debug=False):
 		"""Write current to file.
 
 		Args:
@@ -1294,7 +1128,7 @@ class Cell(object):
 			T: Absolute temperature in K
 			debug (bool, opt.): Print extra information during runtime
 		"""
-		filename = self.current_filename(z, V, T, fraction)
+		filename = self.current_filename(z, V, T, fraction, delta_s)
 
 		current_file = safe_open(filename, "w")
 		if debug:
@@ -1306,53 +1140,9 @@ class Cell(object):
 				current_file.write(str(i)+" "+str(j)+" "+str(current[i, j])+"\n")
 		current_file.close()
 
-	def write_current_plane(self, current, z, wf_height, V, T, fraction, debug=False):
-		"""Write current to file.
-
-		Args:
-			T: Absolute temperature in K
-			debug (bool, opt.): Print extra information during runtime
-		"""
-		filename = self.current_plane_filename(z, wf_height, V, T)
-
-		current_file = safe_open(filename, "w")
-		if debug:
-			sys.stdout.write("Writing current grid to {}\n".format(filename))
-		# Iterate over mesh points
-		for i, j in np.ndindex(current.shape):
-			# If LDOS is non-zero at mesh point, write data to file
-			if current[i, j] != 0:
-				current_file.write(str(i)+" "+str(j)+" "+str(current[i, j])+"\n")
-		current_file.close()
-
-	def read_current(self, z, V, T, fraction, debug=False):
+	def read_current(self, z, V, T, fraction, delta_s=None, debug=False):
 		"""Read current grid from file"""
-		filename = self.current_filename(z, V, T, fraction)
-		current_file = open(filename, 'r')
-		current = np.zeros(self.real_mesh.shape[:2], dtype=float)
-
-		if debug:
-			sys.stdout.write("Reading I(R) from {}\n".format(filename))
-			sys.stdout.flush()
-
-		for line in current_file:
-			line_split = line.split()
-			# Get mesh indices
-			i = int(line_split[0])
-			j = int(line_split[1])
-
-			# Get current value
-			value = float(line_split[2])
-			current[i, j] = value
-
-		if debug:
-			sys.stdout.write("I(R) successfully read\n")
-			sys.stdout.flush()
-		return current
-
-	def read_current_plane(self, z, wf_index, V, T, debug=False):
-		"""Read current grid from file"""
-		filename = self.current_plane_filename(z, wf_index, V, T)
+		filename = self.current_filename(z, V, T, fraction, delta_s=delta_s)
 		current_file = open(filename, 'r')
 		current = np.zeros(self.real_mesh.shape[:2], dtype=float)
 

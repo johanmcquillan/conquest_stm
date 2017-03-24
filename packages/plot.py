@@ -55,7 +55,7 @@ def plot_2d(cell, mesh_3d, title, save_name, axis, plane_value):
 		plt.close()
 
 
-def plot_3d_scatter_mask(C, title, mesh, delta=0.0, zero_surf=False, atoms=True):
+def plot_3d_scatter_mask(C, title, mesh, delta=0.0, height=False, zero_surf=False, atoms=True):
 
 	fig = plt.figure()
 	ax = fig.gca(projection='3d')
@@ -75,11 +75,22 @@ def plot_3d_scatter_mask(C, title, mesh, delta=0.0, zero_surf=False, atoms=True)
 	else:
 		print np_points.shape, np.max(np_points[3])
 
+	ax.view_init(elev=45, azim=-45)
+
 	ax.set_xlim(0, C.vector.x / C.grid_spacing)
 	ax.set_ylim(0, C.vector.y / C.grid_spacing)
 	ax.set_zlim(0, C.vector.z / C.grid_spacing)
 
-	ax.scatter(np_points[0], np_points[1], np_points[2], c=cm.Reds(abs(np_points[3])/np.max(np_points[3])))
+	ax.set_xlabel("x")
+	ax.set_ylabel("y")
+	ax.set_zlabel("z")
+
+	if height:
+		cmap = cm.Spectral(np_points[2])
+	else:
+		cmap = cm.Reds(abs(np_points[3]) / np.max(np_points[3]))
+
+	ax.scatter(np_points[0], np_points[1], np_points[2], c=cmap)
 
 	if atoms:
 		x = [C.atoms[a].atom_pos.x/C.grid_spacing for a in C.atoms]
@@ -90,7 +101,8 @@ def plot_3d_scatter_mask(C, title, mesh, delta=0.0, zero_surf=False, atoms=True)
 	plt.show()
 
 
-def plot_3d_isosurface(title, mesh, fraction, x_range, y_range, z_range, step, atoms=None, grid_spacing=0, alpha=1, save_name=None, show=True, top_down=False):
+def plot_3d_isosurface(title, mesh, fraction, x_range, y_range, z_range, step, atoms=None, grid_spacing=0, alpha=1,
+                    save_name=None, show=True, top_down=False):
 	"""Plot isosurface of 3D mesh.
 
 	Args:
@@ -121,10 +133,11 @@ def plot_3d_isosurface(title, mesh, fraction, x_range, y_range, z_range, step, a
 		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.afmhot, antialiased=False, lw=0.0, vmin=65, alpha=alpha)
 	else:
 		# Set axes
-		# ax.view_init(elev=90, azim=-90)
+		ax.view_init(elev=45, azim=-45)
 		ax.set_xlabel("x")
 		ax.set_ylabel("y")
 		ax.set_zlabel("z")
+		# ax.set_zlim(40, 80)
 		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Spectral, antialiased=False, lw=0.0, alpha=alpha)
 
 	if atoms is not None and grid_spacing > 0:
@@ -227,7 +240,7 @@ def plot_radials(ions, points=500, print_status=False, spectro=True, interpolati
 			# Setup plot
 			fig, ax = plt.subplots(figsize=(10, 5))
 
-			plt.title('Radial Functions for '+ion_name+'.ion')
+			plt.title('Radial Functions for '+str(ion_name)+'.ion')
 			ax.set_xlabel('Radial Distance, $r$ / $a_0$')
 			ax.set_ylabel('$R_{\zeta l}(r)$')
 			plt.minorticks_on()
@@ -266,6 +279,7 @@ def plot_radials(ions, points=500, print_status=False, spectro=True, interpolati
 
 			# Add plot to pdf and reset plt
 			plt.legend()
+			plt.show()
 			pdf.savefig()
 			plt.close()
 
@@ -476,7 +490,7 @@ def plot_basis_2d(
 
 
 def plot_ldos_2d(
-		cell, min_E, max_E, T, axis, planeValue, minimum, maximum, step=None, interpolation='cubic',
+		cell, min_E, max_E, T, axis, planeValue, minimum, maximum, step=None, title=True, interpolation='cubic',
 		print_status=False, debug=False):
 	"""Plots cross-section of charge density to pdf.
 
@@ -524,9 +538,11 @@ def plot_ldos_2d(
 
 	axes = ['x', 'y', 'z']
 	axes.remove(axis)
-	title = cell.name+' LDoS in $'+axes[0]+'-'+axes[1]+'$ plane at $'+axis+'='+str(planeValue)+'a_0$'
-
-	plot_2d(cell, ldos_3d, title, save_name, axis, planeValue, minimum, maximum)
+	if title:
+		ttl = cell.name+' LDoS in $'+axes[0]+'-'+axes[1]+'$ plane at $'+axis+'='+str(planeValue)+'a_0$'
+	else:
+		ttl = ''
+	plot_2d(cell, ldos_3d, ttl, save_name, axis, planeValue, minimum, maximum)
 
 	if print_status:
 		print 'Finished ' + save_name + '.pdf'
@@ -534,7 +550,7 @@ def plot_ldos_2d(
 
 def plot_ldos_3d(
 		cell, min_E, max_E, T, step=0.0, fraction=0.8,
-		show=True, save=False, recalculate=False, vectorised=True, top_down=False, atoms=False, debug=False):
+		show=True, save=False, title=True, recalculate=False, vectorised=True, top_down=False, atoms=False, debug=False):
 	"""Plots charge density isosurface.
 
 	All lengths measured in Bohr radii (a0).
@@ -569,10 +585,12 @@ def plot_ldos_3d(
 	if max_ldos == 0.0:
 		raise ValueError("LDoS is zero at all points")
 
-	title = (
-		cell.name+' LDoS Isosurface at '+str(fraction)+' of Maximum Density for \n Energies from '
-		+str(min_E)+' eV to '+str(max_E)+' eV relative to the Fermi Level')
-
+	if title:
+		ttl = (
+			cell.name+' LDoS Isosurface at '+str(fraction)+' of Maximum Density for \n Energies from '
+			+str(min_E)+' eV to '+str(max_E)+' eV relative to the Fermi Level')
+	else:
+		ttl = ''
 	# Save plot as png
 	if save:
 		timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
@@ -584,12 +602,12 @@ def plot_ldos_3d(
 		a = atoms
 	else:
 		a = None
-	plot_3d_isosurface(title, ldos, fraction, x_range, y_range, z_range, step, atoms=a, grid_spacing=cell.grid_spacing, save_name=save_name, show=show, top_down=top_down)
+	plot_3d_isosurface(ttl, ldos, fraction, x_range, y_range, z_range, step, atoms=a, grid_spacing=cell.grid_spacing, save_name=save_name, show=show, top_down=top_down)
 
 
 def plot_current_2d_iso(
 		cell, z, V, T, tip_work_func, tip_energy, fraction, delta_s=None, interpolation='cubic',
-		print_status=False, recalculate=False, save=False, show=True, partial_surface=False, debug=False):
+		print_status=False, recalculate=False, save=False, show=True, title=True, partial_surface=False, debug=False):
 	"""Plots cross-section of charge density to pdf.
 
 	All lengths measured in bohr radii (a0).
@@ -609,13 +627,16 @@ def plot_current_2d_iso(
 	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
 	save_name = cell.name + '_current_' + str(z) +'_' + str(V) + '_' + str(T) + '_' + str(fraction) + '_' + timeStamp
 
-	title = cell.name + ' STM scan at $V={:.2f}V$ at $z={}a_0$'.format(V, z)
-	title = cell.name + ' STM scan at $V={:.2f}V$ at fraction of {}'.format(V, fraction)
+	if title:
+		ttl = cell.name + ' STM scan at $V={:.2f}V$ at $z={}a_0$'.format(V, z)
+		ttl = cell.name + ' STM scan at $V={:.2f}V$ at fraction of {}'.format(V, fraction)
+	else:
+		ttl = ''
 
 	with PdfPages('figures2D/'+save_name+'.pdf') as pdf:
-		plt.imshow(current, interpolation='bilinear', origin='lower', cmap=cm.gray)
+		plt.imshow(current, interpolation='bilinear', origin='lower', cmap=cm.afmhot)
 		plt.colorbar()
-		plt.title(title)
+		plt.title(ttl)
 		plt.xlabel('y')
 		plt.ylabel('x')
 
@@ -670,15 +691,15 @@ def plot_current_2d_plane(
 		print 'Finished ' + save_name + '.pdf'
 
 
-def plot_differential_spectrum(cell, rs, min_V, max_V, sigma, dE=0.005, show=True, normalised=False, debug=False):
+def plot_differential_spectrum(cell, rs, min_V, max_V, sigma, normalised=False, dE=0.005, show=True, debug=False):
 
 	E, LDOS = cell.get_spectrum(rs, min_V, max_V, sigma, dE=dE, debug=debug)
 
-	if normalised:
-		maxes = LDOS.max(axis=0)
-		LDOS *= 1.0 / maxes
-
 	fig, ax = plt.subplots(1)
+
+	if normalised:
+		LDOS /= np.max(LDOS, axis=0)
+		ax.set_ylim(0, 1.2)
 
 	for i in range(len(rs)):
 		r = rs[i]
@@ -698,19 +719,49 @@ def plot_differential_spectrum(cell, rs, min_V, max_V, sigma, dE=0.005, show=Tru
 		plt.show()
 
 
-def plot_differential_spectrum_th(cell, rs, min_V, max_V, sigma, T, fraction, z, dE=0.005, show=True, normalised=False, debug=False):
+def plot_differential_spectrum_th(cell, rs, min_V, max_V, sigma, T, fraction, z, normalised=False, dE=0.005, show=True, debug=False):
 
 	E, LDOS = cell.get_spectrum_th(rs, min_V, max_V, sigma, T, fraction, z, dE=dE, debug=debug)
 
+	fig, ax = plt.subplots(1)
+
 	if normalised:
-		maxes = LDOS.max(axis=0)
-		LDOS *= 1.0 / maxes
+		LDOS /= np.max(LDOS, axis=0)
+		ax.set_ylim(0, 1.2)
+
+	for i in range(len(rs)):
+		r = rs[i]
+		ax.plot(E, LDOS[:, i], label=r"$({:.2f}, {:.2f}, {:.2f})$".format(r[0], r[1], r[2]))
+
+	ax.set_xlim(min_V, max_V)
+	ax.set_xlabel(r'Sample Bias Voltage, $V / V$')
+	ax.set_yticklabels(["{:.1f}".format(t) for t in ax.get_yticks()])
+
+	ax.set_ylabel(r'Differential Conductance, d$I$/d$V$ (Arbitrary Units)')
+	# plt.legend(loc='upper right')
+	# title = r"{} {} Spectrum at $ a_0$, $\sigma = {}eV$".format(cell.name, r"$\frac{dI}{dV}$", sigma)
+	# plt.title(title)
+	plt.xlim(-1.5, 1.5)
+
+	if show:
+		plt.show()
+
+
+def plot_differential_spectrum_both(cell, rs, min_V, max_V, sigma, T, fraction, z, normalised=False, dE=0.005, show=True, debug=False):
+
+	E, LDOS_direct = cell.get_spectrum(rs, min_V, max_V, sigma, dE=dE, debug=debug)
+	E, LDOS_th = cell.get_spectrum_th(rs, min_V, max_V, sigma, T, fraction, z, dE=dE, debug=debug)
+
+	if normalised:
+		LDOS_direct /= np.max(LDOS_direct, axis=0)
+		LDOS_th /= np.max(LDOS_th, axis=0)
 
 	fig, ax = plt.subplots(1)
 
 	for i in range(len(rs)):
 		r = rs[i]
-		ax.plot(E, LDOS[:, i], label=r"$({:.2f}, {:.2f}, {:.2f})$".format(r[0], r[1], r[2]))
+		ax.plot(E, LDOS_direct[:, i], label=r"$({:.2f}, {:.2f}, {:.2f})$".format(r[0], r[1], r[2]))
+		ax.plot(E, LDOS_th[:, i], label=r"$({:.2f}, {:.2f}, {:.2f})$".format(r[0], r[1], r[2]))
 
 	ax.set_xlim(min_V, max_V)
 	ax.set_xlabel(r'Sample Bias Voltage, $V / V$')

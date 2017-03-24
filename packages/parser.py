@@ -61,7 +61,7 @@ def get_ion(ion_name, ion_folder='ions/'):
 		sys.exit(1)
 
 
-def get_cell(conquest_out, conquest_folder='conquest/', ion_folder='ions/', grid_spacing=0.5, group_size=150, debug=False):
+def get_cell(conquest_out, conquest_folder='conquest/', ion_folder='ions/', grid_spacing=0.5, group_size=150, weights=True, debug=False):
 	# Open Conquest_out file
 	if debug:
 		sys.stdout.write("Building simulation cell\n")
@@ -152,9 +152,12 @@ def get_cell(conquest_out, conquest_folder='conquest/', ion_folder='ions/', grid
 					Kx = float(data[0])
 					Ky = float(data[1])
 					Kz = float(data[2])
-					line = conquest_dat_file.next()
-					data = line.split()
-					K_weight = float(data[0])
+					if weights:
+						line = conquest_dat_file.next()
+						data = line.split()
+						K_weight = float(data[0])
+					else:
+						K_weight = 1
 					K = KVector(Kx, Ky, Kz, K_weight)
 					try:
 						line = conquest_dat_file.next()
