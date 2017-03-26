@@ -1,11 +1,9 @@
 
 import numpy as np
-import datetime as dt
 
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d as mp3d
 from mpl_toolkits.mplot3d import Axes3D
-from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib import cm
 from matplotlib import colors as clrs
 
@@ -15,13 +13,20 @@ from sph import sph
 from vector import Vector
 
 # Spectroscopic notation dictionary
-SPECTRAL = {0: 's', 1: 'p', 2: 'd', 3: 'f', 4: 'g',
-               5: 'h', 6: 'i', 7: 'j', 8: 'k'}
+SPECTRAL = {0: 's', 1: 'p', 2: 'd', 3: 'f', 4: 'g', 5: 'h', 6: 'i', 7: 'j', 8: 'k'}
 
 AXES = ('x', 'y', 'z')
 
 
-def plot_2d(cell, mesh_3d, title, save_name, axis, plane_value):
+def plot_2d(cell, mesh_3d, title, axis, plane_value):
+	"""Plots a 2D cross-section of a 3D mesh.
+	Args:
+		cell (Cell): Cell object
+		mesh_3d (array(float)): 3D array
+		title (string): Title of plot
+		axis (string): Axis normal to plane to be plotted; 'x', 'y', or 'z'
+		plane_value (float): Height of plane in Bohr Radii
+	"""
 
 	if axis == 'x':
 		index = np.where(cell.x_mesh == plane_value)[0][0]
@@ -41,75 +46,23 @@ def plot_2d(cell, mesh_3d, title, save_name, axis, plane_value):
 	else:
 		raise ValueError("Axis must be x, y, or z")
 
-	with PdfPages('figures2D/'+save_name+'.pdf') as pdf:
-		plt.imshow(
-				mesh_2d, interpolation='bilinear', origin='lower', cmap=cm.copper,
-				extent=(0, mesh_2d.shape[0], 0, mesh_2d.shape[1]))
-		plt.colorbar()
-		plt.title(title)
-		plt.xlabel(label1)
-		plt.ylabel(label2)
-
-		# Save to pdf
-		pdf.savefig()
-		plt.close()
-
-
-def plot_3d_scatter_mask(C, title, mesh, delta=0.0, height=False, zero_surf=False, atoms=True):
-
-	fig = plt.figure()
-	ax = fig.gca(projection='3d')
+	plt.imshow(mesh_2d, interpolation='bilinear', origin='lower', cmap=cm.afmhot, extent=(0, mesh_2d.shape[0], 0, mesh_2d.shape[1]))
+	plt.colorbar()
 	plt.title(title)
-
-	points = []
-	for ijk in np.ndindex(mesh.shape):
-		if (type(mesh) is not np.ma.MaskedArray or mesh[ijk] is not np.ma.masked) and (delta == 0.0 or abs(mesh[ijk]) <= delta) and (zero_surf or mesh[ijk] != 0):
-			i, j, k = ijk
-			points.append([i, j, k, mesh[ijk]])
-			#print i, j, k, mesh[ijk], delta
-
-	np_points = np.transpose(np.array(points))
-
-	if len(points) == 0 or np.max(np_points) == 0:
-		raise ValueError("No Points!")
-	else:
-		print np_points.shape, np.max(np_points[3])
-
-	ax.view_init(elev=45, azim=-45)
-
-	ax.set_xlim(0, C.vector.x / C.grid_spacing)
-	ax.set_ylim(0, C.vector.y / C.grid_spacing)
-	ax.set_zlim(0, C.vector.z / C.grid_spacing)
-
-	ax.set_xlabel("x")
-	ax.set_ylabel("y")
-	ax.set_zlabel("z")
-
-	if height:
-		cmap = cm.Spectral(np_points[2])
-	else:
-		cmap = cm.Reds(abs(np_points[3]) / np.max(np_points[3]))
-
-	ax.scatter(np_points[0], np_points[1], np_points[2], c=cmap)
-
-	if atoms:
-		x = [C.atoms[a].atom_pos.x/C.grid_spacing for a in C.atoms]
-		y = [C.atoms[a].atom_pos.y/C.grid_spacing for a in C.atoms]
-		z = [C.atoms[a].atom_pos.z/C.grid_spacing for a in C.atoms]
-
-		ax.scatter(x, y, z)
+	plt.xlabel(label1)
+	plt.ylabel(label2)
 	plt.show()
+	plt.close()
 
 
-def plot_3d_isosurface(title, mesh, fraction, x_range, y_range, z_range, step, atoms=None, grid_spacing=0, alpha=1,
-                    save_name=None, show=True, top_down=False):
+def plot_3d_isosurface(title, mesh, fraction, alpha=1):
 	"""Plot isosurface of 3D mesh.
 
 	Args:
+		title (string): Title of plot
+		mesh (array(float)): 3D array to be plotted
 		fraction (float, opt.): Sets value of isosurface to this fraction of max charge density
-		show (bool, opt.): If true, show plot
-		save (bool, opt.): If true, save plot
-		debug (bool, opt.): If true, print extra information during runtime
+		alpha (float, opt.): Transparency of plot surface
 	"""
 
 	mes = measure.marching_cubes(mesh, fraction*np.max(mesh))
@@ -121,171 +74,68 @@ def plot_3d_isosurface(title, mesh, fraction, x_range, y_range, z_range, step, a
 	ax = fig.gca(projection='3d')
 	plt.title(title)
 
-	ax.set_xlim3d(x_range[0] / step, x_range[1] / step)
-	ax.set_ylim3d(y_range[0] / step, y_range[1] / step)
-	ax.set_zlim3d(z_range[0] / step, z_range[1] / step)
-
-	if top_down:
-		ax.view_init(elev=90, azim=-90)
-		ax.set_xlabel("x")
-		ax.set_ylabel("y")
-		ax.set_zlabel("z")
-		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.afmhot, antialiased=False, lw=0.0, vmin=65, alpha=alpha)
-	else:
-		# Set axes
-		ax.view_init(elev=45, azim=-45)
-		ax.set_xlabel("x")
-		ax.set_ylabel("y")
-		ax.set_zlabel("z")
-		# ax.set_zlim(40, 80)
-		ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Spectral, antialiased=False, lw=0.0, alpha=alpha)
-
-	if atoms is not None and grid_spacing > 0:
-		x = [atoms[a].atom_pos.x/grid_spacing for a in atoms]
-		y = [atoms[a].atom_pos.y/grid_spacing for a in atoms]
-		z = [atoms[a].atom_pos.z/grid_spacing for a in atoms]
-
-		ax.scatter(x, y, z, c='r', s=20)
-
-	if save_name:
-		plt.savefig("figures3D/"+save_name+".png")
-	if show:
-		plt.show()
-	plt.close()
-
-
-def plot_pao_3d(cell):
-
-	x_range = (0.0, cell.vector.x)
-	y_range = (0.0, cell.vector.y)
-	z_range = (0.0, cell.vector.z)
-
-	fig = plt.figure()
-	ax = fig.gca(projection='3d')
-
-	supp_mesh = cell.get_support_group(0, recalculate=True, debug=True)
-	mesh = np.zeros(supp_mesh.shape)
-	from packages.smart_dict import SmartDict
-	for a in cell.atoms:
-		atom = cell.atoms[a]
-		coeffs = SmartDict()
-		for l in atom.radials:
-			for zeta in atom.radials[l]:
-				for m in range(-l, l+1):
-					coeffs[l][zeta][m] = 0
-
-		for K in atom.bands:
-			for E in atom.bands[K]:
-				if cell.fermi_level - 2 <= E <= cell.fermi_level:
-					for l in atom.radials:
-						for zeta in atom.radials[l]:
-							for m in range(-l, l + 1):
-								coeffs[l][zeta][m] += abs(atom.get_coefficient(K, E, l, zeta, m))**2
-
-		for l in atom.radials:
-			for zeta in atom.radials[l]:
-				for m in range(-l, l+1):
-					for ijk in np.ndindex(mesh.shape):
-						if supp_mesh[ijk] is not None:
-							mesh[ijk] += coeffs[l][zeta][m]*supp_mesh[ijk][a][l][zeta][m]
-					mes = measure.marching_cubes(mesh, 0.01 * np.max(mesh))
-	verts = mes[0]
-	faces = mes[1]
+	# Set axes
+	ax.view_init(elev=45, azim=-45)
 	ax.set_xlabel("x")
 	ax.set_ylabel("y")
 	ax.set_zlabel("z")
-	step = cell.grid_spacing
-	ax.set_xlim3d(x_range[0] / step, x_range[1] / step)
-	ax.set_ylim3d(y_range[0] / step, y_range[1] / step)
-	ax.set_zlim3d(z_range[0] / step, z_range[1] / step)
-	ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], antialiased=True,
-	                lw=0.1, alpha=0.6)
+
+	ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Spectral, antialiased=False, lw=0.0, alpha=alpha)
+
 	plt.show()
+	plt.close()
 
 
-def plot_vector_field(cell, vector_field):
-
-	# fig, ax = plt.subplots(subplot_kw=dict(projection='3d'))
-
-	fig = plt.figure()
-	ax = fig.gca(projection='3d')
-
-	# for i in range(vector_field.shape[0]):
-	# 	for j in range(vector_field.shape[1]):
-	# 		for k in range(vector_field.shape[2]):
-	# 			print vector_field[i, j, k]
-
-	ax.quiver(cell.x_mesh, cell.y_mesh, cell.z_mesh, vector_field[0], vector_field[1], vector_field[2])
-	plt.show()
-
-
-def plot_radials(ions, points=500, print_status=False, spectro=True, interpolation='cubic'):
-	"""Plot all radial functions from self.ions to pdf
+def plot_radials(ion, spectro=True, interpolation='cubic'):
+	"""Plot all radial functions of an Ion object.
 
 	Args:
-		ions ({string : Ion}): Dict of Ion objects, indexed by ion name
-		points (int, opt.): Number of points for plot
-		print_status (bool, opt.): If true, print notification when finishing a plot
+		ion (Ion): Ion object
 		spectro (bool, opt.): If true, use spectroscopic notation
+		interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
 	"""
-	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
+	fig, ax = plt.subplots(figsize=(10, 5))
 
-	with PdfPages('pdfs/radials'+timeStamp+'.pdf') as pdf:
+	plt.title('Radial Functions for '+str(ion.ion_name)+'.ion')
+	ax.set_xlabel(r'Radial Distance, $r$ / $a_0$')
+	ax.set_ylabel(r'$R_{\zeta l}(r)$')
+	plt.minorticks_on()
+	plt.grid(b=True, which='major', alpha=0.25, linestyle='-')
+	plt.grid(b=True, which='minor', alpha=0.05, linestyle='-')
 
-		# Plot all functions for the same ion on one graph
-		ion_names = sorted(ions.keys())
-		for ion_name in ion_names:
-			ion = ions[ion_name]
+	# Loop over all radial functions
+	maxy = 0
+	for l in ion.radials:
+		for zeta in ion.radials[l]:
+			# Get Radial and data from ion
+			radial = ion.get_radial(l, zeta)
+			my = max(radial.radial_function_values)
+			if my > maxy:
+				maxy = my
+			n = radial.n
+			r = np.linspace(0.0, radial.cutoff, 1000)
+			R = np.empty_like(r)
+			for i in range(0, len(r)):
+				R[i] = radial.get_value(r[i], interpolation=interpolation)
 
-			# Setup plot
-			fig, ax = plt.subplots(figsize=(10, 5))
+			# Add radial info to legend and add to plot
+			# If spectro, use spectroscopic notation for legend
+			if spectro:
+				label = '$\zeta ='+str(zeta)+'$; $'+str(n)+SPECTRAL[l]+'$'
+			else:
+				label = '$\zeta ='+str(zeta)+'$; $n='+str(n)+'$, $l='+str(l)+'$'
+			ax.plot(r, R, label=label)
 
-			plt.title('Radial Functions for '+str(ion_name)+'.ion')
-			ax.set_xlabel('Radial Distance, $r$ / $a_0$')
-			ax.set_ylabel('$R_{\zeta l}(r)$')
-			plt.minorticks_on()
-			plt.grid(b=True, which='major', alpha=0.25, linestyle='-')
-			plt.grid(b=True, which='minor', alpha=0.05, linestyle='-')
+	ymax = 0.2 * int(maxy / 0.2 + 2)
+	ax.set_ylim(ymin=0, ymax=ymax)
 
-			# Loop over all radial functions
-			maxy = 0
-			my = 0
-			for l in ion.radials:
-				for zeta in ion.radials[l]:
-					# Get Radial and data from ion
-					radial = ion.get_radial(l, zeta)
-					my = max(radial.radial_function_values)
-					if my > maxy:
-						maxy = my
-					n = radial.n
-					step = radial.cutoff / points
-					r = np.arange(0.0, radial.cutoff, step)
-					R = np.empty_like(r)
-					for i in range(0, len(r)):
-						R[i] = radial.get_value(r[i], interpolation=interpolation)
-
-					# Add radial info to legend and add to plot
-					# If spectro, use spectroscopic notation for legend
-					if spectro:
-						label = '$\zeta ='+str(zeta)+'$; $'+str(n)+SPECTRAL[l]+'$'
-					else:
-						label = '$\zeta ='+str(zeta)+'$; $n='+str(n)+'$, $l='+str(l)+'$'
-					ax.plot(r, R, label=label)
-
-					if print_status:
-						print "Finished Radial "+ion.ion_name+"_"+str(zeta)+"_"+str(n)+"_"+str(l)
-			ymax = 0.2 * int(maxy / 0.2 + 2)
-			ax.set_ylim(ymin=0, ymax=ymax)
-
-			# Add plot to pdf and reset plt
-			plt.legend()
-			plt.show()
-			pdf.savefig()
-			plt.close()
+	plt.legend()
+	plt.show()
+	plt.close()
 
 
-def plot_sph_2d(l, m, axis, minimum=-8.0, maximum=8.0, plane_value=0.0, step=0.1, print_status=False):
-	"""Plots cross-section of spherical harmonic to pdf.
+def plot_sph_2d(l, m, axis, minimum=-8.0, maximum=8.0, plane_value=0.0, step=0.1):
+	"""Plot cross-section of spherical harmonic.
 	All lengths measured in bohr radii (a0).
 
 	Args:
@@ -295,11 +145,10 @@ def plot_sph_2d(l, m, axis, minimum=-8.0, maximum=8.0, plane_value=0.0, step=0.1
 		minimum (int, opt.): Minimum value of coordinates measured in a0; Default is -8
 		maximum (int, opt.): Maximum value of coordinates measured in a0; Default is +8
 		plane_value (float, opt.): Constant value assigned to Cartesian coordinate given by axis; Default is 0.00001
-		step (float, opt.): Interval between Cartesian mgrid points, measured in a0; Default is 0.1
-		print_status (bool, opt.): If true, print update when plot is finished
+		step (float, opt.): Interval between points, measured in a0; Default is 0.1
 	"""
 
-	if axis not in ['x', 'y', 'z']:
+	if axis not in AXES:
 		raise ValueError("Axis must be x, y, or z")
 
 	# Initialise meshes
@@ -331,23 +180,15 @@ def plot_sph_2d(l, m, axis, minimum=-8.0, maximum=8.0, plane_value=0.0, step=0.1
 				maxY = abs(Y[i, j])
 
 	# Setup plot
-	plot_name = 'SPH_'+str(l)+'_'+str(m)+'_'+axis
-	with PdfPages('pdfs/'+plot_name+'.pdf') as pdf:
-		plt.imshow(
-			Y, interpolation='bilinear', origin='center', cmap=cm.bwr, extent=(minimum, maximum, minimum, maximum),
-			vmin=-maxY, vmax=maxY)
-		plt.colorbar()
-		plt.grid()
-		axes = ['x', 'y', 'z']
-		axes.remove(axis)
-		ttl = 'Spherical Harmonic for \n \n $l='+str(l)+'$, $m_l='+str(m)+'$ in $'+axes[0]+'-'+axes[1]+'$ plane'
-		plt.title(ttl)
-
-		# Save to pdf
-		pdf.savefig()
-		plt.close()
-		if print_status:
-			print 'Finished '+plot_name+'.pdf'
+	plt.imshow(Y, interpolation='bilinear', origin='center', cmap=cm.bwr, extent=(minimum, maximum, minimum, maximum), vmin=-maxY, vmax=maxY)
+	plt.colorbar()
+	plt.grid()
+	axes = ['x', 'y', 'z']
+	axes.remove(axis)
+	ttl = 'Spherical Harmonic for \n \n $l='+str(l)+'$, $m_l='+str(m)+'$ in $'+axes[0]+'-'+axes[1]+'$ plane'
+	plt.title(ttl)
+	plt.show()
+	plt.close()
 
 
 def plot_sph_3d(l, m):
@@ -393,106 +234,9 @@ def plot_sph_3d(l, m):
 	plt.close()
 
 
-def plot_basis_2d(
-		ion_name, ion, zeta, n, l, m, axis, minimum=-8, maximum=8, plane_value=0.0, step=0.1, print_status=False,
-		spectro=False):
-	"""Plots cross-section of basis function of ion to pdf.
-	All lengths measured in bohr radii (a0).
-
-	Args:
-		ion_name (string): Name of ion file (excluding .ion)
-		ion (Ion): Ion object to be plotted
-		zeta (int):	Zeta index of Radial
-		n (int): Principal quantum number for Radial
-		l (int): Orbital angular momentum quantum number for Radial and spherical harmonic
-		m (int): Azimuthal quantum number for spherical harmonic
-		axis (string) : Cartesian axis ('x', 'y', or 'z') to set to constant value given by planeValue
-		minimum (int, opt.): Minimum value of coordinates measured in a0; Default is -8
-		maximum (int, opt.): Maximum value of coordinates measured in a0; Default is +8
-		plane_value (double, opt.): Constant value assigned to Cartesian coordinate given by axis; Default is 0.00001
-		step (int, opt.): Interval between Cartesian mgrid points, measured in a0; Default is 0.1
-		print_status (boolean, opt.): If true, print notification when finishing a plot
-		spectro (boolean, opt.): If true, use spectroscopic notation
-	"""
-
-	if axis not in ['x', 'y', 'z']:
-		raise ValueError("Axis must be x, y, or z")
-
-	# Initialise meshes
-	# 2D cartesian mesh (x, y, or z axis determined later)
-	space1, space2 = np.mgrid[minimum:maximum:step, minimum:maximum:step]
-
-	Y = np.empty_like(space1, dtype=float)  # Spherical Harmonic mesh
-	R = np.empty_like(space1, dtype=float)  # Radial Function mesh
-	psi = np.empty_like(space1, dtype=float)  # Basis Function mesh (psi = R*Y)
-
-	max_psi = 0.1  # Colour plot sets limits to -max_psi to +max_psi
-
-	# Loop over all mesh points
-	for i in range(0, int((maximum - minimum) / step)):
-		for j in range(0, int((maximum - minimum) / step)):
-			# Use axis variable to determine which axes space1 and space2 refer to
-			# Evaluate spherical harmonic at mesh point
-			if axis == 'z':
-				r = Vector(space2[i, j], space1[i, j], plane_value)
-				plt.xlabel('$x$ / $a_0$')
-				plt.ylabel('$y$ / $a_0$')
-			if axis == 'y':
-				r = Vector(space2[i, j], plane_value, space1[i, j])
-				plt.xlabel('$x$ / $a_0$')
-				plt.ylabel('$z$ / $a_0$')
-			if axis == 'x':
-				r = Vector(plane_value, space2[i, j], space1[i, j])
-				plt.xlabel('$y$ / $a_0$')
-				plt.ylabel('$z$ / $a_0$')
-
-			Y[i, j] = sph(l, m, r)
-			# Evaluate value of Radial at mesh point and get psi
-			distance = abs(r)
-			R[i, j] = ion.get_radial_value(l, zeta, distance)
-			psi[i, j] = Y[i, j] * R[i, j]
-
-			# Update maxpsi
-			if abs(psi[i, j]) > max_psi:
-				max_psi = abs(psi[i, j])
-
-	if max_psi == 0:
-		raise ValueError("Wavefunction is zero at all points")
-
-	# Setup plot
-	time_stamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
-	plot_name = (
-		'Basis_' + ion_name + '_' + str(zeta) + '_' + str(n) + '_' + str(l) + '_' + str(m) + '_' + axis + time_stamp)
-	with PdfPages('pdfs/' + plot_name + '.pdf') as pdf:
-		plt.imshow(
-			psi, interpolation='bilinear', origin='center', cmap=cm.bwr, extent=(minimum, maximum, minimum, maximum),
-			vmin=-max_psi, vmax=max_psi)
-		plt.colorbar()
-		plt.grid()
-		axes = ['x', 'y', 'z']
-		axes.remove(axis)
-		if spectro:
-			ttl = (
-				ion_name + ' Basis Function for \n \n $\zeta=' + str(zeta) + '$, $' + str(n) + SPECTRAL[l] + '$, $m_l=' + str(m)
-				+ '$ in $' + axes[0] + '-' + axes[1] + '$ plane')
-		else:
-			ttl = (
-				ion_name + ' Basis Function for \n \n $\zeta=' + str(zeta) + '$, $n=' + str(n) + '$, $l=' + str(l) + '$, $m_l=' + str(m)
-				+ '$ in $' + axes[0] + '-' + axes[1] + '$ plane')
-		plt.title(ttl)
-
-		# Save to pdf
-		pdf.savefig()
-		plt.close()
-
-		if print_status:
-			print 'Finished '+plot_name+'.pdf'
-
-
 def plot_ldos_2d(
-		cell, min_E, max_E, T, axis, planeValue, minimum, maximum, step=None, title=True, interpolation='cubic',
-		print_status=False, debug=False):
-	"""Plots cross-section of charge density to pdf.
+		cell, min_E, max_E, T, axis, plane_value, title=True, interpolation='cubic', debug=False):
+	"""Plots cross-section of LDOS.
 
 	All lengths measured in bohr radii (a0).
 
@@ -501,56 +245,35 @@ def plot_ldos_2d(
 		min_E (float): Minimum energy
 		max_E (float): Maximum energy
 		T (float): Absolute temperature in K
-		axis (string): Cartesian axis ('x', 'y', or 'z') to set to constant value given by planeValue
-		minimum (int): Minimum value of coordinates
-		maximum (int): Maximum value of coordinates
-		planeValue (float, opt.): Constant value assigned to Cartesian coordinate given by axis; Default is 0.0
-		step (float, opt.): Interval between Cartesian mgrid points, measured in a0;
-							Default is cell.grid_spacing
-		interpolation (string, opt.): Method of interpolation; possible arguments are 'cubic' (default) and 'linear'
-		print_status (bool, opt.): If true, print update when file is saved
+		axis (string): Cartesian axis ('x', 'y', or 'z') to set to constant value given by plane_value
+		plane_value (float, opt.): Constant value assigned to Cartesian coordinate given by axis; Default is 0.0
+		title (bool, opt.): If False, show no title
+		interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
 		debug (bool, opt.): If true, print extra information during runtime
 	"""
 
 	if axis not in AXES:
 		raise ValueError("Axis must be x, y, or z")
 
-	# If no step given, set to gridSpacing
-	if not step:
-		step = cell.grid_spacing
-
 	# Get absolute energy
 	min_E_abs = min_E + cell.fermiLevel
 	max_E_abs = max_E + cell.fermiLevel
 
-	ldos_3d = cell.get_ldos_grid(min_E_abs, max_E_abs, T, debug=debug)
+	ldos_3d = cell.get_ldos_grid(min_E_abs, max_E_abs, T, interpolation=interpolation, debug=debug)
 
 	if np.max(ldos_3d) == 0.0:
 		raise ValueError("LDoS is zero at all points")
-	else:
-		index = np.where(ldos_3d == 16.9705557301)
-		i = index[0]
-		j = index[1]
-		k = index[2]
-
-	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
-	save_name = cell.name + '_LDoS2D_' + axis + '_' + timeStamp
 
 	axes = ['x', 'y', 'z']
 	axes.remove(axis)
 	if title:
-		ttl = cell.name+' LDoS in $'+axes[0]+'-'+axes[1]+'$ plane at $'+axis+'='+str(planeValue)+'a_0$'
+		ttl = cell.name+' LDoS in $'+axes[0]+'-'+axes[1]+'$ plane at $'+axis+'='+str(plane_value) + 'a_0$'
 	else:
 		ttl = ''
-	plot_2d(cell, ldos_3d, ttl, save_name, axis, planeValue, minimum, maximum)
-
-	if print_status:
-		print 'Finished ' + save_name + '.pdf'
+	plot_2d(cell, ldos_3d, ttl, axis, plane_value)
 
 
-def plot_ldos_3d(
-		cell, min_E, max_E, T, step=0.0, fraction=0.8,
-		show=True, save=False, title=True, recalculate=False, vectorised=True, top_down=False, atoms=False, debug=False):
+def plot_ldos_3d(cell, min_E, max_E, T, step=0.0, fraction=0.02, title=True, recalculate=False, vectorised=True, interpolation='cubic', alpha=1, debug=False):
 	"""Plots charge density isosurface.
 
 	All lengths measured in Bohr radii (a0).
@@ -559,11 +282,14 @@ def plot_ldos_3d(
 		cell (Cell): Simulation cell to plot
 		min_E (float): Minimum of energy range
 		max_E (float): Maximum of energy range
+		T (float): Apsolute temperature in k
 		step (float, opt.): Interval between Cartesian mgrid points; Default is cell.gridSpacing
 		fraction (float, opt.): Sets value of isosurface to this fraction of max charge density
+		title (bool, opt.): If False, show no title
 		alpha (float, opt.): Transparency of plot surfaces
-		show (bool, opt.): If true, show plot
-		save (bool, opt.): If true, save plot
+		recalculate (bool, opt.): Force recalculation, even if already stored
+		vectorised (bool, opt.): If true, use NumPy vectorisation
+		interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
 		debug (bool, opt.): If true, print extra information during runtime
 	"""
 	x_range = (0.0, cell.vector.x)
@@ -578,8 +304,7 @@ def plot_ldos_3d(
 	min_E_abs = min_E + cell.fermi_level
 	max_E_abs = max_E + cell.fermi_level
 
-	# Cartesian mesh
-	ldos = cell.get_ldos_grid(min_E_abs, max_E_abs, T, vectorised=vectorised, debug=debug, recalculate=recalculate)
+	ldos = cell.get_ldos_grid(min_E_abs, max_E_abs, T, vectorised=vectorised, interpolation=interpolation, recalculate=recalculate, debug=debug)
 	max_ldos = np.max(ldos)
 
 	if max_ldos == 0.0:
@@ -591,211 +316,91 @@ def plot_ldos_3d(
 			+str(min_E)+' eV to '+str(max_E)+' eV relative to the Fermi Level')
 	else:
 		ttl = ''
-	# Save plot as png
-	if save:
-		timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
-		save_name = cell.name+"_LDoS3D_"+str(fraction)+"_"+str(min_E_abs)+"_"+str(max_E_abs)+"_"+timeStamp
-	else:
-		save_name = None
 
-	if atoms:
-		a = atoms
-	else:
-		a = None
-	plot_3d_isosurface(ttl, ldos, fraction, x_range, y_range, z_range, step, atoms=a, grid_spacing=cell.grid_spacing, save_name=save_name, show=show, top_down=top_down)
+	plot_3d_isosurface(ttl, ldos, fraction, alpha=alpha)
 
 
-def plot_current_2d_iso(
-		cell, z, V, T, tip_work_func, tip_energy, fraction, delta_s=None, interpolation='cubic',
-		print_status=False, recalculate=False, save=False, show=True, title=True, partial_surface=False, debug=False):
-	"""Plots cross-section of charge density to pdf.
+def plot_current_2d(cell, z, V, T, tip_work_func, tip_energy, fraction, delta_s=None, interpolation='cubic', recalculate=False, vectorised=True, title=True, debug=False):
+	"""Plot constant-height STM scan.
 
 	All lengths measured in bohr radii (a0).
 
 	Args:
 		cell (Cell): Simulation cell to plot
-		min_E (float): Minimum energy
-		max_E (float): Maximum energy
-		T (float): Absolute temperature in K
-		interpolation (string, opt.): Method of interpolation; possible arguments are 'cubic' (default) and 'linear'
-		print_status (bool, opt.): If true, print update when file is saved
-		debug (bool, opt.): If true, print extra information during runtime
+		z (float): z-value of plane in Bohr radii; Uses nearest mesh point to given value
+		V (float): Bias voltage
+		T (float): Absolute temperature
+		tip_work_func (float): Work function of tip
+		tip_energy (float): Fermi-level of tip
+		delta_s (float, opt.): Surface broadening parameter; If None, uses default value
+		fraction (float, opt.): Fraction of maximum charge density to use as isovalue for isosurface
+		recalculate (bool, opt.): Force recalculation, even if already stored
+		vectorised (bool, opt.): If true, use NumPy vectorisation
+		interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
+		title (bool, opt.): If False, show no title
+		debug (bool, opt.): Print extra information during runtime
 	"""
 
-	current = cell.get_current_scan_iso(z, V, T, tip_work_func, tip_energy, delta_s, fraction=fraction, recalculate=recalculate, debug=debug, partial_surface=partial_surface)
-
-	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
-	save_name = cell.name + '_current_' + str(z) +'_' + str(V) + '_' + str(T) + '_' + str(fraction) + '_' + timeStamp
+	current = cell.get_current_scan(z, V, T, tip_work_func, tip_energy, delta_s, fraction=fraction, recalculate=recalculate, vectorised=vectorised, interpolation=interpolation, debug=debug)
 
 	if title:
-		ttl = cell.name + ' STM scan at $V={:.2f}V$ at $z={}a_0$'.format(V, z)
-		ttl = cell.name + ' STM scan at $V={:.2f}V$ at fraction of {}'.format(V, fraction)
+		ttl = cell.name + ' STM scan at $V={:.2f}V$ at $z={}a_0$ and fraction of ${}$'.format(V, z, fraction)
 	else:
 		ttl = ''
 
-	with PdfPages('figures2D/'+save_name+'.pdf') as pdf:
-		plt.imshow(current, interpolation='bilinear', origin='lower', cmap=cm.afmhot)
-		plt.colorbar()
-		plt.title(ttl)
-		plt.xlabel('y')
-		plt.ylabel('x')
+	plt.imshow(current, interpolation='bilinear', origin='lower', cmap=cm.afmhot)
+	plt.colorbar()
+	plt.title(ttl)
+	plt.xlabel('y')
+	plt.ylabel('x')
+	plt.show()
+	plt.close()
 
-		if save:
-			pdf.savefig()
-		if show:
-			plt.show()
 
-		plt.close()
-
-	if print_status:
-		print 'Finished ' + save_name + '.pdf'
-		
-		
-def plot_current_2d_plane(
-		cell, z, wf_height, V, T, tip_work_func, tip_energy, delta_s, interpolation='cubic',
-		print_status=False, recalculate=False, show=True, debug=False):
-	"""Plots cross-section of charge density to pdf.
-
-	All lengths measured in bohr radii (a0).
+def plot_spectrum(cell, xy, min_V, max_V, sigma, T, fraction, z, delta_s=None, dE=0.005, debug=False):
+	"""Get spectroscopic data from a list of specific tip positions.
 
 	Args:
 		cell (Cell): Simulation cell to plot
+		xy (list(list(float)): x-y points of tip in a0; Given as [[x1, y1], [x2, y2], ...]; Uses nearest mesh point
+		min_V (float): Lower bound for voltage range
+		max_V (float): Upper bound for voltage range
+		sigma (float): State smearing parameter in eV
 		T (float): Absolute temperature in K
-		interpolation (string, opt.): Method of interpolation; possible arguments are 'cubic' (default) and 'linear'
-		print_status (bool, opt.): If true, print update when file is saved
-		debug (bool, opt.): If true, print extra information during runtime
+		z (float): z-value of plane in a0; Uses nearest mesh point to given value
+		fraction (float): Fraction of maximum charge density to use as isovalue for isosurface
+		delta_s (float, opt.): Surface broadening parameter; If None, uses default value
+		dE (float, opt.): Energy resolution of data points
+		debug (bool, opt.): Print extra information during runtime
 	"""
-	current = cell.get_current_scan_plane(z, wf_height, V, T, tip_work_func, tip_energy, recalculate=recalculate, debug=debug)
-	
-	timeStamp = '_{:%Y-%m-%d-%H-%M-%S}'.format(dt.datetime.now())
-	save_name = cell.name + '_current_' + str(z) +'_' + str(V) + '_' + str(T) + timeStamp
 
-	title = cell.name+r' STM scan at $V={:.2}V$ at $z={}a_0$, with $\psi$ integrated at $z={}$'.format(V, z, wf_height)
-
-	with PdfPages('figures2D/'+save_name+'.pdf') as pdf:
-		plt.imshow(current, interpolation='bilinear', origin='lower', cmap=cm.copper)
-		plt.colorbar()
-		plt.title(title)
-		plt.xlabel('y')
-		plt.ylabel('x')
-
-		# Save to pdf
-		pdf.savefig()
-
-		if show:
-			plt.show()
-
-		plt.close()
-
-	if print_status:
-		print 'Finished ' + save_name + '.pdf'
-
-
-def plot_differential_spectrum(cell, rs, min_V, max_V, sigma, normalised=False, dE=0.005, show=True, debug=False):
-
-	E, LDOS = cell.get_spectrum(rs, min_V, max_V, sigma, dE=dE, debug=debug)
-
+	E, LDOS = cell.get_spectrum_th(xy, min_V, max_V, sigma, T, fraction, z, delta_s=delta_s, dE=dE, debug=debug)
 	fig, ax = plt.subplots(1)
 
-	if normalised:
-		LDOS /= np.max(LDOS, axis=0)
-		ax.set_ylim(0, 1.2)
-
-	for i in range(len(rs)):
-		r = rs[i]
-		ax.plot(E, LDOS[:, i], label=r"$({:.2f}, {:.2f}, {:.2f})$".format(r[0], r[1], r[2]))
-
-	ax.set_xlim(min_V, max_V)
-	ax.set_xlabel(r'Sample Bias Voltage, $V / V$')
-	ax.set_yticklabels(["{:.1e}".format(t) for t in ax.get_yticks()])
-
-	ax.set_ylabel(r'LDOS (Arbitrary Units)')
-	# plt.legend(loc='upper right')
-	# title = r"{} {} Spectrum at $ a_0$, $\sigma = {}eV$".format(cell.name, r"$\frac{dI}{dV}$", sigma)
-	# plt.title(title)
-	plt.xlim(-1.5, 1.5)
-
-	if show:
-		plt.show()
-
-
-def plot_differential_spectrum_th(cell, rs, min_V, max_V, sigma, T, fraction, z, normalised=False, dE=0.005, show=True, debug=False):
-
-	E, LDOS = cell.get_spectrum_th(rs, min_V, max_V, sigma, T, fraction, z, dE=dE, debug=debug)
-
-	fig, ax = plt.subplots(1)
-
-	if normalised:
-		LDOS /= np.max(LDOS, axis=0)
-		ax.set_ylim(0, 1.2)
-
-	for i in range(len(rs)):
-		r = rs[i]
-		ax.plot(E, LDOS[:, i], label=r"$({:.2f}, {:.2f}, {:.2f})$".format(r[0], r[1], r[2]))
+	for i in range(len(xy)):
+		ax.plot(E, LDOS[:, i])
 
 	ax.set_xlim(min_V, max_V)
 	ax.set_xlabel(r'Sample Bias Voltage, $V / V$')
 	ax.set_yticklabels(["{:.1f}".format(t) for t in ax.get_yticks()])
 
-	ax.set_ylabel(r'Differential Conductance, d$I$/d$V$ (Arbitrary Units)')
-	# plt.legend(loc='upper right')
-	# title = r"{} {} Spectrum at $ a_0$, $\sigma = {}eV$".format(cell.name, r"$\frac{dI}{dV}$", sigma)
-	# plt.title(title)
+	ax.set_ylabel(r'Tunnelling Conductance, d$I$/d$V$ (Arbitrary Units)')
+
 	plt.xlim(-1.5, 1.5)
-
-	if show:
-		plt.show()
-
-
-def plot_differential_spectrum_both(cell, rs, min_V, max_V, sigma, T, fraction, z, normalised=False, dE=0.005, show=True, debug=False):
-
-	E, LDOS_direct = cell.get_spectrum(rs, min_V, max_V, sigma, dE=dE, debug=debug)
-	E, LDOS_th = cell.get_spectrum_th(rs, min_V, max_V, sigma, T, fraction, z, dE=dE, debug=debug)
-
-	if normalised:
-		LDOS_direct /= np.max(LDOS_direct, axis=0)
-		LDOS_th /= np.max(LDOS_th, axis=0)
-
-	fig, ax = plt.subplots(1)
-
-	for i in range(len(rs)):
-		r = rs[i]
-		ax.plot(E, LDOS_direct[:, i], label=r"$({:.2f}, {:.2f}, {:.2f})$".format(r[0], r[1], r[2]))
-		ax.plot(E, LDOS_th[:, i], label=r"$({:.2f}, {:.2f}, {:.2f})$".format(r[0], r[1], r[2]))
-
-	ax.set_xlim(min_V, max_V)
-	ax.set_xlabel(r'Sample Bias Voltage, $V / V$')
-	ax.set_yticklabels(["{:.1e}".format(t) for t in ax.get_yticks()])
-
-	ax.set_ylabel(r'LDOS (Arbitrary Units)')
-	# plt.legend(loc='upper right')
-	# title = r"{} {} Spectrum at $ a_0$, $\sigma = {}eV$".format(cell.name, r"$\frac{dI}{dV}$", sigma)
-	# plt.title(title)
-	plt.xlim(-1.5, 1.5)
-
-	if show:
-		plt.show()
-
-
-def plot_line_cut(cell, axis, value, z, min_V, max_V, sigma, dE=0.005, debug=False):
-
-	E, LDOS = cell.get_line_cut(axis, value, z, min_V, max_V, sigma, dE=dE, debug=debug)
-
-	plt.plot(E, LDOS)
-	plt.xlim(min_V, max_V)
-	plt.xlabel('E / eV')
-
 	plt.show()
+	plt.close()
 
 
-def plot_cits(cell, V, T, fraction, sigma, z=None, delta_s=None, method='none', debug=True):
+def plot_cits(cell, V, T, fraction, sigma, title=False, delta_s=None, debug=True):
+	"""Plot Current Imaging Tunnelling Spectroscopy scan - UNFINISHED and UNRELIABLE"""
 
-	if z is None:
-		z = cell.real_mesh[0, 0, -1, 2]
+	scan = cell.get_cits(V, T, fraction, sigma, delta_s=delta_s, debug=debug)
 
-	scan = cell.get_cits(z, V, T, fraction, sigma, delta_s=delta_s, method=method, debug=debug)
-
-	title = r"{} CITS at $V = {}V$, $\sigma = {}eV$, using ".format(cell.name, V, sigma)
-	plt.title(title)
+	if title:
+		ttl = r"{} CITS at $V = {}V$, $\sigma = {}eV$, using ".format(cell.name, V, sigma)
+	else:
+		ttl = ''
+	plt.title(ttl)
 	plt.imshow(scan, interpolation='spline16', origin='lower left', aspect='auto', cmap=cm.afmhot)
 	plt.show()
+	plt.close()

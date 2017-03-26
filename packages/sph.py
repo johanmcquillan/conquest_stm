@@ -32,7 +32,8 @@ def sph(l, m, vector):
 		m (int): Order; Azimuthal quantum number; must be within -l >= m >= l
 		vector (Vector): 3D real space Cartesian vector
 	Returns:
-		harmonic (float): Spherical harmonic for given l and m, evaluated at (x, y, z)"""
+		harmonic (float): Spherical harmonic for given l and m, evaluated at (x, y, z)
+	"""
 
 	harmonic = 0.0
 

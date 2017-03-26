@@ -2,30 +2,39 @@ import numpy as np
 
 
 class Vector(object):
-	"""3D real space Cartesian vector.
+	"""3D Cartesian vector.
 
 	Attributes:
 		x (float): Component value in x direction
 		y (float): Component value in y direction
 		z (float): Component value in z direction
+		components (np.array(float)): Components stored as array
 		magnitude (float): Vector magnitude; Initially null - only calculates if needed, saves computational cost
-		hash (int): Hash value; Initially null - only calculates if needed, saves computational cost
+		hash (int): Hash value for use as dict key; Initially null - only calculates if needed, saves computational cost
 	"""
 
 	def __init__(self, x, y, z):
+		"""Construct 3D Cartesian vector.
+
+		Args:
+			x (float): Component value in x direction
+			y (float): Component value in y direction
+			z (float): Component value in z direction
+		"""
 		self.x = x
 		self.y = y
 		self.z = z
 		self.components = np.array([x, y, z])
-		self.magnitude = None
-		self.hash = None
+		self.magnitude = None  # Vector magnitude; Initially null - only calculates if needed, saves computational cost
+		self.hash = None  # Hash value for use as dict key; Initially null - only calculates if needed, saves computational cost
 
 	def __str__(self):
-		"""Return string of components"""
+		"""Return string of components, (x, y, z)."""
 		return '('+str(self.x)+', '+str(self.y)+', '+str(self.z)+')'
 
 	def __hash__(self):
-		"""Return hash of tuple of components"""
+		"""Return hash of the tuple of components"""
+		# If hash not already stored, calculate
 		if self.hash is None:
 			self.hash = hash((self.x, self.y, self.z))
 		return self.hash
@@ -35,7 +44,7 @@ class Vector(object):
 		return (self.x, self.y, self.z) == (other.x, other.y, other.z)
 
 	def __ne__(self, other):
-		"""Inverse of self -- other"""
+		"""Inverse of self == other"""
 		return not self == other
 
 	def __abs__(self):
@@ -74,45 +83,16 @@ class Vector(object):
 		"""Subtract two vectors"""
 		return self + (-other)
 
-	@staticmethod
-	def get_x(vector):
-		return vector.x
-
-	@staticmethod
-	def get_y(vector):
-		return vector.y
-
-	@staticmethod
-	def get_z(vector):
-		return vector.z
-
-	@staticmethod
-	def elementwise_multiplication(vectorA, vectorB):
-		x = vectorA.x * vectorB.x
-		y = vectorA.y * vectorB.y
-		z = vectorA.z * vectorB.z
-		return Vector(x, y, z)
-
-	def invalid_component(self):
-		if (self.x == np.inf) or (self.y == np.inf) or (self.z == np.nan) or (self.x == np.inf) or (self.y == np.nan) or (self.z == np.nan):
-			return True
-		else:
-			return False
-
-	@staticmethod
-	def static_invalid_component(vector):
-		return vector.invalid_component()
-
 	def project_x(self):
-		"""Project vector onto x-axis"""
+		"""Return projection of vector onto x-axis"""
 		return Vector(self.x, 0, 0)
 
 	def project_y(self):
-		"""Project vector onto y-axis"""
+		"""Return projection of vector onto y-axis"""
 		return Vector(0, self.y, 0)
 
 	def project_z(self):
-		"""Project vector onto z-axis"""
+		"""Return projection of vector onto z-axis"""
 		return Vector(0, 0, self.z)
 
 	def dot(self, other):
@@ -145,77 +125,34 @@ class Vector(object):
 		self.hash = None
 		self.magnitude = None
 
-	def constrain_vector_relative(self, cell_vector):
-		"""Constrain vector to lie within simulation cell"""
-
-		# Check if vector components are greater than half of cell sides
-		# If greater, add or subtract cell length
-		while self.x > cell_vector.x/2:
-			self.x -= cell_vector.x
-		while self.x <= -cell_vector.x/2:
-			self.x += cell_vector.x
-
-		while self.y > cell_vector.y/2:
-			self.y -= cell_vector.y
-		while self.y <= -cell_vector.y/2:
-			self.y += cell_vector.y
-
-		while self.z > cell_vector.z/2:
-			self.z -= cell_vector.z
-		while self.z <= -cell_vector.z/2:
-			self.z += cell_vector.z
-
-		self.reset_hash_mag()
-
-	def constrain_vector_to_cell(self, cell_vector):
-		"""Constrain vector to lie within simulation cell"""
-
-		# Check if vector components are greater than half of cell sides
-		# If greater, add or subtract cell length
-		while self.x >= cell_vector.x:
-			self.x -= cell_vector.x
-		while self.x < 0:
-			self.x += cell_vector.x
-
-		while self.y >= cell_vector.y:
-			self.y -= cell_vector.y
-		while self.y < 0:
-			self.y += cell_vector.y
-
-		while self.z >= cell_vector.z:
-			self.z -= cell_vector.z
-		while self.z < 0:
-			self.z += cell_vector.z
-
-		self.reset_hash_mag()
-
 	@staticmethod
 	def zero():
 		"""Zero vector"""
 		return Vector(0.0, 0.0, 0.0)
 
-	@staticmethod
-	def array(mesh):
-		shape = mesh.shape[:3]
-		vector_array = np.empty(shape, dtype=Vector)
-		for indices in np.ndindex(shape):
-			vector_array[indices] = Vector(*mesh[indices])
-		return vector_array
-
 
 class KVector(Vector):
-	"""3D k-space Cartesian vector.
+	"""3D Cartesian vector in k-space. Includes k-point weighting.
 
 	Attributes:
 		x (float): Component value in x direction
 		y (float): Component value in y direction
 		z (float): Component value in z direction
-		magnitude (float): Vector magnitude. Initially null - only calculates if needed, saves computational cost
-		hash (int): Hash value; Initially null - only calculates if needed, saves computational cost
+		components (np.array(float)): Components stored as array
+		magnitude (float): Vector magnitude; Initially null - only calculates if needed, saves computational cost
+		hash (int): Hash value for use as dict key; Initially null - only calculates if needed, saves computational cost
 		weight (float): K-point weighting
 	"""
 
 	def __init__(self, x, y, z, weight):
+		"""Construct 3D Cartesian vector.
+
+			Args:
+				x (float): Component value in x direction
+				y (float): Component value in y direction
+				z (float): Component value in z direction
+				weight (float): K-point weighting
+		"""
 		Vector.__init__(self, x, y, z)
 		self.weight = weight
 
