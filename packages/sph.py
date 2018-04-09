@@ -31,11 +31,12 @@ def sph(l, m, vector):
     Currently, only l <= 4 is supported.
 
     Args:
-        l (int): Degree; Orbital angular momentum quantum number; Must be => 0
-        m (int): Order; Azimuthal quantum number; must be within -l >= m >= l
-        vector (Vector): 3D real space Cartesian vector
+        l (int): Degree; Orbital angular momentum quantum number; Must be => 0.
+        m (int): Order; Azimuthal quantum number; must be within -l >= m >= l.
+        vector (Vector): 3D real space Cartesian vector.
+
     Returns:
-        harmonic (float): Spherical harmonic for given l and m, evaluated at (x, y, z)
+        harmonic (float): Spherical harmonic for given l and m, evaluated at (x, y, z).
     """
 
     harmonic = 0.0

@@ -21,6 +21,7 @@ class SmartDict(dict):
         self.locked = False
 
     def __missing__(self, key):
-        """If given invalid key, store an empty SmartDict object using this key"""
+        """If given invalid key, store an empty SmartDict object using this key."""
+        
         value = self[key] = type(self)()
         return value

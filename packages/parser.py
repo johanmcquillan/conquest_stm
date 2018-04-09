@@ -15,6 +15,7 @@ HA_TO_EV = 27.2114  # Factor to convert Hartrees to electron volts
 
 def get_ion(ion_name, ion_folder='ions/'):
     """Create Ion object from .ion file."""
+    
     try:
         # Open .ion
         ion_file = open(ion_folder + ion_name+'.ion', 'r')
@@ -74,18 +75,19 @@ def get_cell(conquest_out, conquest_folder='conquest/', ion_folder='ions/', grid
     """Return Cell object form CONQUEST files.
 
     Args:
-        conquest_out (string): Base filename of simulation files; within conquest_folder directory, there must exist
-                                    files 'conquest_out', 'conquest_out.dat', and 'conquest_out.dos'
-        conquest_folder (string, opt.): Folder for CONQUEST files
-        ion_folder (string, opt.): Folder for .ion files
-        grid_spacing (float, opt.): Mesh resolution in Bohr radii
-        group_size (int, opt.): Maximum number of atoms to be saved to same support mesh file
-        weights (bool, opt.): If true, look for k-point weightings in .dat file;
-                                Old version of Conquest_STMOutput did not provide k-point weights
-        debug (bool, opt.): If true, print extra information during runtime
+        conquest_out (string): Base filename of simulation files.
+            Within conquest_folder directory, there must exist files 'conquest_out',
+            'conquest_out.dat', and 'conquest_out.dos'
+        conquest_folder (string, opt.): Folder for CONQUEST files.
+        ion_folder (string, opt.): Folder for .ion files.
+        grid_spacing (float, opt.): Mesh resolution in Bohr radii.
+        group_size (int, opt.): Maximum number of atoms to be saved to same support mesh file.
+        weights (bool, opt.): If true, look for k-point weightings in .dat file.
+            Old version of Conquest_STMOutput did not provide k-point weights.
+        debug (bool, opt.): If true, print extra information during runtime.
 
     Returns:
-        Cell: Simulation cell
+        Cell: Simulation cell.
     """
 
     if debug:
@@ -210,7 +212,8 @@ def get_cell(conquest_out, conquest_folder='conquest/', ion_folder='ions/', grid
                                 coeff_string = coeff_string.replace('(', '')
                                 coeff_string = coeff_string.replace(')', '')
                                 complex_string = coeff_string.split(',')
-                                complex_coeff = complex(float(complex_string[0]), float(complex_string[1]))
+                                complex_coeff = complex(float(complex_string[0]),
+                                                        float(complex_string[1]))
 
                                 # Add coefficient to Atom
                                 atoms[atom_index].add_coefficient(K, bandE, PAO, complex_coeff)
@@ -240,7 +243,8 @@ def get_cell(conquest_out, conquest_folder='conquest/', ion_folder='ions/', grid
             fermi_lvl = float(data[2]) * HA_TO_EV
 
             # Create Cell
-            cell = Cell(conquest_out, fermi_lvl, cell_length_x, cell_length_y, cell_length_z, grid_spacing=grid_spacing, group_size=group_size)
+            cell = Cell(conquest_out, fermi_lvl, cell_length_x, cell_length_y, cell_length_z,
+                        grid_spacing=grid_spacing, group_size=group_size)
 
             # Fill Cell with atoms
             for atom_key in atoms:

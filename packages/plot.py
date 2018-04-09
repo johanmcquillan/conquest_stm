@@ -21,12 +21,13 @@ AXES = ('x', 'y', 'z')
 
 def plot_2d(cell, mesh_3d, title, axis, plane_value):
     """Plots a 2D cross-section of a 3D mesh.
+    
     Args:
-        cell (Cell): Cell object
-        mesh_3d (array(float)): 3D array
-        title (string): Title of plot
-        axis (string): Axis normal to plane to be plotted; 'x', 'y', or 'z'
-        plane_value (float): Height of plane in Bohr Radii
+        cell (Cell): Cell object.
+        mesh_3d (array(float)): 3D array.
+        title (string): Title of plot.
+        axis (string): Axis normal to plane to be plotted; 'x', 'y', or 'z'.
+        plane_value (float): Height of plane in Bohr Radii.
     """
 
     if axis == 'x':
@@ -47,7 +48,8 @@ def plot_2d(cell, mesh_3d, title, axis, plane_value):
     else:
         raise ValueError('Axis must be x, y, or z')
 
-    plt.imshow(mesh_2d, interpolation='bilinear', origin='lower', cmap=cm.afmhot, extent=(0, mesh_2d.shape[0], 0, mesh_2d.shape[1]))
+    plt.imshow(mesh_2d, interpolation='bilinear', origin='lower', cmap=cm.afmhot,
+               extent=(0, mesh_2d.shape[0], 0, mesh_2d.shape[1]))
     plt.colorbar()
     plt.title(title)
     plt.xlabel(label1)
@@ -60,10 +62,10 @@ def plot_3d_isosurface(title, mesh, fraction, alpha=1):
     """Plot isosurface of 3D mesh.
 
     Args:
-        title (string): Title of plot
-        mesh (array(float)): 3D array to be plotted
-        fraction (float, opt.): Sets value of isosurface to this fraction of max charge density
-        alpha (float, opt.): Transparency of plot surface
+        title (string): Title of plot.
+        mesh (array(float)): 3D array to be plotted.
+        fraction (float, opt.): Sets value of isosurface to this fraction of max charge density.
+        alpha (float, opt.): Transparency of plot surface.
     """
 
     mes = measure.marching_cubes(mesh, fraction*np.max(mesh))
@@ -81,7 +83,8 @@ def plot_3d_isosurface(title, mesh, fraction, alpha=1):
     ax.set_ylabel('y')
     ax.set_zlabel('z')
 
-    ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Spectral, antialiased=False, lw=0.0, alpha=alpha)
+    ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Spectral,
+                    antialiased=False, lw=0.0, alpha=alpha)
 
     plt.show()
     plt.close()
@@ -91,10 +94,12 @@ def plot_radials(ion, spectro=True, interpolation='cubic'):
     """Plot all radial functions of an Ion object.
 
     Args:
-        ion (Ion): Ion object
-        spectro (bool, opt.): If true, use spectroscopic notation
-        interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
+        ion (Ion): Ion object.
+        spectro (bool, opt.): If true, use spectroscopic notation.
+        interpolation (string, opt.): Method of interpolation.
+            Possible arguments are 'linear', 'quadratic', 'cubic'
     """
+    
     fig, ax = plt.subplots(figsize=(10, 5))
 
     plt.title('Radial Functions for '+str(ion.ion_name)+'.ion')
@@ -140,13 +145,14 @@ def plot_sph_2d(l, m, axis, minimum=-8.0, maximum=8.0, plane_value=0.0, step=0.1
     All lengths measured in bohr radii (a0).
 
     Args:
-        l (int): Orbital angular momentum quantum number for spherical harmonic
-        m (int): Azimuthal quantum number for spherical harmonic
-        axis (string): Cartesian axis ('x', 'y', or 'z') to set to constant value given by planeValue
-        minimum (int, opt.): Minimum value of coordinates measured in a0; Default is -8
-        maximum (int, opt.): Maximum value of coordinates measured in a0; Default is +8
-        plane_value (float, opt.): Constant value assigned to Cartesian coordinate given by axis; Default is 0.00001
-        step (float, opt.): Interval between points, measured in a0; Default is 0.1
+        l (int): Orbital angular momentum quantum number for spherical harmonic.
+        m (int): Azimuthal quantum number for spherical harmonic.
+        axis (string): Cartesian axis ('x', 'y', or 'z') to set to constant value given by plane_value.
+        minimum (int, opt.): Minimum value of coordinates measured in a0; Default is -8.
+        maximum (int, opt.): Maximum value of coordinates measured in a0; Default is +8.
+        plane_value (float, opt.): Constant value assigned to Cartesian coordinate given by axis;
+            Default is 0.00001
+        step (float, opt.): Interval between points, measured in a0; Default is 0.1.
     """
 
     if axis not in AXES:
@@ -181,7 +187,8 @@ def plot_sph_2d(l, m, axis, minimum=-8.0, maximum=8.0, plane_value=0.0, step=0.1
                 maxY = abs(Y[i, j])
 
     # Setup plot
-    plt.imshow(Y, interpolation='bilinear', origin='center', cmap=cm.bwr, extent=(minimum, maximum, minimum, maximum), vmin=-maxY, vmax=maxY)
+    plt.imshow(Y, interpolation='bilinear', origin='center', cmap=cm.bwr,
+               extent=(minimum, maximum, minimum, maximum), vmin=-maxY, vmax=maxY)
     plt.colorbar()
     plt.grid()
     axes = ['x', 'y', 'z']
@@ -196,8 +203,8 @@ def plot_sph_3d(l, m):
     """Plots 3D spherical harmonic isosurface.
 
     Args:
-        l (int): Degree of spherical harmonic
-        m (int): Order of spherical harmonic
+        l (int): Degree of spherical harmonic.
+        m (int): Order of spherical harmonic.
     """
 
     # Get mesh of angles
@@ -242,14 +249,16 @@ def plot_ldos_2d(
     All lengths measured in bohr radii (a0).
 
     Args:
-        cell (Cell): Simulation cell to plot
-        min_E (float): Minimum energy
-        max_E (float): Maximum energy
-        T (float): Absolute temperature in K
-        axis (string): Cartesian axis ('x', 'y', or 'z') to set to constant value given by plane_value
-        plane_value (float, opt.): Constant value assigned to Cartesian coordinate given by axis; Default is 0.0
-        title (bool, opt.): If False, show no title
-        interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
+        cell (Cell): Simulation cell to plot.
+        min_E (float): Minimum energy.
+        max_E (float): Maximum energy.
+        T (float): Absolute temperature in K.
+        axis (string): Cartesian axis ('x', 'y', or 'z') to set to constant value given by plane_value.
+        plane_value (float, opt.): Constant value assigned to Cartesian coordinate given by axis.
+            Default is 0.0
+        title (bool, opt.): If False, show no title.
+        interpolation (string, opt.): Method of interpolation.
+            Possible arguments are 'linear', 'quadratic', 'cubic'
         debug (bool, opt.): If true, print extra information during runtime
     """
 
@@ -274,25 +283,28 @@ def plot_ldos_2d(
     plot_2d(cell, ldos_3d, ttl, axis, plane_value)
 
 
-def plot_ldos_3d(cell, min_E, max_E, T, step=0.0, fraction=0.02, title=True, recalculate=False, vectorised=True, interpolation='cubic', alpha=1, debug=False):
+def plot_ldos_3d(cell, min_E, max_E, T, step=0.0, fraction=0.02, title=True, recalculate=False,
+                 vectorised=True, interpolation='cubic', alpha=1, debug=False):
     """Plots charge density isosurface.
 
     All lengths measured in Bohr radii (a0).
 
     Args:
-        cell (Cell): Simulation cell to plot
-        min_E (float): Minimum of energy range
-        max_E (float): Maximum of energy range
-        T (float): Apsolute temperature in k
-        step (float, opt.): Interval between Cartesian mgrid points; Default is cell.gridSpacing
-        fraction (float, opt.): Sets value of isosurface to this fraction of max charge density
-        title (bool, opt.): If False, show no title
-        alpha (float, opt.): Transparency of plot surfaces
-        recalculate (bool, opt.): Force recalculation, even if already stored
-        vectorised (bool, opt.): If true, use NumPy vectorisation
-        interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
-        debug (bool, opt.): If true, print extra information during runtime
+        cell (Cell): Simulation cell to plot.
+        min_E (float): Minimum of energy range.
+        max_E (float): Maximum of energy range.
+        T (float): Apsolute temperature in k.
+        step (float, opt.): Interval between Cartesian mgrid points; Default is cell.gridSpacing.
+        fraction (float, opt.): Sets value of isosurface to this fraction of max charge density.
+        title (bool, opt.): If False, show no title.
+        alpha (float, opt.): Transparency of plot surfaces.
+        recalculate (bool, opt.): Force recalculation, even if already stored.
+        vectorised (bool, opt.): If true, use NumPy vectorisation.
+        interpolation (string, opt.): Method of interpolation.
+            Possible arguments are 'linear', 'quadratic', 'cubic'
+        debug (bool, opt.): If true, print extra information during runtime.
     """
+    
     x_range = (0.0, cell.vector.x)
     y_range = (0.0, cell.vector.y)
     z_range = (0.0, cell.vector.z)
@@ -305,7 +317,8 @@ def plot_ldos_3d(cell, min_E, max_E, T, step=0.0, fraction=0.02, title=True, rec
     min_E_abs = min_E + cell.fermi_level
     max_E_abs = max_E + cell.fermi_level
 
-    ldos = cell.get_ldos_grid(min_E_abs, max_E_abs, T, vectorised=vectorised, interpolation=interpolation, recalculate=recalculate, debug=debug)
+    ldos = cell.get_ldos_grid(min_E_abs, max_E_abs, T, vectorised=vectorised,
+                              interpolation=interpolation, recalculate=recalculate, debug=debug)
     max_ldos = np.max(ldos)
 
     if max_ldos == 0.0:
@@ -321,28 +334,33 @@ def plot_ldos_3d(cell, min_E, max_E, T, step=0.0, fraction=0.02, title=True, rec
     plot_3d_isosurface(ttl, ldos, fraction, alpha=alpha)
 
 
-def plot_current_2d(cell, z, V, T, tip_work_func, tip_energy, fraction, delta_s=None, interpolation='cubic', recalculate=False, vectorised=True, title=True, debug=False):
+def plot_current_2d(cell, z, V, T, tip_work_func, tip_energy, fraction, delta_s=None,
+                    interpolation='cubic', recalculate=False, vectorised=True, title=True,
+                    debug=False):
     """Plot constant-height STM scan.
 
     All lengths measured in bohr radii (a0).
 
     Args:
-        cell (Cell): Simulation cell to plot
-        z (float): z-value of plane in Bohr radii; Uses nearest mesh point to given value
-        V (float): Bias voltage
-        T (float): Absolute temperature
-        tip_work_func (float): Work function of tip
-        tip_energy (float): Fermi-level of tip
-        delta_s (float, opt.): Surface broadening parameter; If None, uses default value
-        fraction (float, opt.): Fraction of maximum charge density to use as isovalue for isosurface
-        recalculate (bool, opt.): Force recalculation, even if already stored
-        vectorised (bool, opt.): If true, use NumPy vectorisation
-        interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
-        title (bool, opt.): If False, show no title
-        debug (bool, opt.): Print extra information during runtime
+        cell (Cell): Simulation cell to plot.
+        z (float): z-value of plane in Bohr radii. Uses nearest mesh point to given value.
+        V (float): Bias voltage.
+        T (float): Absolute temperature.
+        tip_work_func (float): Work function of tip.
+        tip_energy (float): Fermi-level of tip.
+        delta_s (float, opt.): Surface broadening parameter. If None, uses default value.
+        fraction (float, opt.): Fraction of maximum charge density to use as value for isosurface.
+        recalculate (bool, opt.): Force recalculation, even if already stored.
+        vectorised (bool, opt.): If true, use NumPy vectorisation.
+        interpolation (string, opt.): Method of interpolation.
+            Possible arguments are 'linear', 'quadratic', 'cubic'
+        title (bool, opt.): If False, show no title.
+        debug (bool, opt.): Print extra information during runtime.
     """
 
-    current = cell.get_current_scan(z, V, T, tip_work_func, tip_energy, delta_s, fraction=fraction, recalculate=recalculate, vectorised=vectorised, interpolation=interpolation, debug=debug)
+    current = cell.get_current_scan(z, V, T, tip_work_func, tip_energy, delta_s, fraction=fraction,
+                                    recalculate=recalculate, vectorised=vectorised,
+                                    interpolation=interpolation, debug=debug)
 
     if title:
         ttl = cell.name + ' STM scan at $V={:.2f}V$ at $z={}a_0$ and fraction of ${}$'.format(V, z, fraction)
@@ -358,24 +376,27 @@ def plot_current_2d(cell, z, V, T, tip_work_func, tip_energy, fraction, delta_s=
     plt.close()
 
 
-def plot_spectrum(cell, xy, min_V, max_V, sigma, T, fraction, z, delta_s=None, dE=0.005, debug=False):
+def plot_spectrum(cell, xy, min_V, max_V, sigma, T, fraction, z, delta_s=None, dE=0.005,
+                  debug=False):
     """Get spectroscopic data from a list of specific tip positions.
 
     Args:
-        cell (Cell): Simulation cell to plot
-        xy (list(list(float)): x-y points of tip in a0; Given as [[x1, y1], [x2, y2], ...]; Uses nearest mesh point
-        min_V (float): Lower bound for voltage range
-        max_V (float): Upper bound for voltage range
-        sigma (float): State smearing parameter in eV
-        T (float): Absolute temperature in K
-        z (float): z-value of plane in a0; Uses nearest mesh point to given value
-        fraction (float): Fraction of maximum charge density to use as isovalue for isosurface
-        delta_s (float, opt.): Surface broadening parameter; If None, uses default value
-        dE (float, opt.): Energy resolution of data points
-        debug (bool, opt.): Print extra information during runtime
+        cell (Cell): Simulation cell to plot.
+        xy (list(list(float)): x-y points of tip in a0; Given as [[x1, y1], [x2, y2], ...].
+            Uses nearest mesh point.
+        min_V (float): Lower bound for voltage range.
+        max_V (float): Upper bound for voltage range.
+        sigma (float): State smearing parameter in eV.
+        T (float): Absolute temperature in K.
+        z (float): z-value of plane in a0; Uses nearest mesh point to given value.
+        fraction (float): Fraction of maximum charge density to use as value for isosurface.
+        delta_s (float, opt): Surface broadening parameter; If None, uses default value.
+        dE (float, opt): Energy resolution of data points.
+        debug (bool, opt): Print extra information during runtime.
     """
 
-    E, LDOS = cell.get_spectrum_th(xy, min_V, max_V, sigma, T, fraction, z, delta_s=delta_s, dE=dE, debug=debug)
+    E, LDOS = cell.get_spectrum_th(xy, min_V, max_V, sigma, T, fraction, z, delta_s=delta_s, dE=dE,
+                                   debug=debug)
     fig, ax = plt.subplots(1)
 
     for i in range(len(xy)):
@@ -393,7 +414,7 @@ def plot_spectrum(cell, xy, min_V, max_V, sigma, T, fraction, z, delta_s=None, d
 
 
 def plot_cits(cell, V, T, fraction, sigma, title=False, delta_s=None, debug=True):
-    """Plot Current Imaging Tunnelling Spectroscopy scan - UNFINISHED and UNRELIABLE"""
+    """Plot Current Imaging Tunnelling Spectroscopy scan - UNFINISHED and UNRELIABLE."""
 
     scan = cell.get_cits(V, T, fraction, sigma, delta_s=delta_s, debug=debug)
 

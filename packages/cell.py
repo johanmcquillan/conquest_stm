@@ -22,45 +22,48 @@ class Cell(object):
     Attributes:
         name (string): Name of simulation; used for plot titles
         fermi_level (float): Fermi Level of simulation
-        vector (Vector): Vector from origin to far corner of cell; components are maximum lengths of cell in each dimension
+        vector (Vector): Vector from origin to far corner of cell.
+            Components are maximum lengths of cell in each dimension
         grid_spacing (float): Resolution of mesh points
         real_mesh (array(float)): Mesh of real space; [i, j, k] returns np.array([x, y, z])
         atoms ({int : Atom}): Atom objects of simulation indexed by atom number
         bands ({Vector : [float]}): List of band energies indexed by k-point vector
-        support_mesh (array(SmartDict)): Mesh of support function values, indexed by [i, j, k][atom_key][l][zeta][m]
+        support_mesh (array(SmartDict)): Mesh of support function values.
+            Indexed by [i, j, k][atom_key][l][zeta][m]
     """
 
-    BOLTZMANN = 8.6173303E-5  # Boltzmann's Constant in eV/K
-    ELECTRON_MASS = 9.10938E-31  # Electron Mass in kg
-    H_BAR = 4.135667662E-15  # Reduced Planck's Constant in eV.s
-    DELTA_S_FACTOR = 2  # Default delta S given by minimum delta S scaled by this factor
+    BOLTZMANN = 8.6173303E-5        # Boltzmann's Constant in eV/K
+    ELECTRON_MASS = 9.10938E-31     # Electron Mass in kg
+    H_BAR = 4.135667662E-15         # Reduced Planck's Constant in eV.s
+    DELTA_S_FACTOR = 2              # Default delta S given by minimum delta S scaled by this factor
 
-    MESH_FOLDER = 'meshes/'  # Folder to save mesh files
-    SUPPORT_FNAME = 'supp_'  # Prefix for support mesh files
-    LDOS_FNAME = 'ldos_'  # Prefix for summed LDOS files
-    PSI_FNAME = 'psi_'  # Prefix for wavefunction files
-    PROP_PSI_FNAME = 'prop_'  # Prefix for propagated wavefunction files
-    CURRENT_FNAME = 'current_'  # Prefix for current files
-    EXT = '.dat'  # Mesh file extension
+    MESH_FOLDER = 'meshes/'         # Folder to save mesh files
+    SUPPORT_FNAME = 'supp_'         # Prefix for support mesh files
+    LDOS_FNAME = 'ldos_'            # Prefix for summed LDOS files
+    PSI_FNAME = 'psi_'              # Prefix for wavefunction files
+    PROP_PSI_FNAME = 'prop_'        # Prefix for propagated wavefunction files
+    CURRENT_FNAME = 'current_'      # Prefix for current files
+    EXT = '.dat'                    # Mesh file extension
 
-    PRINT_RELATIVE_TO_EF = True  # Print energies as absolute or relative to Fermi level
-    PROG_BAR_INTERVALS = 20  # Number of intervals in debug progress bar
+    PRINT_RELATIVE_TO_EF = True     # Print energies as absolute or relative to Fermi level
+    PROG_BAR_INTERVALS = 20         # Number of intervals in debug progress bar
     PROG_BAR_CHARACTER = '>'
 
-    def __init__(self, name, fermi_level, x_length, y_length, z_length, grid_spacing=0.5, group_size=400):
+    def __init__(self, name, fermi_level, x_length, y_length, z_length,
+                 grid_spacing=0.5, group_size=400):
         """Constructs 3D cell with given dimensional.
 
         All lengths measured in Bohr radii (a0);
         All energies measured in Hartrees (Ha).
 
         Args:
-            name (string): Name of simulation; used for plot titles
-            fermi_level (float): Fermi Level of simulation
-            x_length (float): Length of cell along x
-            y_length (float): Length of cell along y
-            z_length (float): Length of cell along z
-            grid_spacing (float, opt.): Resolution of mesh points
-            group_size (int, opt.): Maximum number of atoms to be saved to same support file
+            name (string): Name of simulation; used for plot titles.
+            fermi_level (float): Fermi Level of simulation.
+            x_length (float): Length of cell along x.
+            y_length (float): Length of cell along y.
+            z_length (float): Length of cell along z.
+            grid_spacing (float, opt.): Resolution of mesh points.
+            group_size (int, opt.): Maximum number of atoms to be saved to same support file.
         """
 
         self.name = name
@@ -80,7 +83,7 @@ class Cell(object):
                                       (1, 2, 3, 0))
 
         # Total number of mesh points
-        self.mesh_points = self.real_mesh.shape[0] * self.real_mesh.shape[1] * self.real_mesh.shape[2]
+        self.mesh_points = self.real_mesh.size
 
         # Initialise atoms and bands
         self.atoms = {}
@@ -96,10 +99,12 @@ class Cell(object):
 
         self.default_delta_s = self.delta_s()  # Default delta_s
 
-        self.psi_vec = np.vectorize(self.calculate_psi_grid_vec)  # Vectorised method to calculate wavefunction
+        # Vectorised method to calculate wavefunction
+        self.psi_vec = np.vectorize(self.calculate_psi_grid_vec)
 
     def energy_list(self):
-        """Return sorted list of energies from all k-points"""
+        """Return sorted list of energies from all k-points."""
+        
         energies = []
         for K in self.bands:
             energies.extend(self.bands[K])
@@ -109,9 +114,10 @@ class Cell(object):
         """Check if cell stores specified band.
 
         Args:
-            K (Vector): 3D Cartesian k-space vector
-            E (float): Band energy
+            K (Vector): 3D Cartesian k-space vector.
+            E (float): Band energy.
         """
+        
         output = False
         if K in self.bands:
             if E in self.bands[K]:
@@ -119,12 +125,13 @@ class Cell(object):
         return output
 
     def add_atom(self, atom, atom_key):
-        """Add atom to self.atoms, indexed by atom_key
+        """Add atom to self.atoms, indexed by atom_key.
 
         Args:
-            atom (Atom): Atom object
-            atom_key (int): Atom number, as given in Conquest_out
+            atom (Atom): Atom object.
+            atom_key (int): Atom number, as given in Conquest_out.
         """
+        
         # Add atom to dict
         self.atoms[atom_key] = atom
 
@@ -144,12 +151,13 @@ class Cell(object):
         """Calculate Fermi-Dirac occupation factor.
 
         Args:
-            energy (float): Energy in eV
-            temperature (float): Absolute temperature in K
+            energy (float): Energy in eV.
+            temperature (float): Absolute temperature in K.
 
         Returns:
-            float: Occupation factor, between 0 and 1
+            float: Occupation factor, between 0 and 1.
         """
+        
         with warnings.catch_warnings():
             # Suppress RuntimeWarning from overflow and underflow in np.exp
             warnings.simplefilter('ignore', RuntimeWarning)
@@ -157,7 +165,8 @@ class Cell(object):
         return f
 
     def bias_to_energy_range(self, V):
-        """For a given bias voltage in eV, return absolute energy range between (Fermi level) and (Fermi level + eV)"""
+        """Return absolute energy range from the Fermi level to the bias voltage."""
+        
         if V > 0:
             min_E = self.fermi_level
             max_E = self.fermi_level + V
@@ -170,13 +179,15 @@ class Cell(object):
         """Return nearest mesh point to x. Not constrained to lie within simulation cell.
 
         Args:
-            x (float): Value in a0 to find nearest point; Works for x, y, and z dimensions
-            points (float, opt.): Number of points in cell dimension; If given, will return mesh index of the found point
+            x (float): Value in a0 to find nearest point; Works for x, y, and z dimensions.
+            points (float, opt.): Number of points in cell dimension.
+                If given, will return mesh index of the found point
 
         Returns:
             float: Nearest mesh point value
             int: Index of mesh point; only given if points argument is specified
         """
+        
         # Get quotient and remainder wrt grid spacing
         div_x, mod_x = divmod(x, self.grid_spacing)
         # Check if x should be rounded up or down
@@ -195,7 +206,8 @@ class Cell(object):
             return new_x
 
     def constrain_relative_vector(self, vector):
-        """Return smallest Vector that is equivalent to input Vector, as per periodic boundary conditions."""
+        """Using periodic boundaries, return smallest Vector that is equivalent to input Vector."""
+        
         x, y, z = vector.components
 
         # Check if vector components are greater than half of cell sides
@@ -223,12 +235,15 @@ class Cell(object):
 
         Args:
             group (int): Atom group
-            interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
-            debug (bool, opt.): If true, print extra information during runtime
+            interpolation (string, opt.): Method of interpolation.
+                Possible arguments are 'linear', 'quadratic', 'cubic'.
+            debug (bool, opt.): If true, print extra information during runtime.
 
         Returns:
-            array(SmartDict): Mesh of support function values, indexed by [x, y, z][atom_key][l][zeta][m]
+            array(SmartDict): Mesh of support function values.
+                Indexed by [x, y, z][atom_key][l][zeta][m]
         """
+        
         if debug:
             print 'Calculating support mesh for atom group', str(group)
         # Initialise support grid
@@ -254,15 +269,21 @@ class Cell(object):
             cut = atom.get_max_cutoff()
 
             # Get mesh points of maximum range of atoms orbitals in each direction
-            x_lower_lim, i_start = self.get_nearest_mesh_value(atom.atom_pos.x - cut, points=self.real_mesh.shape[0])
+            x_lower_lim, i_start = self.get_nearest_mesh_value(atom.atom_pos.x - cut,
+                                                               points=self.real_mesh.shape[0])
             x_upper_lim = self.get_nearest_mesh_value(atom.atom_pos.x + cut) + self.grid_spacing
-            y_lower_lim, j_start = self.get_nearest_mesh_value(atom.atom_pos.y - cut, points=self.real_mesh.shape[1])
+            y_lower_lim, j_start = self.get_nearest_mesh_value(atom.atom_pos.y - cut,
+                                                               points=self.real_mesh.shape[1])
             y_upper_lim = self.get_nearest_mesh_value(atom.atom_pos.y + cut) + self.grid_spacing
-            z_lower_lim, k_start = self.get_nearest_mesh_value(atom.atom_pos.z - cut, points=self.real_mesh.shape[2])
+            z_lower_lim, k_start = self.get_nearest_mesh_value(atom.atom_pos.z - cut,
+                                                               points=self.real_mesh.shape[2])
             z_upper_lim = self.get_nearest_mesh_value(atom.atom_pos.z + cut) + self.grid_spacing
 
             # Get array of mesh points within cutoff
-            local_mesh = np.transpose(np.mgrid[x_lower_lim:x_upper_lim:self.grid_spacing, y_lower_lim:y_upper_lim:self.grid_spacing, z_lower_lim:z_upper_lim:self.grid_spacing], (1, 2, 3, 0))
+            local_mesh = np.transpose(np.mgrid[x_lower_lim:x_upper_lim:self.grid_spacing,
+                                               y_lower_lim:y_upper_lim:self.grid_spacing,
+                                               z_lower_lim:z_upper_lim:self.grid_spacing],
+                                      (1, 2, 3, 0))
             lm_shape = local_mesh.shape[:3]
 
             # Progress bar initialisation
@@ -271,13 +292,14 @@ class Cell(object):
             total_points = local_mesh.shape[0]*local_mesh.shape[1]*local_mesh.shape[2]
 
             # The local mesh may exist over the periodic boundaries
-            # Roll the full support mesh such the [0, 0, 0] entry corresponds physically to the same point
-            #   as the [0, 0, 0] point on the local mesh
+            # Roll the full support mesh such the [0, 0, 0] entry corresponds
+            #   physically to the same point as the [0, 0, 0] point on the local mesh
             rolled_mesh = np.roll(support_grid, -i_start, 0)
             rolled_mesh = np.roll(rolled_mesh, -j_start, 1)
             rolled_mesh = np.roll(rolled_mesh, -k_start, 2)
 
-            # Extract the part of the full support mesh that corresponds to the same physical space as the local mesh
+            # Extract the part of the full support mesh that corresponds to
+            #   the same physical space as the local mesh
             partial_mesh = rolled_mesh[0:lm_shape[0], 0:lm_shape[1], 0:lm_shape[2]]
 
             # Iterate over the local mesh
@@ -285,7 +307,7 @@ class Cell(object):
                 position = local_mesh[local_ijk]
                 r = Vector(*position)
 
-                # Find the shortest Vector between r and atom_pos, accounting for periodic boundaries
+                # Find the shortest Vector between r and atom_pos using periodic boundaries
                 relative_position = self.constrain_relative_vector(r - atom.atom_pos)
 
                 # Convert indices of local mesh point from tuple into a list
@@ -301,7 +323,8 @@ class Cell(object):
                 for l in atom.radials:
                     for zeta in atom.radials[l]:
                         # Get radial part of wavefunction
-                        R = atom.get_radial_value_relative(l, zeta, relative_position, interpolation=interpolation)
+                        R = atom.get_radial_value_relative(l, zeta, relative_position,
+                                                           interpolation=interpolation)
 
                         # If R == 0, do not store
                         if R != 0.0:
@@ -327,7 +350,8 @@ class Cell(object):
                     sys.stdout.write('\r')
                     sys.stdout.write(debug_str)
                     sys.stdout.write(
-                        ' [{:<{}}]'.format(self.PROG_BAR_CHARACTER * bars_done, self.PROG_BAR_INTERVALS))
+                        ' [{:<{}}]'.format(self.PROG_BAR_CHARACTER * bars_done,
+                                           self.PROG_BAR_INTERVALS))
                     sys.stdout.write(' {:3.0f}%'.format(percent))
                     sys.stdout.flush()
                     bars_done += 1
@@ -341,17 +365,19 @@ class Cell(object):
             support_grid = np.roll(rolled_mesh, k_start, 2)
 
             if debug:
-                sys.stdout.write("\n")
+                sys.stdout.write('\n')
                 sys.stdout.flush()
 
         return support_grid
 
     def support_group_filename(self, group):
-        """Return standardised filename for relevant support function file"""
+        """Return standardised filename for relevant support function file."""
+        
         return self.MESH_FOLDER+self.SUPPORT_FNAME+self.name+'_'+str(self.grid_spacing)+'_'+str(self.atom_group_size)+'_'+str(group)+self.EXT
 
     def write_support_group(self, group, support_mesh, debug=False):
-        """Write support function group to file"""
+        """Write support function group to file."""
+        
         filename = self.support_group_filename(group)
         support_file = safe_open(filename, 'w')
 
@@ -387,7 +413,8 @@ class Cell(object):
             points_done += 1
             if debug and float(points_done) / self.mesh_points * self.PROG_BAR_INTERVALS > bars_done:
                 sys.stdout.write('\r')
-                sys.stdout.write(' [{:<{}}]'.format(self.PROG_BAR_CHARACTER * bars_done, self.PROG_BAR_INTERVALS))
+                sys.stdout.write(' [{:<{}}]'.format(self.PROG_BAR_CHARACTER * bars_done,
+                                                    self.PROG_BAR_INTERVALS))
                 sys.stdout.flush()
                 bars_done += 1
 
@@ -397,7 +424,8 @@ class Cell(object):
         support_file.close()
 
     def read_support_group(self, group, debug=False):
-        """Read support function group from file"""
+        """Read support function group from file."""
+        
         filename = self.support_group_filename(group)
         support_file = open(filename, 'r')
         support_mesh = np.empty(self.real_mesh.shape[:3], dtype=SmartDict)
@@ -455,13 +483,16 @@ class Cell(object):
 
         Args:
             group (int): Atom group
-            recalculate (bool, opt.): Force recalculation, even if already stored
-            interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
-            debug (bool, opt.): Print extra information during runtime
+            recalculate (bool, opt.): Force recalculation, even if already stored.
+            interpolation (string, opt.): Method of interpolation.
+                Possible arguments are 'linear', 'quadratic', 'cubic'.
+            debug (bool, opt.): Print extra information during runtime.
 
         Returns:
-            array(SmartDict): Mesh of support function values, indexed by [i, j, k][atom_key][l][zeta][m]
+            array(SmartDict): Mesh of support function values.
+                Indexed by [i, j, k][atom_key][l][zeta][m].
         """
+        
         # Check if support function group is already stored in field
         if group == self.current_group and self.support_mesh is not None:
             return self.support_mesh
@@ -471,7 +502,8 @@ class Cell(object):
                 support_mesh = self.read_support_group(group, debug=debug)
             else:
                 # Recalculate support grid
-                support_mesh = self.calculate_support_group(group, interpolation=interpolation, debug=debug)
+                support_mesh = self.calculate_support_group(group, interpolation=interpolation,
+                                                            debug=debug)
                 # Write to file
                 self.write_support_group(group, support_mesh, debug=debug)
             self.current_group = group
@@ -479,26 +511,31 @@ class Cell(object):
             return support_mesh
 
     def calculate_psi_grid_vec(self, support_dict, atom_key, l, zeta, m, coefficient):
-        """Calculate wavefunction contribution from a point of the support function mesh for a given orbital and atom"""
-        if support_dict is not None and atom_key in support_dict and l in support_dict[atom_key] and zeta in support_dict[atom_key][l] and m in support_dict[atom_key][l][zeta]:
+        """Calculate wavefunction contribution from a point of the support function mesh
+        for a given orbital and atom."""
+        
+        if (support_dict is not None and atom_key in support_dict and l in support_dict[atom_key]
+                and zeta in support_dict[atom_key][l] and m in support_dict[atom_key][l][zeta]):
             psi = coefficient * support_dict[atom_key][l][zeta][m]
         else:
             psi = complex(0, 0)
         return psi
 
-    def calculate_psi_grid(self, K, E, recalculate=False, vectorised=True, interpolation='cubic', debug=False):
+    def calculate_psi_grid(self, K, E, recalculate=False, vectorised=True, interpolation='cubic',
+                           debug=False):
         """Evaluate wavefunction over the mesh for a given k-point and energy.
 
         Args:
-            K (KVector): K-point Vector
-            E (float): Band energy
-            recalculate (bool, opt.): Force recalculation, even if already stored
-            vectorised (bool, opt.): If true, use NumPy vectorisation
-            interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
-            debug (bool, opt.): Print extra information during runtime
+            K (KVector): K-point Vector.
+            E (float): Band energy.
+            recalculate (bool, opt.): Force recalculation, even if already stored.
+            vectorised (bool, opt.): If true, use NumPy vectorisation.
+            interpolation (string, opt.): Method of interpolation.
+                Possible arguments are 'linear', 'quadratic', 'cubic'
+            debug (bool, opt.): Print extra information during runtime.
 
         Returns:
-            array(complex): Mesh of complex wavefunction values
+            array(complex): Mesh of complex wavefunction values.
         """
 
         # Initialise progress bar
@@ -528,7 +565,8 @@ class Cell(object):
 
             # Check if current atom group is the one currently read from file
             if group != previous_group:
-                support_grid = self.get_support_group(group, recalculate=recalculate, interpolation=interpolation, debug=debug)
+                support_grid = self.get_support_group(group, recalculate=recalculate,
+                                                      interpolation=interpolation, debug=debug)
                 previous_group = group
 
             # Iterate over orbitals
@@ -551,7 +589,8 @@ class Cell(object):
                 percent = prog * 100
                 sys.stdout.write('\r')
                 sys.stdout.write(debug_str)
-                sys.stdout.write(' [{:<{}}]'.format(self.PROG_BAR_CHARACTER * bars_done, self.PROG_BAR_INTERVALS))
+                sys.stdout.write(' [{:<{}}]'.format(self.PROG_BAR_CHARACTER * bars_done,
+                                                    self.PROG_BAR_INTERVALS))
                 sys.stdout.write(' {:3.0f}%'.format(percent))
                 sys.stdout.flush()
                 bars_done = int(prog * self.PROG_BAR_INTERVALS)
@@ -561,12 +600,14 @@ class Cell(object):
         return psi_grid
 
     def psi_filename(self, K, E):
-        """Return standardised filename for relevant wavefunction file"""
+        """Return standardised filename for relevant wavefunction file."""
+        
         return (self.MESH_FOLDER+self.PSI_FNAME+self.name+'_'+str(self.grid_spacing)+'_'
                 +str(K.x)+'_'+str(K.y)+'_'+str(K.z)+'_'+str(E)+self.EXT)
 
     def write_psi_grid(self, psi_grid, K, E):
-        """Write wavefunction function mesh to file"""
+        """Write wavefunction function mesh to file."""
+        
         filename = self.psi_filename(K, E)
         psi_file = safe_open(filename, 'w')
         for ijk in np.ndindex(self.real_mesh.shape[:3]):
@@ -577,7 +618,8 @@ class Cell(object):
         psi_file.close()
 
     def read_psi_grid(self, K, E, debug=False):
-        """Read wavefunction mesh from file"""
+        """Read wavefunction mesh from file."""
+        
         filename = self.psi_filename(K, E)
         psi_file = open(filename, 'r')
         psi_grid = np.zeros_like(self.real_mesh[..., 0], dtype=complex)
@@ -599,7 +641,8 @@ class Cell(object):
             psi_grid[i, j, k] = complex(real, imag)
         return psi_grid
 
-    def get_psi_grid(self, K, E, recalculate=False, vectorised=True, interpolation='cubic', debug=False):
+    def get_psi_grid(self, K, E, recalculate=False, vectorised=True, interpolation='cubic',
+                     debug=False):
         """Get mesh of complex wavefunction values.
 
         If it is already stored in a file and recalculate is False, then it will read from file.
@@ -610,21 +653,25 @@ class Cell(object):
             E (float): Band energy
             recalculate (bool, opt.): Force recalculation, even if already stored
             vectorised (bool, opt.): If true, use NumPy vectorisation
-            interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
+            interpolation (string, opt.): Method of interpolation.
+                Possible arguments are 'linear', 'quadratic', 'cubic'
             debug (bool, opt.): Print extra information during runtime
 
         Returns:
             array(complex): Mesh of complex wavefunction values
         """
+        
         if not recalculate and os.path.isfile(self.psi_filename(K, E)):
             # Read data from file
             psi_grid = self.read_psi_grid(K, E, debug=debug)
         else:
-            psi_grid = self.calculate_psi_grid(K, E, recalculate=recalculate, vectorised=vectorised, interpolation=interpolation, debug=debug)
+            psi_grid = self.calculate_psi_grid(K, E, recalculate=recalculate, vectorised=vectorised,
+                                               interpolation=interpolation, debug=debug)
             self.write_psi_grid(psi_grid, K, E)
         return psi_grid
 
-    def calculate_ldos_grid(self, min_E, max_E, T, recalculate=False, vectorised=True, interpolation='cubic', debug=False):
+    def calculate_ldos_grid(self, min_E, max_E, T, recalculate=False, vectorised=True,
+                            interpolation='cubic', debug=False):
         """Calculate summed LDOS.
 
         Args:
@@ -633,12 +680,14 @@ class Cell(object):
             T (float): Absolute temperature in Kelvin
             recalculate (bool, opt.): Force recalculation, even if already stored
             vectorised (bool, opt.): If true, use NumPy vectorisation
-            interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
+            interpolation (string, opt.): Method of interpolation.
+                Possible arguments are 'linear', 'quadratic', 'cubic'
             debug (bool, opt.): Print extra information during runtime
 
         Returns:
             array(float): LDoS mesh
         """
+        
         # Print debug info
         if debug:
             sys.stdout.write('Calculating local density of states grid\n')
@@ -655,7 +704,9 @@ class Cell(object):
         for K in self.bands:
             for E in self.bands[K]:
                 if min_E <= E <= max_E:
-                    psi_grid = self.get_psi_grid(K, E, recalculate=recalculate, vectorised=vectorised, interpolation=interpolation, debug=debug)
+                    psi_grid = self.get_psi_grid(K, E, recalculate=recalculate,
+                                                 vectorised=vectorised, interpolation=interpolation,
+                                                 debug=debug)
                     fd = self.fermi_dirac(E, T)
                     if E > self.fermi_level:
                         fd = 1 - fd
@@ -668,18 +719,21 @@ class Cell(object):
 
     def ldos_filename(self, min_E, max_E, T):
         """Return standardised filename for relevant LDOS file"""
-        return self.MESH_FOLDER+self.LDOS_FNAME+self.name+'_'+str(self.grid_spacing)+'_'+str(min_E)+'_'+str(max_E)+'_'+str(T)+self.EXT
+        
+        return self.MESH_FOLDER+self.LDOS_FNAME+self.name+'_'+str(self.grid_spacing)+'_'+str(min_E)+\
+            '_'+str(max_E)+'_'+str(T)+self.EXT
 
     def write_ldos_grid(self, ldos_grid, min_E, max_E, T, debug=False):
         """Write LDoS mesh to file.
 
         Args:
-            ldos_grid (array(float)): 3D array of LDOS values
-            min_E (float): Minimum energy
-            max_E (float): Maximum energy
-            T (float): Absolute temperature in K
-            debug (bool, opt.): Print extra information during runtime
+            ldos_grid (array(float)): 3D array of LDOS values.
+            min_E (float): Minimum energy.
+            max_E (float): Maximum energy.
+            T (float): Absolute temperature in K.
+            debug (bool, opt.): Print extra information during runtime.
         """
+        
         filename = self.ldos_filename(min_E, max_E, T)
         # Get LDOS mesh
         ldos_file = safe_open(filename, 'w')
@@ -694,7 +748,8 @@ class Cell(object):
         ldos_file.close()
 
     def read_ldos_grid(self, min_E, max_E, T, debug=False):
-        """Read LDOS mesh from file"""
+        """Read LDOS mesh from file."""
+        
         filename = self.ldos_filename(min_E, max_E, T)
         ldos_file = open(filename, 'r')
         ldos_grid = np.zeros_like(self.real_mesh[..., 0])
@@ -716,7 +771,8 @@ class Cell(object):
             print 'LDoS grid successfully read'
         return ldos_grid
 
-    def get_ldos_grid(self, min_E, max_E, T, recalculate=False, vectorised=True, interpolation='cubic', debug=False):
+    def get_ldos_grid(self, min_E, max_E, T, recalculate=False, vectorised=True,
+                      interpolation='cubic', debug=False):
         """Get LDOS mesh by calculating or reading from file.
 
         Args:
@@ -725,28 +781,33 @@ class Cell(object):
             T (float): Absolute temperature in K
             recalculate (bool, opt.): Force recalculation of meshes, even if already stored
             vectorised (bool, opt.): If true, use NumPy vectorisation
-            interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
+            interpolation (string, opt.): Method of interpolation.
+                Possible arguments are 'linear', 'quadratic', 'cubic'
             debug (bool, opt.): Print extra information during runtime
 
         Returns:
             array(float): 3D mesh of LDOS values
         """
+        
         # Read ldos grid from file if not stored by cell
         if not recalculate and os.path.isfile(self.ldos_filename(min_E, max_E, T)):
             ldos_grid = self.read_ldos_grid(min_E, max_E, T, debug=debug)
         else:
             # Calculate LDOS on mesh
-            ldos_grid = self.calculate_ldos_grid(min_E, max_E, T, recalculate=recalculate, vectorised=vectorised, interpolation=interpolation, debug=debug)
+            ldos_grid = self.calculate_ldos_grid(min_E, max_E, T, recalculate=recalculate,
+                                                 vectorised=vectorised, interpolation=interpolation,
+                                                 debug=debug)
             self.write_ldos_grid(ldos_grid, min_E, max_E, T, debug=debug)
         return ldos_grid
 
     def periodic_gradient(self, mesh):
         """Calculate gradient of mesh with periodic boundary conditions enforced.
 
-        This is done by padding the mesh with extra columns in each dimension, then copying the columns from the other side
-        of the mesh into the pads. This makes the columns corresponding to a boundary of the simulation cell effectively next
-        to the columns near the opposing boundary, such that numerical calculation of the gradient should be continuous over
-        the boundary.
+        This is done by padding the mesh with extra columns in each dimension, then copying the
+        columns from the other side of the mesh into the pads. This makes the columns corresponding
+        to a boundary of the simulation cell effectively next to the columns near the opposing
+        boundary, such that numerical calculation of the gradient should be continuous over the
+        boundary.
         """
 
         # Width of padding
@@ -767,22 +828,28 @@ class Cell(object):
         padded_mesh[pad:-pad, pad:-pad, -pad:] = mesh[:, :, :pad]
 
         # Get gradient
-        padded_gradient = np.transpose(np.array(np.gradient(padded_mesh, self.grid_spacing)), (1, 2, 3, 0))
+        padded_gradient = np.transpose(np.array(np.gradient(padded_mesh, self.grid_spacing)),
+                                       (1, 2, 3, 0))
 
         # Return unpadded gradient
         return padded_gradient[pad:-pad, pad:-pad, pad:-pad]
 
     def delta_s(self):
-        """Calculate the default value for delta S. This is the minimum delta S from Paz and Soler, multiplied by DELTA_S_FACTOR"""
-        min_delta_s = 2.0 * self.grid_spacing / self.H_BAR * np.sqrt(4.85 * 2.0 * self.ELECTRON_MASS)
+        """Calculate the default value for delta S.
+        
+        This is the minimum delta S from Paz and Soler, multiplied by DELTA_S_FACTOR."""
+        
+        min_delta_s = 2.0 * self.grid_spacing / self.H_BAR * np.sqrt(4.85*2.0*self.ELECTRON_MASS)
         return self.DELTA_S_FACTOR * min_delta_s
 
     def kappa_squared(self, tip_work_func, tip_fermi_level):
         """Calculate decay constant of tip wavefunction"""
+        
         return 2*self.ELECTRON_MASS/(self.H_BAR**2)*(tip_work_func - tip_fermi_level)
 
     def greens_function(self, distance, tip_work_func, tip_energy):
         """Evaluate Tersoff-Hamann Green's Function"""
+        
         if distance == 0:
             return 0
         else:
@@ -817,7 +884,7 @@ class Cell(object):
             for k in reversed(range(broadened_mesh.shape[2])):
                 if k < max_height_index:
                     if past_surface:
-                        # First surface has been traversed, so replace subsequent elements with zeros
+                        # First surface has been traversed, replace subsequent elements with zeros
                         broadened_mesh[i, j, k] = 0
                     elif broadened_mesh[i, j, k] != 0 and not on_surface:
                         # Highest surface has been reached
@@ -834,11 +901,12 @@ class Cell(object):
         """Return c mesh for surface integration.
 
         Args:
-            charge_density_mesh (array(float)): Charge density or LDOS mesh
-            fraction (float): Isovalue given by fraction of maximum mesh value
-            tip_height_index (int): Z-index of tip height
-            delta_s (float, opt.): Durface broadening parameter; If None, uses default value
+            charge_density_mesh (array(float)): Charge density or LDOS mesh.
+            fraction (float): Isovalue given by fraction of maximum mesh value.
+            tip_height_index (int): Z-index of tip height.
+            delta_s (float, opt.): Durface broadening parameter; If None, uses default value.
         """
+        
         if delta_s is None:
             delta_s = self.default_delta_s
 
@@ -846,7 +914,8 @@ class Cell(object):
         zero_points = charge_density_mesh == 0
 
         # Get magnitude of c mesh
-        broadened_mesh = self.broadened_surface(charge_density_mesh, fraction, tip_height_index, delta_s=delta_s)
+        broadened_mesh = self.broadened_surface(charge_density_mesh, fraction, tip_height_index,
+                                                delta_s=delta_s)
 
         # Get gradient of density mesh
         gradient_surface = self.periodic_gradient(charge_density_mesh)
@@ -862,12 +931,14 @@ class Cell(object):
 
     def get_A_mesh(self, c, wavefunction_mesh):
         """Calculate A mesh."""
+        
         grad_wavefunction = self.periodic_gradient(wavefunction_mesh)
         return self.mesh_dot_product(c, grad_wavefunction)
 
     @staticmethod
     def mesh_dot_product(vector_mesh_A, vector_mesh_B):
         """Return dot/scalar product of two vector meshes."""
+        
         # Check if resulting mesh will be complex
         if vector_mesh_A.dtype == complex or vector_mesh_B.dtype == complex:
             dtype = complex
@@ -881,6 +952,7 @@ class Cell(object):
 
     def get_B_mesh(self, c, wavefunction_mesh):
         """Calculate B mesh."""
+        
         B = np.zeros_like(c, dtype=complex)
         for i in range(3):
             B[..., i] = c[..., i] * wavefunction_mesh
@@ -892,13 +964,14 @@ class Cell(object):
         Uses symmetry of the function to reduce number of calculations.
 
         Args:
-            z_index (float): z-index of tip plane
-            tip_work_func (float): Work function of tip
-            tip_energy (float): Fermi-level of tip
-            debug (bool, opt.): Print extra information during runtime
+            z_index (float): z-index of tip plane.
+            tip_work_func (float): Work function of tip.
+            tip_energy (float): Fermi-level of tip.
+            debug (bool, opt.): Print extra information during runtime.
         """
 
-        # Create square grid with sides equal to the size of the x or y=axis of the real mesh, whichever is larger
+        # Create square grid with sides equal to the size of the x or y=axis of the real mesh
+        #   whichever is larger
         plane_length_half = - (- (max(self.real_mesh.shape[:2]) + 1) / 2)
         plane_length_full = plane_length_half * 2 - 1
         plane_shape_half = (plane_length_half,) * 2
@@ -954,7 +1027,8 @@ class Cell(object):
                 percent = prog * 100
                 sys.stdout.write('\r')
                 sys.stdout.write(debug_str)
-                sys.stdout.write(' [{:<{}}]'.format(self.PROG_BAR_CHARACTER * bars_done, self.PROG_BAR_INTERVALS))
+                sys.stdout.write(' [{:<{}}]'.format(self.PROG_BAR_CHARACTER * bars_done,
+                                                    self.PROG_BAR_INTERVALS))
                 sys.stdout.write(' {:3.0f}%'.format(percent))
                 sys.stdout.flush()
                 bars_done += 1
@@ -965,14 +1039,17 @@ class Cell(object):
         return G_mesh
 
     def propagated_psi_filename(self, K, E, T, fraction, z, delta_s=None):
-        """Return standardised filename for relevant propagated wavefunction file"""
+        """Return standardised filename for relevant propagated wavefunction file."""
+        
         if delta_s is None:
             delta_s = self.default_delta_s
         return (self.MESH_FOLDER+self.PROP_PSI_FNAME+self.name+'_'+str(self.grid_spacing)+'_'
-                +str(K.x)+'_'+str(K.y)+'_'+str(K.z)+'_'+str(E)+'_'+str(T)+'_'+str(fraction)+'_'+str(z)+'_'+str(delta_s)+self.EXT)
+                +str(K.x)+'_'+str(K.y)+'_'+str(K.z)+'_'+str(E)+'_'+str(T)+'_'+str(fraction)+'_'
+                +str(z)+'_'+str(delta_s)+self.EXT)
 
     def write_prop_psi(self, psi, K, E, T, fraction, z, delta_s=None):
-        """Write propagated wavefunction function mesh to file"""
+        """Write propagated wavefunction function mesh to file."""
+        
         if delta_s is None:
             delta_s = self.default_delta_s
         filename = self.propagated_psi_filename(K, E, T, fraction, z, delta_s=delta_s)
@@ -984,7 +1061,8 @@ class Cell(object):
         psi_file.close()
 
     def read_prop_psi(self, K, E, T, fraction, z, delta_s=None, debug=False):
-        """Read propagated wavefunction mesh from file"""
+        """Read propagated wavefunction mesh from file."""
+        
         if delta_s is None:
             delta_s = self.default_delta_s
 
@@ -1009,7 +1087,9 @@ class Cell(object):
             psi[i, j] = complex(real, imag)
         return psi
 
-    def calculate_current_scan(self, z, V, T, tip_work_func, tip_energy, delta_s=None, fraction=0.025, recalculate=False, vectorised=True, interpolation='cubic', debug=False):
+    def calculate_current_scan(self, z, V, T, tip_work_func, tip_energy, delta_s=None,
+                               fraction=0.025, recalculate=False, vectorised=True,
+                               interpolation='cubic', debug=False):
         """Calculate tunnelling current across a plane ie. in constant-height mode.
 
         Args:
@@ -1018,15 +1098,16 @@ class Cell(object):
             T (float): Absolute temperature
             tip_work_func (float): Work function of tip
             tip_energy (float): Fermi-level of tip
-            delta_s (float, opt.): Surface broadening parameter; If None, uses default value
-            fraction (float, opt.): Fraction of maximum charge density to use as isovalue for isosurface
-            recalculate (bool, opt.): Force recalculation, even if already stored
-            vectorised (bool, opt.): If true, use NumPy vectorisation
-            interpolation (string, opt.): Method of interpolation; possible arguments are 'linear', 'quadratic', 'cubic'
-            debug (bool, opt.): Print extra information during runtime
+            delta_s (float, opt): Surface broadening parameter; If None, uses default value
+            fraction (float, opt): Fraction of max charge density to use as value for isosurface
+            recalculate (bool, opt): Force recalculation, even if already stored.
+            vectorised (bool, opt): If true, use NumPy vectorisation.
+            interpolation (str, opt): Method of interpolation.
+                Possible arguments are 'linear', 'quadratic', 'cubic'.
+            debug (bool, opt): Print extra information during runtime.
 
         Returns:
-            array(float): 2D array of current values
+            array(float): 2D array of current values.
         """
 
         if delta_s is None:
@@ -1056,9 +1137,11 @@ class Cell(object):
         elements = current.shape[0]*current.shape[1]
 
         # Calculate meshes
-        ldos = self.get_ldos_grid(min_E, max_E, T, recalculate=recalculate, vectorised=vectorised, interpolation=interpolation, debug=debug)
+        ldos = self.get_ldos_grid(min_E, max_E, T, recalculate=recalculate, vectorised=vectorised,
+                                  interpolation=interpolation, debug=debug)
         c = self.get_c(ldos, fraction, k, delta_s=delta_s)
-        G_conjugate = np.conjugate(self.greens_function_mesh(k, tip_work_func, tip_energy, debug=debug))
+        G_conjugate = np.conjugate(self.greens_function_mesh(k, tip_work_func,
+                                                             tip_energy, debug=debug))
 
         # Print debug info
         if debug:
@@ -1078,7 +1161,8 @@ class Cell(object):
                         fd = 1 - fd
 
                     # Get propagated wavefunction
-                    if not recalculate and os.path.isfile(self.propagated_psi_filename(K, E, T, fraction, z, delta_s=delta_s)):
+                    if not recalculate and os.path.isfile(
+                            self.propagated_psi_filename(K, E, T, fraction, z, delta_s=delta_s)):
                         # Read data from file
                         psi = self.read_prop_psi(K, E, T, fraction, z, delta_s=delta_s, debug=debug)
                         read = True
@@ -1088,7 +1172,9 @@ class Cell(object):
                         bars_done = 0
 
                         # Get unpropagated wavefunction
-                        raw_psi = self.get_psi_grid(K, E, recalculate=recalculate, vectorised=vectorised, interpolation=interpolation, debug=debug)
+                        raw_psi = self.get_psi_grid(K, E, recalculate=recalculate,
+                                                    vectorised=vectorised,
+                                                    interpolation=interpolation, debug=debug)
 
                         # Print debug info
                         prog = float(energies_done) / total_energies * 100
@@ -1096,7 +1182,9 @@ class Cell(object):
                             E_str = str(E - self.fermi_level) + ' eV'
                         else:
                             E_str = str(E) + ' eV'
-                        debug_str = 'Calculating psi(R) at k = {!s}, E = {}: {:5.1f}%'.format(K, E_str, prog)
+                        debug_str = 'Calculating psi(R) at k = {!s}, E = {}: {:5.1f}%'.format(K,
+                                                                                              E_str,
+                                                                                              prog)
                         if debug:
                             sys.stdout.write(debug_str)
                             sys.stdout.flush()
@@ -1144,12 +1232,15 @@ class Cell(object):
 
     def current_filename(self, z, V, T, fraction, delta_s=None):
         """Return standardised filename for relevant current file."""
+        
         if delta_s is None:
             delta_s = self.default_delta_s
-        return self.MESH_FOLDER+self.CURRENT_FNAME+self.name+'_'+str(self.grid_spacing)+'_'+str(z)+'_'+str(V)+'_'+str(T)+'_'+str(fraction)+'_'+str(delta_s)+self.EXT
+        return (self.MESH_FOLDER+self.CURRENT_FNAME+self.name+'_'+str(self.grid_spacing)+'_'+str(z)+
+                '_'+str(V)+'_'+str(T)+'_'+str(fraction)+'_'+str(delta_s)+self.EXT)
 
     def write_current(self, current, z, V, T, fraction, delta_s=None, debug=False):
         """Write current to file."""
+        
         filename = self.current_filename(z, V, T, fraction, delta_s)
 
         current_file = safe_open(filename, 'w')
@@ -1164,6 +1255,7 @@ class Cell(object):
 
     def read_current(self, z, V, T, fraction, delta_s=None, debug=False):
         """Read current grid from file."""
+        
         filename = self.current_filename(z, V, T, fraction, delta_s=delta_s)
         current_file = open(filename, 'r')
         current = np.zeros(self.real_mesh.shape[:2], dtype=float)
@@ -1187,34 +1279,40 @@ class Cell(object):
             sys.stdout.flush()
         return current
 
-    def get_current_scan(self, z, V, T, tip_work_func, tip_energy, delta_s=None, fraction=0.025, recalculate=False, vectorised=True, interpolation='cubic', debug=False):
+    def get_current_scan(self, z, V, T, tip_work_func, tip_energy, delta_s=None, fraction=0.025,
+                         recalculate=False, vectorised=True, interpolation='cubic', debug=False):
         """Get constant-height tunnelling current as 2d array.
 
         If it is already stored in a file and recalculate is False, then it will read from file.
         Otherwise, it will calculate current.
 
         Args:
-            z (float): z-value of plane in Bohr radii; Uses nearest mesh point to given value
-            V (float): Bias voltage
-            T (float): Absolute temperature
-            tip_work_func (float): Work function of tip
-            tip_energy (float): Fermi-level of tip
-            delta_s (float, opt.): Surface broadening parameter; If None, uses default value
-            fraction (float, opt.): Fraction of maximum charge density to use as isovalue for isosurface
-            recalculate (bool, opt.): Force recalculation, even if already stored
-            vectorised (bool, opt.): If true, use NumPy vectorisation
-            debug (bool, opt.): Print extra information during runtime
+            z (float): z-value of plane in Bohr radii; Uses nearest mesh point to given value.
+            V (float): Bias voltage.
+            T (float): Absolute temperature.
+            tip_work_func (float): Work function of tip.
+            tip_energy (float): Fermi-level of tip.
+            delta_s (float, opt): Surface broadening parameter; If None, uses default value.
+            fraction (float, opt): Fraction of max charge density to use as value for isosurface.
+            recalculate (bool, opt): Force recalculation, even if already stored.
+            vectorised (bool, opt): If true, use NumPy vectorisation.
+            debug (bool, opt): Print extra information during runtime.
 
         Returns:
-            array(float): 2D array of current values
+            array(float): 2D array of current values.
         """
+        
         if delta_s is None:
             delta_s = self.default_delta_s
         if not recalculate and os.path.isfile(self.current_filename(z, V, T, fraction)):
             # Read data from file
             current = self.read_current(z, V, T, fraction, debug=debug)
         else:
-            current = self.calculate_current_scan(z, V, T, tip_work_func, tip_energy, delta_s=delta_s, fraction=fraction, recalculate=recalculate, interpolation=interpolation, vectorised=vectorised, debug=debug)
+            current = self.calculate_current_scan(z, V, T, tip_work_func, tip_energy,
+                                                  delta_s=delta_s, fraction=fraction,
+                                                  recalculate=recalculate,
+                                                  interpolation=interpolation,
+                                                  vectorised=vectorised, debug=debug)
             self.write_current(current, z, V, T, fraction)
         return current
 
@@ -1222,21 +1320,23 @@ class Cell(object):
         """Get spectroscopic data from a list of specific tip positions.
 
         Args:
-            xy (list(list(float)): x-y points of tip in a0; Given as [[x1, y1], [x2, y2], ...]; Uses nearest mesh point
-            min_V (float): Lower bound for voltage range
-            max_V (float): Upper bound for voltage range
-            sigma (float): State smearing parameter in eV
-            T (float): Absolute temperature in K
-            z (float): z-value of plane in a0; Uses nearest mesh point to given value
-            fraction (float): Fraction of maximum charge density to use as isovalue for isosurface
-            delta_s (float, opt.): Surface broadening parameter; If None, uses default value
-            dE (float, opt.): Energy resolution of data points
-            debug (bool, opt.): Print extra information during runtime
+            xy (list(list(float)): x-y points of tip in a0; Given as [[x1, y1], [x2, y2], ...].
+                Uses nearest mesh point.
+            min_V (float): Lower bound for voltage range.
+            max_V (float): Upper bound for voltage range.
+            sigma (float): State smearing parameter in eV.
+            T (float): Absolute temperature in K.
+            z (float): z-value of plane in a0; Uses nearest mesh point to given value.
+            fraction (float): Fraction of maximum charge density to use as value for isosurface.
+            delta_s (float, opt.): Surface broadening parameter; If None, uses default value.
+            dE (float, opt.): Energy resolution of data points.
+            debug (bool, opt.): Print extra information during runtime.
 
         Returns:
-            array(float): Range of voltage values with resolution dE
-            array(float): Tunnelling conductance values for each tip position
+            array(float): Range of voltage values with resolution dE.
+            array(float): Tunnelling conductance values for each tip position.
         """
+        
         # Convert voltage range into absolute energies
         min_E = min_V + self.fermi_level
         max_E = max_V + self.fermi_level
@@ -1279,13 +1379,15 @@ class Cell(object):
         LDOS = np.zeros((E_range.shape[0], len(xy)))
 
         for u in range(len(E_range)):
-            LDOS[u] = np.sum(weights[..., None] * psis * np.exp(- (((E_range[u] - Es[..., None]) / sigma)**2) / 2), axis=0)
+            LDOS[u] = np.sum(weights[..., None] * psis *
+                             np.exp(-(((E_range[u] - Es[..., None]) / sigma)**2) / 2), axis=0)
         V_range = E_range - self.fermi_level
 
         return V_range, LDOS
 
     def get_cits(self, V, T, fraction, sigma, delta_s=None, debug=False):
         """Calculate Current Imaging Tunnelling Spectroscopy scan - UNFINISHED and UNRELIABLE."""
+        
         if delta_s is None:
             delta_s = self.default_delta_s
 
