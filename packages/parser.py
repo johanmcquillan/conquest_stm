@@ -78,13 +78,13 @@ def get_cell(conquest_out, conquest_folder='conquest/', ion_folder='ions/', grid
         conquest_out (string): Base filename of simulation files.
             Within conquest_folder directory, there must exist files 'conquest_out',
             'conquest_out.dat', and 'conquest_out.dos'
-        conquest_folder (string, opt.): Folder for CONQUEST files.
-        ion_folder (string, opt.): Folder for .ion files.
-        grid_spacing (float, opt.): Mesh resolution in Bohr radii.
-        group_size (int, opt.): Maximum number of atoms to be saved to same support mesh file.
-        weights (bool, opt.): If true, look for k-point weightings in .dat file.
+        conquest_folder (string, opt): Folder for CONQUEST files.
+        ion_folder (string, opt): Folder for .ion files.
+        grid_spacing (float, opt): Mesh resolution in Bohr radii.
+        group_size (int, opt): Maximum number of atoms to be saved to same support mesh file.
+        weights (bool, opt): If true, look for k-point weightings in .dat file.
             Old version of Conquest_STMOutput did not provide k-point weights.
-        debug (bool, opt.): If true, print extra information during runtime.
+        debug (bool, opt): If true, print extra information during runtime.
 
     Returns:
         Cell: Simulation cell.

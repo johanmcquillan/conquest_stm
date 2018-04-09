@@ -62,8 +62,8 @@ class Cell(object):
             x_length (float): Length of cell along x.
             y_length (float): Length of cell along y.
             z_length (float): Length of cell along z.
-            grid_spacing (float, opt.): Resolution of mesh points.
-            group_size (int, opt.): Maximum number of atoms to be saved to same support file.
+            grid_spacing (float, opt): Resolution of mesh points.
+            group_size (int, opt): Maximum number of atoms to be saved to same support file.
         """
 
         self.name = name
@@ -180,7 +180,7 @@ class Cell(object):
 
         Args:
             x (float): Value in a0 to find nearest point; Works for x, y, and z dimensions.
-            points (float, opt.): Number of points in cell dimension.
+            points (float, opt): Number of points in cell dimension.
                 If given, will return mesh index of the found point
 
         Returns:
@@ -235,9 +235,9 @@ class Cell(object):
 
         Args:
             group (int): Atom group
-            interpolation (string, opt.): Method of interpolation.
+            interpolation (string, opt): Method of interpolation.
                 Possible arguments are 'linear', 'quadratic', 'cubic'.
-            debug (bool, opt.): If true, print extra information during runtime.
+            debug (bool, opt): If true, print extra information during runtime.
 
         Returns:
             array(SmartDict): Mesh of support function values.
@@ -483,10 +483,10 @@ class Cell(object):
 
         Args:
             group (int): Atom group
-            recalculate (bool, opt.): Force recalculation, even if already stored.
-            interpolation (string, opt.): Method of interpolation.
+            recalculate (bool, opt): Force recalculation, even if already stored.
+            interpolation (string, opt): Method of interpolation.
                 Possible arguments are 'linear', 'quadratic', 'cubic'.
-            debug (bool, opt.): Print extra information during runtime.
+            debug (bool, opt): Print extra information during runtime.
 
         Returns:
             array(SmartDict): Mesh of support function values.
@@ -528,11 +528,11 @@ class Cell(object):
         Args:
             K (KVector): K-point Vector.
             E (float): Band energy.
-            recalculate (bool, opt.): Force recalculation, even if already stored.
-            vectorised (bool, opt.): If true, use NumPy vectorisation.
-            interpolation (string, opt.): Method of interpolation.
+            recalculate (bool, opt): Force recalculation, even if already stored.
+            vectorised (bool, opt): If true, use NumPy vectorisation.
+            interpolation (string, opt): Method of interpolation.
                 Possible arguments are 'linear', 'quadratic', 'cubic'
-            debug (bool, opt.): Print extra information during runtime.
+            debug (bool, opt): Print extra information during runtime.
 
         Returns:
             array(complex): Mesh of complex wavefunction values.
@@ -651,11 +651,11 @@ class Cell(object):
         Args:
             K (KVector): K-point Vector
             E (float): Band energy
-            recalculate (bool, opt.): Force recalculation, even if already stored
-            vectorised (bool, opt.): If true, use NumPy vectorisation
-            interpolation (string, opt.): Method of interpolation.
+            recalculate (bool, opt): Force recalculation, even if already stored
+            vectorised (bool, opt): If true, use NumPy vectorisation
+            interpolation (string, opt): Method of interpolation.
                 Possible arguments are 'linear', 'quadratic', 'cubic'
-            debug (bool, opt.): Print extra information during runtime
+            debug (bool, opt): Print extra information during runtime
 
         Returns:
             array(complex): Mesh of complex wavefunction values
@@ -678,11 +678,11 @@ class Cell(object):
             min_E (float): Minimum absolute energy
             max_E (float): Maximum absolute energy
             T (float): Absolute temperature in Kelvin
-            recalculate (bool, opt.): Force recalculation, even if already stored
-            vectorised (bool, opt.): If true, use NumPy vectorisation
-            interpolation (string, opt.): Method of interpolation.
+            recalculate (bool, opt): Force recalculation, even if already stored
+            vectorised (bool, opt): If true, use NumPy vectorisation
+            interpolation (string, opt): Method of interpolation.
                 Possible arguments are 'linear', 'quadratic', 'cubic'
-            debug (bool, opt.): Print extra information during runtime
+            debug (bool, opt): Print extra information during runtime
 
         Returns:
             array(float): LDoS mesh
@@ -731,7 +731,7 @@ class Cell(object):
             min_E (float): Minimum energy.
             max_E (float): Maximum energy.
             T (float): Absolute temperature in K.
-            debug (bool, opt.): Print extra information during runtime.
+            debug (bool, opt): Print extra information during runtime.
         """
         
         filename = self.ldos_filename(min_E, max_E, T)
@@ -779,11 +779,11 @@ class Cell(object):
             min_E (float): Minimum absolute energy
             max_E (float): Maximum absolute energy
             T (float): Absolute temperature in K
-            recalculate (bool, opt.): Force recalculation of meshes, even if already stored
-            vectorised (bool, opt.): If true, use NumPy vectorisation
-            interpolation (string, opt.): Method of interpolation.
+            recalculate (bool, opt): Force recalculation of meshes, even if already stored
+            vectorised (bool, opt): If true, use NumPy vectorisation
+            interpolation (string, opt): Method of interpolation.
                 Possible arguments are 'linear', 'quadratic', 'cubic'
-            debug (bool, opt.): Print extra information during runtime
+            debug (bool, opt): Print extra information during runtime
 
         Returns:
             array(float): 3D mesh of LDOS values
@@ -904,7 +904,7 @@ class Cell(object):
             charge_density_mesh (array(float)): Charge density or LDOS mesh.
             fraction (float): Isovalue given by fraction of maximum mesh value.
             tip_height_index (int): Z-index of tip height.
-            delta_s (float, opt.): Durface broadening parameter; If None, uses default value.
+            delta_s (float, opt): Durface broadening parameter; If None, uses default value.
         """
         
         if delta_s is None:
@@ -967,7 +967,7 @@ class Cell(object):
             z_index (float): z-index of tip plane.
             tip_work_func (float): Work function of tip.
             tip_energy (float): Fermi-level of tip.
-            debug (bool, opt.): Print extra information during runtime.
+            debug (bool, opt): Print extra information during runtime.
         """
 
         # Create square grid with sides equal to the size of the x or y=axis of the real mesh
@@ -1328,9 +1328,9 @@ class Cell(object):
             T (float): Absolute temperature in K.
             z (float): z-value of plane in a0; Uses nearest mesh point to given value.
             fraction (float): Fraction of maximum charge density to use as value for isosurface.
-            delta_s (float, opt.): Surface broadening parameter; If None, uses default value.
-            dE (float, opt.): Energy resolution of data points.
-            debug (bool, opt.): Print extra information during runtime.
+            delta_s (float, opt): Surface broadening parameter; If None, uses default value.
+            dE (float, opt): Energy resolution of data points.
+            debug (bool, opt): Print extra information during runtime.
 
         Returns:
             array(float): Range of voltage values with resolution dE.

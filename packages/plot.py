@@ -64,8 +64,8 @@ def plot_3d_isosurface(title, mesh, fraction, alpha=1):
     Args:
         title (string): Title of plot.
         mesh (array(float)): 3D array to be plotted.
-        fraction (float, opt.): Sets value of isosurface to this fraction of max charge density.
-        alpha (float, opt.): Transparency of plot surface.
+        fraction (float, opt): Sets value of isosurface to this fraction of max charge density.
+        alpha (float, opt): Transparency of plot surface.
     """
 
     mes = measure.marching_cubes(mesh, fraction*np.max(mesh))
@@ -95,8 +95,8 @@ def plot_radials(ion, spectro=True, interpolation='cubic'):
 
     Args:
         ion (Ion): Ion object.
-        spectro (bool, opt.): If true, use spectroscopic notation.
-        interpolation (string, opt.): Method of interpolation.
+        spectro (bool, opt): If true, use spectroscopic notation.
+        interpolation (string, opt): Method of interpolation.
             Possible arguments are 'linear', 'quadratic', 'cubic'
     """
     
@@ -148,11 +148,11 @@ def plot_sph_2d(l, m, axis, minimum=-8.0, maximum=8.0, plane_value=0.0, step=0.1
         l (int): Orbital angular momentum quantum number for spherical harmonic.
         m (int): Azimuthal quantum number for spherical harmonic.
         axis (string): Cartesian axis ('x', 'y', or 'z') to set to constant value given by plane_value.
-        minimum (int, opt.): Minimum value of coordinates measured in a0; Default is -8.
-        maximum (int, opt.): Maximum value of coordinates measured in a0; Default is +8.
-        plane_value (float, opt.): Constant value assigned to Cartesian coordinate given by axis;
+        minimum (int, opt): Minimum value of coordinates measured in a0; Default is -8.
+        maximum (int, opt): Maximum value of coordinates measured in a0; Default is +8.
+        plane_value (float, opt): Constant value assigned to Cartesian coordinate given by axis;
             Default is 0.00001
-        step (float, opt.): Interval between points, measured in a0; Default is 0.1.
+        step (float, opt): Interval between points, measured in a0; Default is 0.1.
     """
 
     if axis not in AXES:
@@ -254,12 +254,12 @@ def plot_ldos_2d(
         max_E (float): Maximum energy.
         T (float): Absolute temperature in K.
         axis (string): Cartesian axis ('x', 'y', or 'z') to set to constant value given by plane_value.
-        plane_value (float, opt.): Constant value assigned to Cartesian coordinate given by axis.
+        plane_value (float, opt): Constant value assigned to Cartesian coordinate given by axis.
             Default is 0.0
-        title (bool, opt.): If False, show no title.
-        interpolation (string, opt.): Method of interpolation.
+        title (bool, opt): If False, show no title.
+        interpolation (string, opt): Method of interpolation.
             Possible arguments are 'linear', 'quadratic', 'cubic'
-        debug (bool, opt.): If true, print extra information during runtime
+        debug (bool, opt): If true, print extra information during runtime
     """
 
     if axis not in AXES:
@@ -294,15 +294,15 @@ def plot_ldos_3d(cell, min_E, max_E, T, step=0.0, fraction=0.02, title=True, rec
         min_E (float): Minimum of energy range.
         max_E (float): Maximum of energy range.
         T (float): Apsolute temperature in k.
-        step (float, opt.): Interval between Cartesian mgrid points; Default is cell.gridSpacing.
-        fraction (float, opt.): Sets value of isosurface to this fraction of max charge density.
-        title (bool, opt.): If False, show no title.
-        alpha (float, opt.): Transparency of plot surfaces.
-        recalculate (bool, opt.): Force recalculation, even if already stored.
-        vectorised (bool, opt.): If true, use NumPy vectorisation.
-        interpolation (string, opt.): Method of interpolation.
+        step (float, opt): Interval between Cartesian mgrid points; Default is cell.gridSpacing.
+        fraction (float, opt): Sets value of isosurface to this fraction of max charge density.
+        title (bool, opt): If False, show no title.
+        alpha (float, opt): Transparency of plot surfaces.
+        recalculate (bool, opt): Force recalculation, even if already stored.
+        vectorised (bool, opt): If true, use NumPy vectorisation.
+        interpolation (string, opt): Method of interpolation.
             Possible arguments are 'linear', 'quadratic', 'cubic'
-        debug (bool, opt.): If true, print extra information during runtime.
+        debug (bool, opt): If true, print extra information during runtime.
     """
     
     x_range = (0.0, cell.vector.x)
@@ -348,14 +348,14 @@ def plot_current_2d(cell, z, V, T, tip_work_func, tip_energy, fraction, delta_s=
         T (float): Absolute temperature.
         tip_work_func (float): Work function of tip.
         tip_energy (float): Fermi-level of tip.
-        delta_s (float, opt.): Surface broadening parameter. If None, uses default value.
-        fraction (float, opt.): Fraction of maximum charge density to use as value for isosurface.
-        recalculate (bool, opt.): Force recalculation, even if already stored.
-        vectorised (bool, opt.): If true, use NumPy vectorisation.
-        interpolation (string, opt.): Method of interpolation.
+        delta_s (float, opt): Surface broadening parameter. If None, uses default value.
+        fraction (float, opt): Fraction of maximum charge density to use as value for isosurface.
+        recalculate (bool, opt): Force recalculation, even if already stored.
+        vectorised (bool, opt): If true, use NumPy vectorisation.
+        interpolation (string, opt): Method of interpolation.
             Possible arguments are 'linear', 'quadratic', 'cubic'
-        title (bool, opt.): If False, show no title.
-        debug (bool, opt.): Print extra information during runtime.
+        title (bool, opt): If False, show no title.
+        debug (bool, opt): Print extra information during runtime.
     """
 
     current = cell.get_current_scan(z, V, T, tip_work_func, tip_energy, delta_s, fraction=fraction,

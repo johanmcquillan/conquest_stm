@@ -55,7 +55,7 @@ class Radial(object):
 
         Args:
             distance (float): Distance to evaluate radial function
-            interpolation (string, opt.): Method of interpolation.
+            interpolation (string, opt): Method of interpolation.
                 Possible arguments are 'linear', 'quadratic', 'cubic'.
 
         Returns:
@@ -99,7 +99,7 @@ class Ion(object):
         
         Args:
             ion_name (string): Name of ion (usually from name of .ion file).
-            radial_dict (SmartDict, opt.): Radial objects, indexed by radials[zeta][n][l].
+            radial_dict (SmartDict, opt): Radial objects, indexed by radials[zeta][n][l].
                 Default is empty, Radial objects may be added after instantiation.
         """
         
@@ -192,7 +192,7 @@ class Ion(object):
             l (int): Orbital angular momentum quantum number
             zeta (int): Indexes cut-off radii
             distance (float): Radial distance from ion
-            interpolation (string, opt.): Method of interpolation.
+            interpolation (string, opt): Method of interpolation.
                 Possible arguments are 'linear', 'quadratic', 'cubic'
 
         Returns:
@@ -236,7 +236,7 @@ class Atom(Ion):
         Args:
             ion_name (string): Name of ion (usually from name of .ion file)
             atom_position (Vector): 3D Cartesian real space vector for atom position
-            radials (SmartDict, opt.): Radial objects, indexed by radials[zeta][n][l],
+            radials (SmartDict, opt): Radial objects, indexed by radials[zeta][n][l],
                 Default is empty, Radial objects may be added after instantiation
         """
         
@@ -257,9 +257,9 @@ class Atom(Ion):
 
         Args:
             relative_position (Vector): Vector relative to atom position.
-            l (int, opt.): Orbital angular momentum quantum number.
+            l (int, opt): Orbital angular momentum quantum number.
                 To check specific radial, needs zeta.
-            zeta (int, opt.): Zeta index; to check specific radial, needs l.
+            zeta (int, opt): Zeta index; to check specific radial, needs l.
 
         Returns:
             bool: True if within cutoff radius.
@@ -283,9 +283,9 @@ class Atom(Ion):
 
         Args:
             position (Vector): Vector relative to simulation cell origin.
-            l (int, opt.): Orbital angular momentum quantum number.
+            l (int, opt): Orbital angular momentum quantum number.
                 To check specific radial, needs zeta.
-            zeta (int, opt.): Indexes cut-off radii.
+            zeta (int, opt): Indexes cut-off radii.
 
         Returns:
             bool: True if within cut-off region.
@@ -362,7 +362,7 @@ class Atom(Ion):
             l (int): Orbital angular momentum quantum number.
             zeta (int): Indexes cut-off radii.
             relative_position (Vector): Vector relative to atom.
-            interpolation (string, opt.): Method of interpolation.
+            interpolation (string, opt): Method of interpolation.
                 Possible arguments are 'linear', 'quadratic', 'cubic'.
 
         Returns:
