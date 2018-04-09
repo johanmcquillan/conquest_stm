@@ -9,6 +9,9 @@ from smart_dict import SmartDict
 from vector import Vector, KVector
 from safe_open import safe_open
 
+__author__ = 'Johan G. McQuillan'
+__email__ = 'johan.mcquillan.13@ucl.ac.uk'
+
 
 class Cell(object):
     """Simulation cell which holds Atom objects in a 3D mesh.

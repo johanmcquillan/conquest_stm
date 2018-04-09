@@ -1,6 +1,9 @@
 
 import packages.plot as plot
 
+__author__ = 'Johan G. McQuillan'
+__email__ = 'johan.mcquillan.13@ucl.ac.uk'
+
 lMax = 4
 
 print "3-DIMENSIONAL SPHERICAL HARMONICS"

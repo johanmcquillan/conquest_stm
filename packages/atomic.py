@@ -5,6 +5,9 @@ from smart_dict import SmartDict
 from sph import sph
 from vector import Vector
 
+__author__ = 'Johan G. McQuillan'
+__email__ = 'johan.mcquillan.13@ucl.ac.uk'
+
 
 class Radial(object):
     """Evaluates radial part of support function by interpolating data read from .ion file.

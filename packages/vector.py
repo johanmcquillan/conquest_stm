@@ -1,6 +1,9 @@
 
 import numpy as np
 
+__author__ = 'Johan G. McQuillan'
+__email__ = 'johan.mcquillan.13@ucl.ac.uk'
+
 
 class Vector(object):
     """3D Cartesian vector.

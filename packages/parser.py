@@ -7,6 +7,9 @@ from cell import Cell
 from smart_dict import SmartDict
 from vector import Vector, KVector
 
+__author__ = 'Johan G. McQuillan'
+__email__ = 'johan.mcquillan.13@ucl.ac.uk'
+
 HA_TO_EV = 27.2114  # Factor to convert Hartrees to electron volts
 
 

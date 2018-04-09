@@ -1,6 +1,9 @@
 
 import numpy as np
 
+__author__ = 'Johan G. McQuillan'
+__email__ = 'johan.mcquillan.13@ucl.ac.uk'
+
 # Normalisation factors for spherical harmonics
 # Numbers in variable names refer to l and absolute value of m
 SPH0 = 1.0/2.0 * np.sqrt(1.0 / np.pi)

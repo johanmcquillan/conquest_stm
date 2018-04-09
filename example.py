@@ -2,6 +2,9 @@
 from packages.parser import get_cell
 import packages.plot as plot
 
+__author__ = 'Johan G. McQuillan'
+__email__ = 'johan.mcquillan.13@ucl.ac.uk'
+
 debug = True
 
 C = get_cell('Si001_test', grid_spacing=0.5, debug=debug)

@@ -10,6 +10,9 @@ from skimage import measure
 from sph import sph
 from vector import Vector
 
+__author__ = 'Johan G. McQuillan'
+__email__ = 'johan.mcquillan.13@ucl.ac.uk'
+
 # Spectroscopic notation dictionary
 SPECTRAL = {0: 's', 1: 'p', 2: 'd', 3: 'f', 4: 'g', 5: 'h', 6: 'i', 7: 'j', 8: 'k'}
 
