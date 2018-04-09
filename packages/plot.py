@@ -45,7 +45,7 @@ def plot_2d(cell, mesh_3d, title, axis, plane_value):
         label1 = 'y'
         label2 = 'x'
     else:
-        raise ValueError("Axis must be x, y, or z")
+        raise ValueError('Axis must be x, y, or z')
 
     plt.imshow(mesh_2d, interpolation='bilinear', origin='lower', cmap=cm.afmhot, extent=(0, mesh_2d.shape[0], 0, mesh_2d.shape[1]))
     plt.colorbar()
@@ -77,9 +77,9 @@ def plot_3d_isosurface(title, mesh, fraction, alpha=1):
 
     # Set axes
     ax.view_init(elev=45, azim=-45)
-    ax.set_xlabel("x")
-    ax.set_ylabel("y")
-    ax.set_zlabel("z")
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_zlabel('z')
 
     ax.plot_trisurf(verts[:, 0], verts[:, 1], faces, verts[:, 2], cmap=cm.Spectral, antialiased=False, lw=0.0, alpha=alpha)
 
@@ -221,13 +221,13 @@ def plot_sph_3d(l, m):
 
     # Plot surface
     fig, ax = plt.subplots(subplot_kw=dict(projection='3d'), figsize=(10, 10))
-    ax.set_xlabel("x")
-    ax.set_ylabel("y")
-    ax.set_zlabel("z")
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_zlabel('z')
     ax.set_xlim3d(-1.0, 1.0)
     ax.set_ylim3d(-1.0, 1.0)
     ax.set_zlim3d(-1.0, 1.0)
-    title = "Real Spherical Harmonic for Degree $l="+str(l)+"$ and Order $m="+str(m)+"$"
+    title = 'Real Spherical Harmonic for Degree $l='+str(l)+'$ and Order $m='+str(m)+'$'
     plt.title(title)
 
     ax.plot_surface(X, Y, Z, rstride=1, cstride=1, edgecolors=None, linewidth=0)
@@ -254,7 +254,7 @@ def plot_ldos_2d(
     """
 
     if axis not in AXES:
-        raise ValueError("Axis must be x, y, or z")
+        raise ValueError('Axis must be x, y, or z')
 
     # Get absolute energy
     min_E_abs = min_E + cell.fermiLevel
@@ -263,7 +263,7 @@ def plot_ldos_2d(
     ldos_3d = cell.get_ldos_grid(min_E_abs, max_E_abs, T, interpolation=interpolation, debug=debug)
 
     if np.max(ldos_3d) == 0.0:
-        raise ValueError("LDoS is zero at all points")
+        raise ValueError('LDoS is zero at all points')
 
     axes = ['x', 'y', 'z']
     axes.remove(axis)
@@ -309,7 +309,7 @@ def plot_ldos_3d(cell, min_E, max_E, T, step=0.0, fraction=0.02, title=True, rec
     max_ldos = np.max(ldos)
 
     if max_ldos == 0.0:
-        raise ValueError("LDoS is zero at all points")
+        raise ValueError('LDoS is zero at all points')
 
     if title:
         ttl = (
@@ -398,7 +398,7 @@ def plot_cits(cell, V, T, fraction, sigma, title=False, delta_s=None, debug=True
     scan = cell.get_cits(V, T, fraction, sigma, delta_s=delta_s, debug=debug)
 
     if title:
-        ttl = r"{} CITS at $V = {}V$, $\sigma = {}eV$, using ".format(cell.name, V, sigma)
+        ttl = r'{} CITS at $V = {}V$, $\sigma = {}eV$, using '.format(cell.name, V, sigma)
     else:
         ttl = ''
     plt.title(ttl)

@@ -69,7 +69,7 @@ class Radial(object):
             elif interpolation == 'cubic':
                 value = self.interpolator_cubic(distance)
             else:
-                errorString = "Interpolation method must be either "
+                errorString = 'Interpolation method must be either '
                 for i in range(len(self.interpolators)):
                     errorString += self.interpolators[i]
                     if i < len(self.interpolators) - 1:

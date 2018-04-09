@@ -35,17 +35,17 @@ class Cell(object):
     H_BAR = 4.135667662E-15  # Reduced Planck's Constant in eV.s
     DELTA_S_FACTOR = 2  # Default delta S given by minimum delta S scaled by this factor
 
-    MESH_FOLDER = "meshes/"  # Folder to save mesh files
-    SUPPORT_FNAME = "supp_"  # Prefix for support mesh files
-    LDOS_FNAME = "ldos_"  # Prefix for summed LDOS files
-    PSI_FNAME = "psi_"  # Prefix for wavefunction files
-    PROP_PSI_FNAME = "prop_"  # Prefix for propagated wavefunction files
-    CURRENT_FNAME = "current_"  # Prefix for current files
-    EXT = ".dat"  # Mesh file extension
+    MESH_FOLDER = 'meshes/'  # Folder to save mesh files
+    SUPPORT_FNAME = 'supp_'  # Prefix for support mesh files
+    LDOS_FNAME = 'ldos_'  # Prefix for summed LDOS files
+    PSI_FNAME = 'psi_'  # Prefix for wavefunction files
+    PROP_PSI_FNAME = 'prop_'  # Prefix for propagated wavefunction files
+    CURRENT_FNAME = 'current_'  # Prefix for current files
+    EXT = '.dat'  # Mesh file extension
 
     PRINT_RELATIVE_TO_EF = True  # Print energies as absolute or relative to Fermi level
     PROG_BAR_INTERVALS = 20  # Number of intervals in debug progress bar
-    PROG_BAR_CHARACTER = ">"
+    PROG_BAR_CHARACTER = '>'
 
     def __init__(self, name, fermi_level, x_length, y_length, z_length, grid_spacing=0.5, group_size=400):
         """Constructs 3D cell with given dimensional.
@@ -230,7 +230,7 @@ class Cell(object):
             array(SmartDict): Mesh of support function values, indexed by [x, y, z][atom_key][l][zeta][m]
         """
         if debug:
-            print "Calculating support mesh for atom group", str(group)
+            print 'Calculating support mesh for atom group', str(group)
         # Initialise support grid
         support_grid = np.empty(self.real_mesh.shape[:3], dtype=SmartDict)
 
@@ -245,7 +245,7 @@ class Cell(object):
         for atom_key in atom_list:
             atom = self.atoms[atom_key]
 
-            debug_str = "  Support grid for atom {:3} - {!s}: ".format(atom_key, atom.ion_name)
+            debug_str = '  Support grid for atom {:3} - {!s}: '.format(atom_key, atom.ion_name)
             if debug:
                 sys.stdout.write(debug_str)
                 sys.stdout.flush()
@@ -327,8 +327,8 @@ class Cell(object):
                     sys.stdout.write('\r')
                     sys.stdout.write(debug_str)
                     sys.stdout.write(
-                        " [{:<{}}]".format(self.PROG_BAR_CHARACTER * bars_done, self.PROG_BAR_INTERVALS))
-                    sys.stdout.write(" {:3.0f}%".format(percent))
+                        ' [{:<{}}]'.format(self.PROG_BAR_CHARACTER * bars_done, self.PROG_BAR_INTERVALS))
+                    sys.stdout.write(' {:3.0f}%'.format(percent))
                     sys.stdout.flush()
                     bars_done += 1
 
@@ -348,7 +348,7 @@ class Cell(object):
 
     def support_group_filename(self, group):
         """Return standardised filename for relevant support function file"""
-        return self.MESH_FOLDER+self.SUPPORT_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(self.atom_group_size)+"_"+str(group)+self.EXT
+        return self.MESH_FOLDER+self.SUPPORT_FNAME+self.name+'_'+str(self.grid_spacing)+'_'+str(self.atom_group_size)+'_'+str(group)+self.EXT
 
     def write_support_group(self, group, support_mesh, debug=False):
         """Write support function group to file"""
@@ -356,7 +356,7 @@ class Cell(object):
         support_file = safe_open(filename, 'w')
 
         if debug:
-            sys.stdout.write("Writing support group to "+filename+": ")
+            sys.stdout.write('Writing support group to '+filename+': ')
             sys.stdout.flush()
         points_done = 0
         bars_done = 0
@@ -367,32 +367,32 @@ class Cell(object):
 
             # If support function values exist at mesh point
             if support_mesh[ijk]:
-                support_file.write(str(i) + " " + str(j) + " " + str(k) + "\n")
+                support_file.write(str(i) + ' ' + str(j) + ' ' + str(k) + '\n')
 
                 # Iterate over atoms
                 for atom_key in support_mesh[ijk]:
                     # Write atom index
-                    support_file.write(str(atom_key) + "\n")
+                    support_file.write(str(atom_key) + '\n')
 
                     # Iterate over orbitals
                     for l in support_mesh[ijk][atom_key]:
                         for zeta in support_mesh[ijk][atom_key][l]:
                             for m in support_mesh[ijk][atom_key][l][zeta]:
                                 # Write orbital data
-                                line = (str(l) + " " + str(zeta) + " " + str(m) + " "
+                                line = (str(l) + ' ' + str(zeta) + ' ' + str(m) + ' '
                                         + str(support_mesh[ijk][atom_key][l][zeta][m]))
-                                support_file.write(line + "\n")
+                                support_file.write(line + '\n')
 
             # Update progress bar
             points_done += 1
             if debug and float(points_done) / self.mesh_points * self.PROG_BAR_INTERVALS > bars_done:
                 sys.stdout.write('\r')
-                sys.stdout.write(" [{:<{}}]".format(self.PROG_BAR_CHARACTER * bars_done, self.PROG_BAR_INTERVALS))
+                sys.stdout.write(' [{:<{}}]'.format(self.PROG_BAR_CHARACTER * bars_done, self.PROG_BAR_INTERVALS))
                 sys.stdout.flush()
                 bars_done += 1
 
         if debug:
-            sys.stdout.write("\n")
+            sys.stdout.write('\n')
             sys.stdout.flush()
         support_file.close()
 
@@ -403,7 +403,7 @@ class Cell(object):
         support_mesh = np.empty(self.real_mesh.shape[:3], dtype=SmartDict)
 
         if debug:
-            print "Reading support group from "+filename
+            print 'Reading support group from '+filename
 
         # Iterate over file lines
         end_of_file = False
@@ -444,7 +444,7 @@ class Cell(object):
             except StopIteration:
                 end_of_file = True
         if debug:
-            print "Support grid successfully read"
+            print 'Support grid successfully read'
         return support_mesh
 
     def get_support_group(self, group, recalculate=False, interpolation='cubic', debug=False):
@@ -511,10 +511,10 @@ class Cell(object):
 
         # Print debug info
         if self.PRINT_RELATIVE_TO_EF:
-            E_str = str(E - self.fermi_level) + " eV"
+            E_str = str(E - self.fermi_level) + ' eV'
         else:
-            E_str = str(E) + " eV"
-        debug_str = "Calculating psi(r) at k = "+str(K)+", E = "+E_str+": "
+            E_str = str(E) + ' eV'
+        debug_str = 'Calculating psi(r) at k = '+str(K)+', E = '+E_str+': '
         if debug:
             sys.stdout.write(debug_str)
             sys.stdout.flush()
@@ -551,43 +551,43 @@ class Cell(object):
                 percent = prog * 100
                 sys.stdout.write('\r')
                 sys.stdout.write(debug_str)
-                sys.stdout.write(" [{:<{}}]".format(self.PROG_BAR_CHARACTER * bars_done, self.PROG_BAR_INTERVALS))
-                sys.stdout.write(" {:3.0f}%".format(percent))
+                sys.stdout.write(' [{:<{}}]'.format(self.PROG_BAR_CHARACTER * bars_done, self.PROG_BAR_INTERVALS))
+                sys.stdout.write(' {:3.0f}%'.format(percent))
                 sys.stdout.flush()
                 bars_done = int(prog * self.PROG_BAR_INTERVALS)
         if debug:
-            sys.stdout.write("\n")
+            sys.stdout.write('\n')
             sys.stdout.flush()
         return psi_grid
 
     def psi_filename(self, K, E):
         """Return standardised filename for relevant wavefunction file"""
-        return (self.MESH_FOLDER+self.PSI_FNAME+self.name+"_"+str(self.grid_spacing)+"_"
-                +str(K.x)+"_"+str(K.y)+"_"+str(K.z)+"_"+str(E)+self.EXT)
+        return (self.MESH_FOLDER+self.PSI_FNAME+self.name+'_'+str(self.grid_spacing)+'_'
+                +str(K.x)+'_'+str(K.y)+'_'+str(K.z)+'_'+str(E)+self.EXT)
 
     def write_psi_grid(self, psi_grid, K, E):
         """Write wavefunction function mesh to file"""
         filename = self.psi_filename(K, E)
-        psi_file = safe_open(filename, "w")
+        psi_file = safe_open(filename, 'w')
         for ijk in np.ndindex(self.real_mesh.shape[:3]):
             i, j, k = ijk
             if psi_grid[ijk] != 0:
                 psi = psi_grid[ijk]
-                psi_file.write(str(i)+" "+str(j)+" "+str(k)+" "+str(psi.real)+" "+str(psi.imag)+"\n")
+                psi_file.write(str(i)+' '+str(j)+' '+str(k)+' '+str(psi.real)+' '+str(psi.imag)+'\n')
         psi_file.close()
 
     def read_psi_grid(self, K, E, debug=False):
         """Read wavefunction mesh from file"""
         filename = self.psi_filename(K, E)
-        psi_file = open(filename, "r")
+        psi_file = open(filename, 'r')
         psi_grid = np.zeros_like(self.real_mesh[..., 0], dtype=complex)
 
         if debug:
             if self.PRINT_RELATIVE_TO_EF:
-                E_str = str(E - self.fermi_level) + " eV"
+                E_str = str(E - self.fermi_level) + ' eV'
             else:
-                E_str = str(E) + " eV"
-            sys.stdout.write("Reading psi(r) at k = {!s}, E = {}\n".format(K, E_str))
+                E_str = str(E) + ' eV'
+            sys.stdout.write('Reading psi(r) at k = {!s}, E = {}\n'.format(K, E_str))
 
         for line in psi_file:
             line_split = line.split()
@@ -641,7 +641,7 @@ class Cell(object):
         """
         # Print debug info
         if debug:
-            sys.stdout.write("Calculating local density of states grid\n")
+            sys.stdout.write('Calculating local density of states grid\n')
             sys.stdout.flush()
 
         # Initialise mesh
@@ -668,7 +668,7 @@ class Cell(object):
 
     def ldos_filename(self, min_E, max_E, T):
         """Return standardised filename for relevant LDOS file"""
-        return self.MESH_FOLDER+self.LDOS_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(min_E)+"_"+str(max_E)+"_"+str(T)+self.EXT
+        return self.MESH_FOLDER+self.LDOS_FNAME+self.name+'_'+str(self.grid_spacing)+'_'+str(min_E)+'_'+str(max_E)+'_'+str(T)+self.EXT
 
     def write_ldos_grid(self, ldos_grid, min_E, max_E, T, debug=False):
         """Write LDoS mesh to file.
@@ -682,15 +682,15 @@ class Cell(object):
         """
         filename = self.ldos_filename(min_E, max_E, T)
         # Get LDOS mesh
-        ldos_file = safe_open(filename, "w")
+        ldos_file = safe_open(filename, 'w')
         if debug:
-            sys.stdout.write("Writing LDOS grid to {}\n".format(filename))
+            sys.stdout.write('Writing LDOS grid to {}\n'.format(filename))
             sys.stdout.flush()
         # Iterate over mesh points
         for i, j, k in np.ndindex(self.real_mesh.shape[:3]):
             # If LDOS is non-zero at mesh point, write data to file
             if ldos_grid[i, j, k]:
-                ldos_file.write(str(i)+" "+str(j)+" "+str(k)+" "+str(ldos_grid[i, j, k])+"\n")
+                ldos_file.write(str(i)+' '+str(j)+' '+str(k)+' '+str(ldos_grid[i, j, k])+'\n')
         ldos_file.close()
 
     def read_ldos_grid(self, min_E, max_E, T, debug=False):
@@ -700,7 +700,7 @@ class Cell(object):
         ldos_grid = np.zeros_like(self.real_mesh[..., 0])
 
         if debug:
-            print "Reading LDoS grid from "+filename
+            print 'Reading LDoS grid from '+filename
 
         for line in ldos_file:
             line_split = line.split()
@@ -713,7 +713,7 @@ class Cell(object):
             ldos_grid[i, j, k] = value
 
         if debug:
-            print "LDoS grid successfully read"
+            print 'LDoS grid successfully read'
         return ldos_grid
 
     def get_ldos_grid(self, min_E, max_E, T, recalculate=False, vectorised=True, interpolation='cubic', debug=False):
@@ -909,7 +909,7 @@ class Cell(object):
         G_mesh = np.zeros(G_shape, dtype=float)
 
         # Print debug info
-        debug_str = "Calculating G(r - R): "
+        debug_str = 'Calculating G(r - R): '
         if debug:
             sys.stdout.write(debug_str)
             sys.stdout.flush()
@@ -954,13 +954,13 @@ class Cell(object):
                 percent = prog * 100
                 sys.stdout.write('\r')
                 sys.stdout.write(debug_str)
-                sys.stdout.write(" [{:<{}}]".format(self.PROG_BAR_CHARACTER * bars_done, self.PROG_BAR_INTERVALS))
-                sys.stdout.write(" {:3.0f}%".format(percent))
+                sys.stdout.write(' [{:<{}}]'.format(self.PROG_BAR_CHARACTER * bars_done, self.PROG_BAR_INTERVALS))
+                sys.stdout.write(' {:3.0f}%'.format(percent))
                 sys.stdout.flush()
                 bars_done += 1
 
         if debug:
-            sys.stdout.write("\n")
+            sys.stdout.write('\n')
             sys.stdout.flush()
         return G_mesh
 
@@ -968,19 +968,19 @@ class Cell(object):
         """Return standardised filename for relevant propagated wavefunction file"""
         if delta_s is None:
             delta_s = self.default_delta_s
-        return (self.MESH_FOLDER+self.PROP_PSI_FNAME+self.name+"_"+str(self.grid_spacing)+"_"
-                +str(K.x)+"_"+str(K.y)+"_"+str(K.z)+"_"+str(E)+"_"+str(T)+"_"+str(fraction)+"_"+str(z)+"_"+str(delta_s)+self.EXT)
+        return (self.MESH_FOLDER+self.PROP_PSI_FNAME+self.name+'_'+str(self.grid_spacing)+'_'
+                +str(K.x)+'_'+str(K.y)+'_'+str(K.z)+'_'+str(E)+'_'+str(T)+'_'+str(fraction)+'_'+str(z)+'_'+str(delta_s)+self.EXT)
 
     def write_prop_psi(self, psi, K, E, T, fraction, z, delta_s=None):
         """Write propagated wavefunction function mesh to file"""
         if delta_s is None:
             delta_s = self.default_delta_s
         filename = self.propagated_psi_filename(K, E, T, fraction, z, delta_s=delta_s)
-        psi_file = safe_open(filename, "w")
+        psi_file = safe_open(filename, 'w')
         for i, j in np.ndindex(psi.shape):
             if psi[i, j] != 0:
                 p = psi[i, j]
-                psi_file.write(str(i)+" "+str(j)+" "+str(p.real)+" "+str(p.imag)+"\n")
+                psi_file.write(str(i)+' '+str(j)+' '+str(p.real)+' '+str(p.imag)+'\n')
         psi_file.close()
 
     def read_prop_psi(self, K, E, T, fraction, z, delta_s=None, debug=False):
@@ -989,15 +989,15 @@ class Cell(object):
             delta_s = self.default_delta_s
 
         filename = self.propagated_psi_filename(K, E, T, fraction, z, delta_s=delta_s)
-        psi_file = open(filename, "r")
+        psi_file = open(filename, 'r')
         psi = np.zeros(self.real_mesh.shape[:2], dtype=complex)
 
         if debug:
             if self.PRINT_RELATIVE_TO_EF:
-                E_str = str(E - self.fermi_level) + " eV"
+                E_str = str(E - self.fermi_level) + ' eV'
             else:
-                E_str = str(E) + " eV"
-            sys.stdout.write("Reading psi(R) at k = {!s}, E = {}\n".format(K, E_str))
+                E_str = str(E) + ' eV'
+            sys.stdout.write('Reading psi(R) at k = {!s}, E = {}\n'.format(K, E_str))
             sys.stdout.flush()
 
         for line in psi_file:
@@ -1033,7 +1033,7 @@ class Cell(object):
             delta_s = self.default_delta_s
 
         if debug:
-            sys.stdout.write("Calculating I(R) at V={}V\n".format(V))
+            sys.stdout.write('Calculating I(R) at V={}V\n'.format(V))
             sys.stdout.flush()
 
         min_E, max_E = self.bias_to_energy_range(V)
@@ -1062,7 +1062,7 @@ class Cell(object):
 
         # Print debug info
         if debug:
-            sys.stdout.write("Calculating grad(G)\n")
+            sys.stdout.write('Calculating grad(G)\n')
             sys.stdout.flush()
 
         G_conjugate_gradient = self.periodic_gradient(G_conjugate)
@@ -1093,10 +1093,10 @@ class Cell(object):
                         # Print debug info
                         prog = float(energies_done) / total_energies * 100
                         if self.PRINT_RELATIVE_TO_EF:
-                            E_str = str(E - self.fermi_level) + " eV"
+                            E_str = str(E - self.fermi_level) + ' eV'
                         else:
-                            E_str = str(E) + " eV"
-                        debug_str = "Calculating psi(R) at k = {!s}, E = {}: {:5.1f}%".format(K, E_str, prog)
+                            E_str = str(E) + ' eV'
+                        debug_str = 'Calculating psi(R) at k = {!s}, E = {}: {:5.1f}%'.format(K, E_str, prog)
                         if debug:
                             sys.stdout.write(debug_str)
                             sys.stdout.flush()
@@ -1126,7 +1126,7 @@ class Cell(object):
                                 percent = prog * 100
                                 sys.stdout.write('\r')
                                 sys.stdout.write(debug_str)
-                                sys.stdout.write(" [{:<{}}] {:3.0f}%".format(self.PROG_BAR_CHARACTER * bars_done,
+                                sys.stdout.write(' [{:<{}}] {:3.0f}%'.format(self.PROG_BAR_CHARACTER * bars_done,
                                                                              self.PROG_BAR_INTERVALS, percent))
                                 sys.stdout.flush()
                                 bars_done += 1
@@ -1146,20 +1146,20 @@ class Cell(object):
         """Return standardised filename for relevant current file."""
         if delta_s is None:
             delta_s = self.default_delta_s
-        return self.MESH_FOLDER+self.CURRENT_FNAME+self.name+"_"+str(self.grid_spacing)+"_"+str(z)+"_"+str(V)+"_"+str(T)+"_"+str(fraction)+"_"+str(delta_s)+self.EXT
+        return self.MESH_FOLDER+self.CURRENT_FNAME+self.name+'_'+str(self.grid_spacing)+'_'+str(z)+'_'+str(V)+'_'+str(T)+'_'+str(fraction)+'_'+str(delta_s)+self.EXT
 
     def write_current(self, current, z, V, T, fraction, delta_s=None, debug=False):
         """Write current to file."""
         filename = self.current_filename(z, V, T, fraction, delta_s)
 
-        current_file = safe_open(filename, "w")
+        current_file = safe_open(filename, 'w')
         if debug:
-            sys.stdout.write("Writing current grid to {}\n".format(filename))
+            sys.stdout.write('Writing current grid to {}\n'.format(filename))
         # Iterate over mesh points
         for i, j in np.ndindex(current.shape):
             # If LDOS is non-zero at mesh point, write data to file
             if current[i, j] != 0:
-                current_file.write(str(i)+" "+str(j)+" "+str(current[i, j])+"\n")
+                current_file.write(str(i)+" "+str(j)+" "+str(current[i, j])+'\n')
         current_file.close()
 
     def read_current(self, z, V, T, fraction, delta_s=None, debug=False):
@@ -1169,7 +1169,7 @@ class Cell(object):
         current = np.zeros(self.real_mesh.shape[:2], dtype=float)
 
         if debug:
-            sys.stdout.write("Reading I(R) from {}\n".format(filename))
+            sys.stdout.write('Reading I(R) from {}\n'.format(filename))
             sys.stdout.flush()
 
         for line in current_file:
@@ -1183,7 +1183,7 @@ class Cell(object):
             current[i, j] = value
 
         if debug:
-            sys.stdout.write("I(R) successfully read\n")
+            sys.stdout.write('I(R) successfully read\n')
             sys.stdout.flush()
         return current
 

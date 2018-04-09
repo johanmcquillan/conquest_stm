@@ -117,7 +117,7 @@ def get_cell(conquest_out, conquest_folder='conquest/', ion_folder='ions/', grid
             line = conquest_out_file.next()
 
         # Skip lines until cell data
-        while "The simulation box has the following dimensions" not in line:
+        while 'The simulation box has the following dimensions' not in line:
             line = conquest_out_file.next()
         line = conquest_out_file.next()
 
