@@ -1,8 +1,8 @@
 
 from scipy.interpolate import interp1d
 
-from sph import sph
 from smart_dict import SmartDict
+from sph import sph
 from vector import Vector
 
 

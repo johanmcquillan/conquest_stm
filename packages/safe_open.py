@@ -1,6 +1,6 @@
 
-import os
 import errno
+import os
 
 
 def make_directory(path):

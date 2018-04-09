@@ -1,6 +1,6 @@
 
-import packages.plot as plot
 from packages.parser import get_cell
+import packages.plot as plot
 
 debug = True
 

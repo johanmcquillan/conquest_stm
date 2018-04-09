@@ -1,8 +1,9 @@
 
 import os
 import sys
-import warnings
 import numpy as np
+import warnings
+
 from sph import sph
 from smart_dict import SmartDict
 from vector import Vector, KVector

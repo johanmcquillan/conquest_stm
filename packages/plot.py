@@ -1,12 +1,10 @@
 
 import numpy as np
-
 import matplotlib.pyplot as plt
-import mpl_toolkits.mplot3d as mp3d
-from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 from matplotlib import colors as clrs
-
+import mpl_toolkits.mplot3d as mp3d
+from mpl_toolkits.mplot3d import Axes3D
 from skimage import measure
 
 from sph import sph
