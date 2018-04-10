@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 
 from packages.parser import get_cell
 import packages.plot as plot
