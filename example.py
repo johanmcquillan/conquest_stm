@@ -8,7 +8,7 @@ __email__ = 'johan.mcquillan.13@ucl.ac.uk'
 
 debug = True
 
-C = get_cell('Si001_test', grid_spacing=0.5, debug=debug)
+C = get_cell('Si001_test', grid_spacing=1.0, debug=debug)
 
 fl = C.fermi_level
 V = -2
