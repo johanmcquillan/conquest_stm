@@ -17,9 +17,8 @@ HA_TO_EV = 27.2114  # Factor to convert Hartrees to electron volts
 def get_ion(ion_name, ion_folder='ions'):
     """Create Ion object from .ion file."""
     
-    try:
-        # Open .ion
-        ion_file = open(os.path.join(ion_folder, ion_name+'.ion'), 'r')
+    # Open .ion
+    with open(os.path.join(ion_folder, ion_name+'.ion'), 'r') as ion_file:
 
         # Skip preamble and first 9 lines
         line = ion_file.next()
@@ -67,10 +66,6 @@ def get_ion(ion_name, ion_folder='ions'):
         # Create Ion with radials
         return atomic.Ion(ion_name, radial_dict)
 
-    except IOError:
-        print '{} does not exist'.format(os.path.join(ion_folder, ion_name+'.ion'))
-        sys.exit(1)
-
 
 def get_cell(conquest_out, conquest_folder='conquest', ion_folder='ions', grid_spacing=0.5,
              group_size=400, weights=True, debug=False):
@@ -95,9 +90,9 @@ def get_cell(conquest_out, conquest_folder='conquest', ion_folder='ions', grid_s
     if debug:
         sys.stdout.write('Building simulation cell\n')
         sys.stdout.flush()
-    try:
-        # Open Conquest_out file
-        conquest_out_file = open(os.path.join(conquest_folder, conquest_out), 'r')
+
+    # Open Conquest_out file
+    with open(os.path.join(conquest_folder, conquest_out), 'r') as conquest_out_file:
         ions = {}
         atoms = {}
 
@@ -166,11 +161,8 @@ def get_cell(conquest_out, conquest_folder='conquest', ion_folder='ions', grid_s
             conquest_out_file.next()
             line = conquest_out_file.next()
 
-        conquest_out_file.close()
-
-        try:
-            # Open corresponding .dat file for basis coefficients
-            conquest_dat_file = open(os.path.join(conquest_folder, conquest_out+'.dat'))
+        # Open corresponding .dat file for basis coefficients
+        with open(os.path.join(conquest_folder, conquest_out+'.dat')) as conquest_dat_file:
             line = conquest_dat_file.next()
 
             # Loop over all lines
@@ -230,34 +222,20 @@ def get_cell(conquest_out, conquest_folder='conquest', ion_folder='ions', grid_s
                     except StopIteration:
                         end_of_file = True
 
-            conquest_dat_file.close()
-        except IOError:
-            print '{} does not exist'.format(os.path.join(conquest_folder, conquest_out+'.dat'))
-
-        try:
             # Open .dos file
-            conquest_dos_file = open(os.path.join(conquest_folder, conquest_out+'.dos'))
+        with open(os.path.join(conquest_folder, conquest_out+'.dos')) as conquest_dos_file:
             line = conquest_dos_file.next()
-            conquest_dos_file.close()
 
-            # Get Fermi level
-            data = line.split()
-            fermi_lvl = float(data[2]) * HA_TO_EV
+        # Get Fermi level
+        data = line.split()
+        fermi_lvl = float(data[2]) * HA_TO_EV
 
-            # Create Cell
-            cell = Cell(conquest_out, fermi_lvl, cell_length_x, cell_length_y, cell_length_z,
-                        grid_spacing=grid_spacing, group_size=group_size)
+        # Create Cell
+        cell = Cell(conquest_out, fermi_lvl, cell_length_x, cell_length_y, cell_length_z,
+                    grid_spacing=grid_spacing, group_size=group_size)
 
-            # Fill Cell with atoms
-            for atom_key in atoms:
-                cell.add_atom(atoms[atom_key], atom_key)
+        # Fill Cell with atoms
+        for atom_key in atoms:
+            cell.add_atom(atoms[atom_key], atom_key)
 
-            return cell
-
-        except IOError:
-            print '{} does not exist'.format(os.path.join(conquest_folder, conquest_out+'.dos'))
-            sys.exit(1)
-
-    except IOError:
-        print '{} does not exist'.format(os.path.join(conquest_folder, conquest_out))
-        sys.exit(1)
+        return cell
