@@ -400,20 +400,19 @@ class Cell(object):
                 # Iterate over atoms
                 for atom_key in support_mesh[ijk]:
                     # Write atom index
-                    support_file.write(str(atom_key) + '\n')
+                    support_file.write('{}\n'.format(atom_key))
 
                     # Iterate over orbitals
                     for l in support_mesh[ijk][atom_key]:
                         for zeta in support_mesh[ijk][atom_key][l]:
                             for m in support_mesh[ijk][atom_key][l][zeta]:
                                 # Write orbital data
-                                line = (str(l) + ' ' + str(zeta) + ' ' + str(m) + ' '
-                                        + str(support_mesh[ijk][atom_key][l][zeta][m]))
-                                support_file.write(line + '\n')
+                                support_file.write('{} {} {} {}\n'.format(
+                                    l, zeta, m, support_mesh[ijk][atom_key][l][zeta][m]))
 
             # Update progress bar
             points_done += 1
-            if debug and float(points_done) / self.mesh_points * self.PROG_BAR_INTERVALS > bars_done:
+            if debug and float(points_done) / self.mesh_points*self.PROG_BAR_INTERVALS > bars_done:
                 sys.stdout.write('\r')
                 sys.stdout.write(' [{:<{}}]'.format(self.PROG_BAR_CHARACTER * bars_done,
                                                     self.PROG_BAR_INTERVALS))
@@ -1075,9 +1074,9 @@ class Cell(object):
 
         if debug:
             if self.PRINT_RELATIVE_TO_EF:
-                E_str = str(E - self.fermi_level) + ' eV'
+                E_str = '{} eV'.format(E - self.fermi_level)
             else:
-                E_str = str(E) + ' eV'
+                E_str = '{} eV'.format(E)
             sys.stdout.write('Reading psi(R) at k = {!s}, E = {}\n'.format(K, E_str))
             sys.stdout.flush()
 
@@ -1182,9 +1181,9 @@ class Cell(object):
                         # Print debug info
                         prog = float(energies_done) / total_energies * 100
                         if self.PRINT_RELATIVE_TO_EF:
-                            E_str = str(E - self.fermi_level) + ' eV'
+                            E_str = '{} eV'.format(E - self.fermi_level)
                         else:
-                            E_str = str(E) + ' eV'
+                            E_str = '{} eV'.format(E)
                         debug_str = 'Calculating psi(R) at k = {!s}, E = {}: {:5.1f}%'.format(
                                 K, E_str, prog)
                         if debug:
