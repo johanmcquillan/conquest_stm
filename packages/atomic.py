@@ -180,8 +180,8 @@ class Ion(object):
         if self.has_radial(l, zeta):
             return self.radials[l][zeta]
         else:
-            raise ValueError('No radial data for ' + self.ion_name + ', l = ' + str(l) + ', zeta = '
-                             + str(zeta))
+            raise ValueError('No radial data for {}, l = {}, zeta = {}'.format(self.ion_name, l,
+                                                                               zeta))
 
     def get_radial_value(self, l, zeta, distance, interpolation='cubic'):
         """Use interpolation to evaluate radial function at distance r.

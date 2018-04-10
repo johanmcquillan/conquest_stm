@@ -1,5 +1,6 @@
 
 import math
+import os
 import sys
 
 import atomic
@@ -13,12 +14,12 @@ __email__ = 'johan.mcquillan.13@ucl.ac.uk'
 HA_TO_EV = 27.2114  # Factor to convert Hartrees to electron volts
 
 
-def get_ion(ion_name, ion_folder='ions/'):
+def get_ion(ion_name, ion_folder='ions'):
     """Create Ion object from .ion file."""
     
     try:
         # Open .ion
-        ion_file = open(ion_folder + ion_name+'.ion', 'r')
+        ion_file = open(os.path.join(ion_folder, ion_name+'.ion'), 'r')
 
         # Skip preamble and first 9 lines
         line = ion_file.next()
@@ -67,11 +68,12 @@ def get_ion(ion_name, ion_folder='ions/'):
         return atomic.Ion(ion_name, radial_dict)
 
     except IOError:
-        print ion_folder+ion_name+'.ion does not exist'
+        print '{} does not exist'.format(os.path.join(ion_folder, ion_name+'.ion'))
         sys.exit(1)
 
 
-def get_cell(conquest_out, conquest_folder='conquest/', ion_folder='ions/', grid_spacing=0.5, group_size=400, weights=True, debug=False):
+def get_cell(conquest_out, conquest_folder='conquest', ion_folder='ions', grid_spacing=0.5,
+             group_size=400, weights=True, debug=False):
     """Return Cell object form CONQUEST files.
 
     Args:
@@ -91,11 +93,11 @@ def get_cell(conquest_out, conquest_folder='conquest/', ion_folder='ions/', grid
     """
 
     if debug:
-        sys.stdout.write("Building simulation cell\n")
+        sys.stdout.write('Building simulation cell\n')
         sys.stdout.flush()
     try:
         # Open Conquest_out file
-        conquest_out_file = open(conquest_folder + conquest_out, 'r')
+        conquest_out_file = open(os.path.join(conquest_folder, conquest_out), 'r')
         ions = {}
         atoms = {}
 
@@ -168,7 +170,7 @@ def get_cell(conquest_out, conquest_folder='conquest/', ion_folder='ions/', grid
 
         try:
             # Open corresponding .dat file for basis coefficients
-            conquest_dat_file = open(conquest_folder + conquest_out + '.dat')
+            conquest_dat_file = open(os.path.join(conquest_folder, conquest_out+'.dat'))
             line = conquest_dat_file.next()
 
             # Loop over all lines
@@ -230,11 +232,11 @@ def get_cell(conquest_out, conquest_folder='conquest/', ion_folder='ions/', grid
 
             conquest_dat_file.close()
         except IOError:
-            print conquest_folder + conquest_out + '.dat does not exist'
+            print '{} does not exist'.format(os.path.join(conquest_folder, conquest_out+'.dat'))
 
         try:
             # Open .dos file
-            conquest_dos_file = open(conquest_folder + conquest_out + '.dos')
+            conquest_dos_file = open(os.path.join(conquest_folder, conquest_out+'.dos'))
             line = conquest_dos_file.next()
             conquest_dos_file.close()
 
@@ -253,9 +255,9 @@ def get_cell(conquest_out, conquest_folder='conquest/', ion_folder='ions/', grid
             return cell
 
         except IOError:
-            print conquest_folder + conquest_out + '.dos does not exist'
+            print '{} does not exist'.format(os.path.join(conquest_folder, conquest_out+'.dos'))
             sys.exit(1)
 
     except IOError:
-        print conquest_folder + conquest_out + ' does not exist'
+        print '{} does not exist'.format(os.path.join(conquest_folder, conquest_out))
         sys.exit(1)
