@@ -24,7 +24,7 @@ while not quitting:
                 else:
                     gotL = True
             except ValueError:
-                print 'l must be between an integer between 0 and '+str(lMax)+' inclusive'
+                print 'l must be between an integer between 0 and {} inclusive'.format(lMax)
 
     if not quitting:
         if l == 0:
@@ -46,7 +46,7 @@ while not quitting:
                             else:
                                 gotM = True
                         except ValueError:
-                            print 'm must be and integer '+str(-l)+' and '+str(+l)+' inclusive'
+                            print 'm must be and integer {} and {} inclusive'.format(-l, +l)
         if not quitting:
-            print 'Showing Spherical Harmonic for l='+str(l)+' and m='+str(m)
+            print 'Showing Spherical Harmonic for l={} and m={}'.format(l, m)
             plot.plot_sph_3d(l, m)

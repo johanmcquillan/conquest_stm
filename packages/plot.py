@@ -102,7 +102,7 @@ def plot_radials(ion, spectro=True, interpolation='cubic'):
     
     fig, ax = plt.subplots(figsize=(10, 5))
 
-    plt.title('Radial Functions for '+str(ion.ion_name)+'.ion')
+    plt.title('Radial Functions for {}.ion'.format(ion.ion_name))
     ax.set_xlabel(r'Radial Distance, $r$ / $a_0$')
     ax.set_ylabel(r'$R_{\zeta l}(r)$')
     plt.minorticks_on()
@@ -127,9 +127,9 @@ def plot_radials(ion, spectro=True, interpolation='cubic'):
             # Add radial info to legend and add to plot
             # If spectro, use spectroscopic notation for legend
             if spectro:
-                label = '$\zeta ='+str(zeta)+'$; $'+str(n)+SPECTRAL[l]+'$'
+                label = '$\zeta ={}$; ${}{}$'.format(zeta, n, SPECTRAL[l])
             else:
-                label = '$\zeta ='+str(zeta)+'$; $n='+str(n)+'$, $l='+str(l)+'$'
+                label = '$\zeta ={}$; $n={}$, $l={}$'.format(zeta, n, l)
             ax.plot(r, R, label=label)
 
     ymax = 0.2 * int(maxy / 0.2 + 2)
@@ -193,7 +193,8 @@ def plot_sph_2d(l, m, axis, minimum=-8.0, maximum=8.0, plane_value=0.0, step=0.1
     plt.grid()
     axes = ['x', 'y', 'z']
     axes.remove(axis)
-    ttl = 'Spherical Harmonic for \n \n $l='+str(l)+'$, $m_l='+str(m)+'$ in $'+axes[0]+'-'+axes[1]+'$ plane'
+    ttl = 'Spherical Harmonic for \n \n $l={}$, $m_l={}$ in ${}-{}$ plane'.format(l, m,
+                                                                                  axes[0], axes[1])
     plt.title(ttl)
     plt.show()
     plt.close()
@@ -234,7 +235,7 @@ def plot_sph_3d(l, m):
     ax.set_xlim3d(-1.0, 1.0)
     ax.set_ylim3d(-1.0, 1.0)
     ax.set_zlim3d(-1.0, 1.0)
-    title = 'Real Spherical Harmonic for Degree $l='+str(l)+'$ and Order $m='+str(m)+'$'
+    title = 'Real Spherical Harmonic for Degree $l={}$ and Order $m={}$'.format(l, m)
     plt.title(title)
 
     ax.plot_surface(X, Y, Z, rstride=1, cstride=1, edgecolors=None, linewidth=0)
@@ -277,7 +278,8 @@ def plot_ldos_2d(
     axes = ['x', 'y', 'z']
     axes.remove(axis)
     if title:
-        ttl = cell.name+' LDoS in $'+axes[0]+'-'+axes[1]+'$ plane at $'+axis+'='+str(plane_value) + 'a_0$'
+        ttl = '{} LDoS in ${}-{}$ plane at ${}={}a_0$'.format(cell.name, axes[0], axes[1], axis,
+                                                              plane_value)
     else:
         ttl = ''
     plot_2d(cell, ldos_3d, ttl, axis, plane_value)
