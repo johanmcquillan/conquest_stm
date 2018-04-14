@@ -245,7 +245,9 @@ class Cell(object):
         """
         
         if debug:
-            print 'Calculating support mesh for atom group {}'.format(group)
+            sys.stdout.write('Calculating support mesh for atom group {}\n'.format(group))
+            sys.stdout.flush()
+        
         # Initialise support grid
         support_grid = np.empty(self.real_mesh.shape[:3], dtype=SmartDict)
 
@@ -432,7 +434,8 @@ class Cell(object):
         support_mesh = np.empty(self.real_mesh.shape[:3], dtype=SmartDict)
 
         if debug:
-            print 'Reading support group from '+filename
+            sys.stdout.write('Reading support group from {}\n'.format(filename))
+            sys.stdout.flush()
 
         # Iterate over file lines
         end_of_file = False
@@ -473,7 +476,8 @@ class Cell(object):
             except StopIteration:
                 end_of_file = True
         if debug:
-            print 'Support grid successfully read'
+            sys.stdout.write('Support grid successfully read\n')
+            sys.stdout.flush()
         return support_mesh
 
     def get_support_group(self, group, recalculate=False, interpolation='cubic', debug=False):
@@ -552,7 +556,7 @@ class Cell(object):
             E_str = '{} eV'.format(E - self.fermi_level)
         else:
             E_str = '{} eV'.format(E)
-        debug_str = 'Calculating psi(r) at k = {}, E = {}: '.format(K, E_str)
+        debug_str = 'Calculating psi(r) at k = {}, E = {}:\n'.format(K, E_str)
         if debug:
             sys.stdout.write(debug_str)
             sys.stdout.flush()
@@ -589,7 +593,6 @@ class Cell(object):
             if debug and prog * self.PROG_BAR_INTERVALS >= bars_done:
                 percent = prog * 100
                 sys.stdout.write('\r')
-                sys.stdout.write(debug_str)
                 sys.stdout.write(' [{:<{}}]'.format(self.PROG_BAR_CHARACTER * bars_done,
                                                     self.PROG_BAR_INTERVALS))
                 sys.stdout.write(' {:3.0f}%'.format(percent))
@@ -756,7 +759,8 @@ class Cell(object):
         ldos_grid = np.zeros_like(self.real_mesh[..., 0])
 
         if debug:
-            print 'Reading LDoS grid from '+filename
+            sys.stdout.write('Reading LDoS grid from {}\n'.format(filename))
+            sys.stdout.flush()
 
         for line in ldos_file:
             line_split = line.split()
@@ -769,7 +773,8 @@ class Cell(object):
             ldos_grid[i, j, k] = value
 
         if debug:
-            print 'LDoS grid successfully read'
+            sys.stdout.write('LDoS grid successfully read\n')
+            sys.stdout.flush()
         return ldos_grid
 
     def get_ldos_grid(self, min_E, max_E, T, recalculate=False, vectorised=True,
@@ -1184,7 +1189,7 @@ class Cell(object):
                             E_str = '{} eV'.format(E - self.fermi_level)
                         else:
                             E_str = '{} eV'.format(E)
-                        debug_str = 'Calculating psi(R) at k = {!s}, E = {}: {:5.1f}%'.format(
+                        debug_str = 'Calculating psi(R) at k = {!s}, E = {}:\n  {:5.1f}%'.format(
                                 K, E_str, prog)
                         if debug:
                             sys.stdout.write(debug_str)
@@ -1214,11 +1219,12 @@ class Cell(object):
                             if debug and prog * self.PROG_BAR_INTERVALS >= bars_done:
                                 percent = prog * 100
                                 sys.stdout.write('\r')
-                                sys.stdout.write(debug_str)
-                                sys.stdout.write(' [{:<{}}] {:3.0f}%'.format(self.PROG_BAR_CHARACTER * bars_done,
-                                                                             self.PROG_BAR_INTERVALS, percent))
+                                sys.stdout.write(' [{:<{}}] {:3.0f}%'.format(
+                                        self.PROG_BAR_CHARACTER * bars_done,
+                                        self.PROG_BAR_INTERVALS, percent))
                                 sys.stdout.flush()
                                 bars_done += 1
+                                
                         # Save propagated wavefunction
                         self.write_prop_psi(psi, K, E, T, fraction, z, delta_s=delta_s)
 
@@ -1227,7 +1233,7 @@ class Cell(object):
 
                     energies_done += 1
                     if debug and not read:
-                        sys.stdout.write("\n")
+                        sys.stdout.write('\n')
                         sys.stdout.flush()
         return current
 
@@ -1370,6 +1376,7 @@ class Cell(object):
                     for m in range(len(mesh_positions)):
                         psis[l].append(abs(psi[mesh_indices[m]])**2)
                     l += 1
+        
         # Convert lists to arrays
         Es = np.array(Es)
         psis = np.array(psis)

@@ -325,9 +325,9 @@ def plot_ldos_3d(cell, min_E, max_E, T, step=0.0, fraction=0.02, title=True, rec
         raise ValueError('LDoS is zero at all points')
 
     if title:
-        ttl = (
-            cell.name+' LDoS Isosurface at '+str(fraction)+' of Maximum Density for \n Energies from '
-            +str(min_E)+' eV to '+str(max_E)+' eV relative to the Fermi Level')
+        ttl = '''{} LDoS Isosurface at {} of Maximum Density for
+              Energies from {} to {} eV relative to the Fermi Level'''.format(
+                   cell.name, fraction, min_E, max_E)
     else:
         ttl = ''
 
@@ -404,7 +404,7 @@ def plot_spectrum(cell, xy, min_V, max_V, sigma, T, fraction, z, delta_s=None, d
 
     ax.set_xlim(min_V, max_V)
     ax.set_xlabel(r'Sample Bias Voltage, $V / V$')
-    ax.set_yticklabels(["{:.1f}".format(t) for t in ax.get_yticks()])
+    ax.set_yticklabels(['{:.1f}'.format(t) for t in ax.get_yticks()])
 
     ax.set_ylabel(r'Tunnelling Conductance, d$I$/d$V$ (Arbitrary Units)')
 
