@@ -1,5 +1,5 @@
 
-import math
+import numpy as np
 import os
 import sys
 
@@ -54,7 +54,7 @@ def get_ion(ion_name, ion_folder='ions'):
                 x, y = line.split()
                 x = float(x)
                 # Multiply R by r^l
-                y = float(y) * math.pow(x, l)
+                y = float(y) * np.power(x, l)
                 r.append(x)
                 R.append(y)
 
