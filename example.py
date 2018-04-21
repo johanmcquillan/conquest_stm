@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-from packages.parser import get_cell
-import packages.plot as plot
+import conquest_stm.plot as plot
+from conquest_stm.parser import get_cell
 
 __author__ = 'Johan G. McQuillan'
 __email__ = 'johan.mcquillan.13@ucl.ac.uk'

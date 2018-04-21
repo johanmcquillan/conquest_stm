@@ -1,5 +1,5 @@
 
-import packages.plot as plot
+import conquest_stm.plot as plot
 
 __author__ = 'Johan G. McQuillan'
 __email__ = 'johan.mcquillan.13@ucl.ac.uk'
