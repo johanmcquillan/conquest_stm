@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 
 import conquest_stm.plot as plot
 from conquest_stm.parser import get_cell
