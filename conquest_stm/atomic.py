@@ -113,17 +113,13 @@ class Ion(object):
             list: Ordered list of PAO data.
                 Each element is a list containing [l, zeta, m] for the PAO.
         """
-        
-        pao_list = []
 
         # Dict keys not necessarily in order
         # Order key list by lowest to highest for each index
-        l_list = sorted(self.radials.keys())
-        for l in l_list:
-            zeta_list = sorted(self.radials[l])
-            for zeta in zeta_list:
-                for m in range(-l, l + 1):
-                    pao_list.append((l, zeta, m))
+        pao_list = [[l, zeta, m]
+                    for l in sorted(self.radials)
+                    for zeta in sorted(self.radials[l])
+                    for m in range(-l, l+1)]
         return pao_list
 
     def has_radial(self, l, zeta):
@@ -138,12 +134,8 @@ class Ion(object):
         Returns:
             bool: True if Radial is stored, false if not.
         """
-        
-        output = False
-        if l in self.radials:
-            if zeta in self.radials[l]:
-                return True
-        return output
+
+        return l in self.radials and zeta in self.radials[l]
 
     def add_radial(self, radial):
         """Adds radial to self.radials.
@@ -153,13 +145,9 @@ class Ion(object):
         Args:
             radial (Radial): Radial object to add.
         """
-        
-        # Get metadata
-        zeta = radial.zeta
-        l = radial.l
 
         # Add Radial
-        self.radials[l][zeta] = radial
+        self.radials[radial.l][radial.zeta] = radial
         self.sorted_pao()
 
     def get_radial(self, l, zeta):
@@ -207,11 +195,9 @@ class Ion(object):
         Beyond the cutoff the radial part of the support function is defined to be 0.
         """
         
-        max_cutoff = 0.0
-        for l in self.radials:
-            for zeta in self.radials[l]:
-                if max_cutoff < self.radials[l][zeta].cutoff:
-                    max_cutoff = self.radials[l][zeta].cutoff
+        max_cutoff = max([self.radials[l][zeta].cutoff
+                          for l in self.radials
+                          for zeta in self.radials[l]])
         return max_cutoff
 
 
@@ -273,8 +259,7 @@ class Atom(Ion):
             if distance <= self.get_max_cutoff():
                 output = True
         else:
-            if self.has_radial(l, zeta):
-                if distance <= self.get_radial(l, zeta).cutoff:
+            if self.has_radial(l, zeta) and distance <= self.get_radial(l, zeta).cutoff:
                     output = True
         return output
 
@@ -310,13 +295,11 @@ class Atom(Ion):
             bool: True if coefficient is stored, false if not.
         """
         
-        output = False
-        if K in self.bands:
-            if E in self.bands[K]:
-                if l in self.bands[K][E]:
-                    if zeta in self.bands[K][E][l]:
-                        if m in self.bands[K][E][l][zeta]:
-                            output = True
+        output = (K in self.bands and
+                  E in self.bands[K] and
+                  l in self.bands[K][E] and
+                  zeta in self.bands[K][E][l] and
+                  m in self.bands[K][E][l][zeta])
         return output
 
     def add_coefficient(self, K, E, PAO, coefficient):
@@ -368,6 +351,7 @@ class Atom(Ion):
         Returns:
             float: Value of radial part of support function.
         """
+        
         R = 0.0
         if self.has_radial(l, zeta):
             distance = abs(relative_position)

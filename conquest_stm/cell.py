@@ -118,11 +118,7 @@ class Cell(object):
             E (float): Band energy.
         """
         
-        output = False
-        if K in self.bands:
-            if E in self.bands[K]:
-                output = True
-        return output
+        return K in self.bands and E in self.bands[K]
 
     def add_atom(self, atom, atom_key):
         """Add atom to self.atoms, indexed by atom_key.
@@ -140,10 +136,12 @@ class Cell(object):
             # If cell does not have k-point, create empty band energy list
             if K not in self.bands:
                 self.bands[K] = []
+                
             # Add band energies to k-point
             for E in atom.bands[K]:
                 if E not in self.bands[K]:
                     self.bands[K].append(E)
+                    
             # Sort energy list
             self.bands[K] = sorted(self.bands[K])
 
@@ -190,9 +188,11 @@ class Cell(object):
         
         # Get quotient and remainder wrt grid spacing
         div_x, mod_x = divmod(x, self.grid_spacing)
+        
         # Check if x should be rounded up or down
         if mod_x >= self.grid_spacing / 2:
             div_x += 1
+            
         # Get new point
         new_x = div_x * self.grid_spacing
         if points is not None:
@@ -318,6 +318,7 @@ class Cell(object):
                     # If point is outside boundary, reduce to lie within cell
                     if partial_ijk_list[i] >= self.real_mesh.shape[i]:
                         partial_ijk_list[i] -= self.real_mesh.shape[i]
+                
                 # Convert back to tuple
                 partial_ijk = tuple(partial_ijk_list)
 
@@ -700,9 +701,7 @@ class Cell(object):
         # Initialise mesh
         ldos_grid = np.zeros_like(self.real_mesh[..., 0], dtype=float)
 
-        total_k_weight = 0
-        for K in self.bands:
-            total_k_weight += K.weight
+        total_k_weight = sum([K.weight for K in self.bands])
 
         # Iterate over energies
         for K in self.bands:
@@ -739,16 +738,19 @@ class Cell(object):
         """
         
         filename = self.ldos_filename(min_E, max_E, T)
+        
         # Get LDOS mesh
         ldos_file = safe_open(filename, 'w')
         if debug:
             sys.stdout.write('Writing LDOS grid to {}\n'.format(filename))
             sys.stdout.flush()
+            
         # Iterate over mesh points
         for i, j, k in np.ndindex(self.real_mesh.shape[:3]):
             # If LDOS is non-zero at mesh point, write data to file
             if ldos_grid[i, j, k]:
                 ldos_file.write('{} {} {} {}\n'.format(i, j, k, ldos_grid[i, j, k]))
+            
         ldos_file.close()
 
     def read_ldos_grid(self, min_E, max_E, T, debug=False):
@@ -1050,6 +1052,7 @@ class Cell(object):
         
         if delta_s is None:
             delta_s = self.default_delta_s
+        
         return os.path.join(self.MESH_FOLDER, '{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.{}'.format(
                 self.PROP_PSI_FNAME, self.name, self.grid_spacing, K.x, K.y, K.z, E, T, fraction, z,
                 delta_s, self.EXT))
@@ -1059,12 +1062,14 @@ class Cell(object):
         
         if delta_s is None:
             delta_s = self.default_delta_s
+        
         filename = self.propagated_psi_filename(K, E, T, fraction, z, delta_s=delta_s)
         psi_file = safe_open(filename, 'w')
         for i, j in np.ndindex(psi.shape):
             if psi[i, j] != 0:
                 p = psi[i, j]
                 psi_file.write('{} {} {} {}\n'.format(i, j, p.real, p.imag))
+        
         psi_file.close()
 
     def read_prop_psi(self, K, E, T, fraction, z, delta_s=None, debug=False):
@@ -1092,6 +1097,7 @@ class Cell(object):
             real = float(line_split[2])
             imag = float(line_split[3])
             psi[i, j] = complex(real, imag)
+        
         return psi
 
     def calculate_current_scan(self, z, V, T, tip_work_func, tip_energy, delta_s=None,
@@ -1254,11 +1260,13 @@ class Cell(object):
         current_file = safe_open(filename, 'w')
         if debug:
             sys.stdout.write('Writing current grid to {}\n'.format(filename))
+            
         # Iterate over mesh points
         for i, j in np.ndindex(current.shape):
             # If LDOS is non-zero at mesh point, write data to file
             if current[i, j] != 0:
                 current_file.write('{} {} {}\n'.format(i, j, current[i, j]))
+                
         current_file.close()
 
     def read_current(self, z, V, T, fraction, delta_s=None, debug=False):
@@ -1285,6 +1293,7 @@ class Cell(object):
         if debug:
             sys.stdout.write('I(R) successfully read\n')
             sys.stdout.flush()
+            
         return current
 
     def get_current_scan(self, z, V, T, tip_work_func, tip_energy, delta_s=None, fraction=0.025,
@@ -1322,6 +1331,7 @@ class Cell(object):
                                                   interpolation=interpolation,
                                                   vectorised=vectorised, debug=debug)
             self.write_current(current, z, V, T, fraction)
+            
         return current
 
     def get_spectrum_th(self, xy, min_V, max_V, sigma, T, fraction, z, delta_s=None, dE=0.005, debug=False):
