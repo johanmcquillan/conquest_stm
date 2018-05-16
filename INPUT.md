@@ -30,7 +30,7 @@ $$
 
 where $\chi$ and $\psi$ are the tip and sample wavefunctions respectively, and $\Sigma$ is ANY surface in the vacuum region between them. The method of Paz and Soler involves evaluating this integral close to the sample atoms, as it is $\psi(\mathbf{r})$ that becomes less accurate at larger distances. This wavefunction is calculated by CONQUEST during a simulation and is thus an input to this program (or rather the basis sets and coefficients are). The tip state must be determined by this program.
 
-Explicit simulation of the atoms that constitute the STM probe tip is costly. Qualitative agreement with experiment can usually be achieved through the Tersoff-Hamann approximation. Representing the tip as a Dirac delta peak at $\mathbf{R}$ and solving the Schrödinger equation yields a Green's function that represents a spherical $s$-wave tip state:
+Explicit simulation of the atoms that constitute the STM probe tip is costly. Qualitative agreement with experiment can usually be achieved through the Tersoff-Hamann approximation. Representing the tip as a Dirac delta peak at $\mathbf{R}$ and solving the Schrödinger equation yields a Green's function that represents a spherical s-wave tip state:
 $$
     \begin{aligned}
         \left(-\frac{1}{2} \nabla^2 - (\phi - \varepsilon_F) \right) G(\mathbf{r} - \mathbf{R}) & = -\delta(\mathbf{r} - \mathbf{R}), \\
