@@ -74,4 +74,4 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 * Prof. David Bowler, University College London, London Centre for Nanotechnology, for supervising this Master's project.
 
-The <img src="https://rawgit.com/johanmcquillan/conquest_stm/master/svgs/c068b57af6b6fa949824f73dcb828783.svg?invert_in_darkmode" align=middle width=42.05817pt height=22.407pt/> equations in this document were compile with ```readme2tex``` from the repository <https://github.com/leegao/readme2tex>.
+The <img src="https://rawgit.com/johanmcquillan/conquest_stm/master/svgs/c068b57af6b6fa949824f73dcb828783.svg?invert_in_darkmode" align=middle width=42.05817pt height=22.407pt/> equations in this document were compiled with ```readme2tex``` from the repository <https://github.com/leegao/readme2tex>.
